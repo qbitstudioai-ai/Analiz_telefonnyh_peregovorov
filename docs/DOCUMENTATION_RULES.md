@@ -11,6 +11,7 @@
 | Цель продукта | [PRODUCT_REQUIREMENTS](PRODUCT_REQUIREMENTS.md) |
 | CORE, настройки, адаптеры, общий путь | [ARCHITECTURE](ARCHITECTURE.md) |
 | Источники и фильтрация | [INPUT_AND_FILTERING](specs/INPUT_AND_FILTERING.md) |
+| Жизненный цикл, повторные/пропущенные звонки и результаты | [CALL_LIFECYCLE](specs/CALL_LIFECYCLE.md) |
 | Транскрибация, дикторы, приватность | [TRANSCRIPTION_AND_PRIVACY](specs/TRANSCRIPTION_AND_PRIVACY.md) |
 | Анализ и знания | [ANALYSIS_AND_KNOWLEDGE](specs/ANALYSIS_AND_KNOWLEDGE.md) |
 | Обратная связь и дашборд | [FEEDBACK_AND_DASHBOARD](specs/FEEDBACK_AND_DASHBOARD.md) |
