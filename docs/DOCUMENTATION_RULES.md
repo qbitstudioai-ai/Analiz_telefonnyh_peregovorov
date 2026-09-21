@@ -10,6 +10,7 @@
 |---|---|
 | Цель продукта | [PRODUCT_REQUIREMENTS](PRODUCT_REQUIREMENTS.md) |
 | CORE, настройки, адаптеры, общий путь | [ARCHITECTURE](ARCHITECTURE.md) |
+| Физическое размещение, российский контур и внешние AI API | [INFRASTRUCTURE_RU_SERVER](INFRASTRUCTURE_RU_SERVER.md) |
 | Ответственность инструментов и источники истины | [SYSTEM_INTERACTIONS](specs/SYSTEM_INTERACTIONS.md) |
 | Источники и фильтрация | [INPUT_AND_FILTERING](specs/INPUT_AND_FILTERING.md) |
 | Жизненный цикл, повторные/пропущенные звонки и результаты | [CALL_LIFECYCLE](specs/CALL_LIFECYCLE.md) |
