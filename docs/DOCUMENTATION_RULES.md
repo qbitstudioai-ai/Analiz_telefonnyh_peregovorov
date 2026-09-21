@@ -17,6 +17,8 @@
 | Транскрибация, дикторы, приватность | [TRANSCRIPTION_AND_PRIVACY](specs/TRANSCRIPTION_AND_PRIVACY.md) |
 | Анализ и знания | [ANALYSIS_AND_KNOWLEDGE](specs/ANALYSIS_AND_KNOWLEDGE.md) |
 | Обратная связь и дашборд | [FEEDBACK_AND_DASHBOARD](specs/FEEDBACK_AND_DASHBOARD.md) |
+| Происхождение, хранение и расчёт данных дашборда | [DASHBOARD_DATA_MAP](DASHBOARD_DATA_MAP.md) |
+| Формулы и знаменатели показателей | [METRICS](specs/METRICS.md) |
 | Роли и поведение ChatGPT | [CHATGPT_INSTRUCTIONS](CHATGPT_INSTRUCTIONS.md) |
 | Порядок задач шаблона | [WORKPLAN_TEMPLATE](WORKPLAN_TEMPLATE.md) |
 | Внедрение готового шаблона | [WORKPLAN_CLIENT_DEPLOYMENT](WORKPLAN_CLIENT_DEPLOYMENT.md) |
