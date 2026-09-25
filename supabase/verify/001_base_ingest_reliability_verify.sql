@@ -11,6 +11,7 @@ declare
   v_bytea_count integer;
   v_manager_id uuid;
   v_call_id uuid;
+  v_other_call_id uuid;
   v_canonical_event_id uuid;
   v_filter_operation_id uuid;
   v_filter_attempt_id uuid;
@@ -286,6 +287,63 @@ begin
     current_filter_decision_id = v_filter_decision_id,
     processing_state = 'waiting_audio'
   where call_id = v_call_id;
+
+  insert into atp_test.calls (
+    source_adapter_code,
+    connection_ref,
+    call_identity_key,
+    direction,
+    answer_status,
+    classification,
+    processing_state
+  )
+  values (
+    'verify_source',
+    'verify_connection',
+    'call-key-002',
+    'outbound',
+    'answered',
+    'client',
+    'registered'
+  )
+  returning call_id into v_other_call_id;
+
+  -- A filter operation from one call must not be attachable to another call.
+  begin
+    insert into atp_test.filter_decisions (
+      call_id,
+      outcome,
+      filter_rules_version_ref,
+      input_facts,
+      operation_id
+    )
+    values (
+      v_other_call_id,
+      'accepted',
+      'verify-filter-rules-v1',
+      '{}'::jsonb,
+      v_filter_operation_id
+    );
+
+    raise exception
+      'DB-01 verification failed: filter decision accepted an operation owned by another call';
+  exception
+    when foreign_key_violation then
+      null;
+  end;
+
+  -- A call must not point to another call's current filter decision.
+  begin
+    update atp_test.calls
+    set current_filter_decision_id = v_filter_decision_id
+    where call_id = v_other_call_id;
+
+    raise exception
+      'DB-01 verification failed: call accepted another call''s current filter decision';
+  exception
+    when foreign_key_violation then
+      null;
+  end;
 
   begin
     insert into atp_test.operations (
