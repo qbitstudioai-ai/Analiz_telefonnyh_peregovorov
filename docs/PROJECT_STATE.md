@@ -63,13 +63,19 @@ Read-only preflight завершён PASS: запросы на `shablon_analiz_t
 
 Операционные SQL теперь фиксируются в отдельной папке `SQL/`.
 
-Для DB-08B создан пакет `SQL/DB-08B/`:
+Для DB-08B используется последовательная нумерация с понятными названиями:
 
-- `001_preflight_readonly.sql` — фактически выполнен, PASS;
-- `010_db01_apply.sql` — **следующий разрешённый SQL**;
-- `011_db01_verify.sql` — запускать только после успешной migration DB-01;
-- `019_db01_rollback_DO_NOT_RUN.sql` — не запускать без отдельного решения.
+- `001_proverka_kontura.sql` — фактически выполнен, PASS;
+- `002_sozdanie_bazovoi_shemy_db01.sql` — фактически выполнен, **Success**;
+- `003_proverka_bazovoi_shemy_db01.sql` — **следующий разрешённый SQL**;
+- `004_otkat_bazovoi_shemy_db01_NE_ZAPUSKAT.sql` — recovery-файл, не запускать без отдельного решения.
 
-## Что ещё не применялось
+## Фактический статус применения
 
-На момент фиксации DB-08A SQL 001—007 ещё не запускался в Supabase. Реальные Credentials, n8n workflow, серверные сервисы и dashboard к schema `shablon_analiz_telefonnyh_peregovorov` ещё не подключены и не проверены.
+- DB-08B preflight — PASS;
+- DB-01 migration — **применена**, Supabase вернул `Success. No rows returned`;
+- DB-01 verify — **ещё не запускался**;
+- DB-02—DB-07 migrations — ещё не применялись;
+- реальные Credentials, n8n workflow, серверные сервисы и dashboard к schema `shablon_analiz_telefonnyh_peregovorov` ещё не подключены и не проверены.
+
+До PASS файла `003_proverka_bazovoi_shemy_db01.sql` нельзя утверждать, что DB-01 фактически проверена.
