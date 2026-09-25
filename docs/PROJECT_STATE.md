@@ -24,17 +24,16 @@
 
 ## Последний завершённый подэтап
 
-**DB-08B / DB-01 — базовая schema фактически применена и проверена PASS.**
+**DB-08B / DB-02 — слой транскрипции и privacy фактически применён и проверен PASS.**
 
 Фактически подтверждено Павлом в рабочем Supabase:
 
-- `001_proverka_kontura.sql` — PASS;
-- `002_sozdanie_bazovoi_shemy_db01.sql` — `Success. No rows returned`;
-- первый verify выявил дефект теста, затем старый текст был повторно запущен из вкладки Studio;
-- `005_povtornaya_proverka_bazovoi_shemy_db01.sql` — `Success. No rows returned`;
-- исправленный verify завершился без необработанной ошибки и выполнил финальный `ROLLBACK`, поэтому DB-01 считается фактически проверенной.
+- DB-01 migration + verify — PASS;
+- `006_sozdanie_sloya_transkripcii_i_privacy_db02.sql` — `Success. No rows returned`;
+- `007_proverka_sloya_transkripcii_i_privacy_db02.sql` — `Success. No rows returned`;
+- verify DB-02 завершился без необработанной ошибки и выполнил финальный `ROLLBACK`.
 
-DB-01: **применена + verify PASS**.
+DB-02: **применена + verify PASS**.
 
 ## Следующая одна задача
 
@@ -67,18 +66,21 @@ Read-only preflight завершён PASS: запросы на `shablon_analiz_t
 - `003_proverka_bazovoi_shemy_db01.sql` — исторический FAIL проверочного SQL;
 - `004_otkat_bazovoi_shemy_db01_NE_ZAPUSKAT.sql` — recovery, не запускать;
 - `005_povtornaya_proverka_bazovoi_shemy_db01.sql` — PASS;
-- `006_sozdanie_sloya_transkripcii_i_privacy_db02.sql` — фактически выполнен, **Success**;
-- `007_proverka_sloya_transkripcii_i_privacy_db02.sql` — **следующий разрешённый SQL**;
-- `008_otkat_sloya_transkripcii_i_privacy_db02_NE_ZAPUSKAT.sql` — recovery, не запускать без отдельного решения.
+- `006_sozdanie_sloya_transkripcii_i_privacy_db02.sql` — Success;
+- `007_proverka_sloya_transkripcii_i_privacy_db02.sql` — PASS;
+- `008_otkat_sloya_transkripcii_i_privacy_db02_NE_ZAPUSKAT.sql` — recovery, не запускать;
+- `009_sozdanie_konfiguracii_i_bazy_znanii_db03.sql` — **следующий разрешённый SQL**;
+- `010_proverka_konfiguracii_i_bazy_znanii_db03.sql` — запускать только после успешного шага 009;
+- `011_otkat_konfiguracii_i_bazy_znanii_db03_NE_ZAPUSKAT.sql` — recovery, не запускать без отдельного решения.
 
 ## Фактический статус применения
 
 - DB-08B preflight — PASS;
 - DB-01 migration — **применена**;
 - DB-01 verify — **PASS**;
-- DB-02 migration — **применена**, Supabase вернул `Success. No rows returned`;
-- DB-02 verify — ещё не запускался;
+- DB-02 migration — **применена**;
+- DB-02 verify — **PASS**;
 - DB-03—DB-07 migrations — ещё не применялись;
 - реальные Credentials, n8n workflow, серверные сервисы и dashboard к schema `shablon_analiz_telefonnyh_peregovorov` ещё не подключены и не проверены.
 
-Следующий шаг: DB-02 verify из `007_proverka_sloya_transkripcii_i_privacy_db02.sql`.
+Следующий шаг: DB-03 migration из `009_sozdanie_konfiguracii_i_bazy_znanii_db03.sql`.

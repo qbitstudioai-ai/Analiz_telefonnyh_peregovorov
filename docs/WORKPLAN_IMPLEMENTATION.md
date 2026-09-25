@@ -29,7 +29,7 @@
 | Статус / ID | Исполнитель | Результат | Критерий готовности |
 |---|---|---|---|
 | [x] DB-01 | ChatGPT + Павел | Базовая migration приёма и надёжности | Migration фактически применена в рабочем Supabase; исправленный verify PASS; подтверждены 8 базовых таблиц, dedup/idempotency/composite FK/temporary-audio constraints; синтетические verify-данные откатились |
-| [x] DB-02 | ChatGPT | Migration транскрипции/privacy | Созданы migration/verify/rollback для 11 DB-02 tables; raw/pseudonym/mapping физически разделены, privacy package имеет exact safe segment set и не имеет direct raw/mapping FK; retention/version ownership статически проверены; к Supabase не применено |
+| [x] DB-02 | ChatGPT + Павел | Migration транскрипции/privacy | Migration фактически применена в рабочем Supabase; verify PASS; подтверждены 11 DB-02 tables, raw/pseudonym/mapping separation, exact safe package set, role constraints, quality/speech metrics; verify-данные откатились |
 | [x] DB-03 | ChatGPT | Migration конфигураций и знаний | Созданы migration/verify/rollback для 13 tables + internal published-only view; draft-first config lifecycle, immutable publication membership, exact doc/fragment/embedding provenance, product scope и external-embedding policy статически проверены; к Supabase не применено |
 | [x] DB-04 | ChatGPT | Migration analysis/evidence | Созданы migration/verify/guarded rollback для 11 tables; exact input manifest, typed claims/evidence, exact safe segment/knowledge refs, absence coverage и current evidence gate статически проверены; direct final-state INSERT bypass закрыт; к Supabase не применено |
 | [x] DB-05 | ChatGPT | Migration CRM/outgoing/corrections/audit | Созданы migration/verify/guarded rollback для 7 tables; CRM/human facts отделены от AI outcome, callback использует trusted refs, outgoing action предшествует send, delivered/unknown retry gates, corrections/disputes и append-only audit статически проверены; к Supabase не применено |
@@ -37,7 +37,7 @@
 | [x] DB-07 | ChatGPT | Изоляция и права шаблонного контура | Канонический migration/verify/guarded rollback: 9 NOLOGIN capability roles, 18 security-barrier runtime/safe views, 5 defense-in-depth RLS policies на raw/mapping, 2 audited SECURITY DEFINER proposal functions, PUBLIC/default privilege hardening и positive/negative matrix; физический контур обновлён DB-08A до `shablon_analiz_telefonnyh_peregovorov`; к Supabase ещё не применено |
 | [x] DB-08A | ChatGPT | Адаптация DB-01—DB-07 к рабочей schema `shablon` | Migration/verify/rollback были переведены с `atp_test` на рабочий контур `shablon`; SQL к Supabase не применялся |
 | [x] DB-08A.1 | ChatGPT | Окончательное имя рабочего контура | До применения SQL schema переименована в `shablon_analiz_telefonnyh_peregovorov` во всех migration/verify/rollback и документации; DB-07 roles используют `shablon_analiz_telefonnyh_peregovorov_*`; DB-05 audit использует `scope_ref='shablon_analiz_telefonnyh_peregovorov'`; к Supabase ещё не применено |
-| [~] DB-08B | Павел + ChatGPT | Применение migrations в рабочем Supabase | Preflight PASS; DB-01 migration + verify PASS; DB-02 migration фактически применена с `Success`; следующий шаг — `007_proverka_sloya_transkripcii_i_privacy_db02.sql` |
+| [~] DB-08B | Павел + ChatGPT | Применение migrations в рабочем Supabase | DB-01 и DB-02 migration + verify PASS; следующий шаг — `009_sozdanie_konfiguracii_i_bazy_znanii_db03.sql`, затем `010_proverka_konfiguracii_i_bazy_znanii_db03.sql` при успехе |
 
 ## Этап B — обработка и контракты
 
