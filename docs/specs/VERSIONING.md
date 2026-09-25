@@ -577,7 +577,7 @@ Current выбирается только среди допустимых под
 - численные сроки хранения;
 - политика массового reanalysis после обновления знаний/методики;
 - UX ручного override;
-- точная evidence schema DOC-14;
+- физическая evidence schema; логические требования определены в [EVIDENCE_MODEL](EVIDENCE_MODEL.md);
 - admin permissions DOC-16.
 
 ## Критерий DOC-13
