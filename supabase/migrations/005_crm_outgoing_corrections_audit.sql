@@ -226,6 +226,52 @@ create table atp_test.business_confirmations (
 comment on table atp_test.business_confirmations is
   'Immutable trusted CRM/human source events. They never overwrite AI inferred outcomes.';
 
+create function atp_test.validate_business_confirmation_insert()
+returns trigger
+language plpgsql
+set search_path = pg_catalog, atp_test
+as $function$
+declare
+  v_predecessor_event_no integer;
+  v_predecessor_call_id uuid;
+  v_predecessor_fact_type text;
+begin
+  if new.event_no = 1 then
+    return new;
+  end if;
+
+  select event_no, call_id, fact_type
+  into v_predecessor_event_no, v_predecessor_call_id, v_predecessor_fact_type
+  from atp_test.business_confirmations
+  where confirmation_id = new.supersedes_confirmation_id
+    and fact_family_ref = new.fact_family_ref;
+
+  if not found then
+    raise exception 'Business confirmation predecessor does not exist in same family';
+  end if;
+
+  if new.event_no <> v_predecessor_event_no + 1 then
+    raise exception 'Business confirmation event_no must follow predecessor exactly';
+  end if;
+
+  if new.call_id is distinct from v_predecessor_call_id
+     or new.fact_type is distinct from v_predecessor_fact_type
+  then
+    raise exception 'Business confirmation correction/cancel cannot change call/fact type';
+  end if;
+
+  if exists (
+    select 1
+    from atp_test.business_confirmations x
+    where x.supersedes_confirmation_id = new.supersedes_confirmation_id
+  ) then
+    raise exception 'Business confirmation predecessor already has a successor';
+  end if;
+
+  return new;
+end
+$function$;
+
 create function atp_test.guard_business_confirmation_immutable()
 returns trigger
 language plpgsql
@@ -237,9 +283,24 @@ begin
 end
 $function$;
 
+create trigger trg_business_confirmations_validate_insert
+before insert on atp_test.business_confirmations
+for each row execute function atp_test.validate_business_confirmation_insert();
+
 create trigger trg_business_confirmations_immutable
 before update or delete on atp_test.business_confirmations
 for each row execute function atp_test.guard_business_confirmation_immutable();
+
+-- Shared delete guard for history rows that may have no child FK yet.
+create function atp_test.guard_db05_history_delete()
+returns trigger
+language plpgsql
+set search_path = pg_catalog
+as $function$
+begin
+  raise exception '% history row cannot be deleted', tg_table_name;
+end
+$function$;
 
 -- Missed-call -> callback relation based only on trusted source/CRM facts.
 create table atp_test.callback_links (
@@ -380,6 +441,10 @@ create trigger trg_callback_links_guard_update
 before update on atp_test.callback_links
 for each row execute function atp_test.guard_callback_link_update();
 
+create trigger trg_callback_links_guard_delete
+before delete on atp_test.callback_links
+for each row execute function atp_test.guard_db05_history_delete();
+
 -- Outgoing message/action is persisted before any external send.
 create table atp_test.outgoing_actions (
   outgoing_action_id uuid primary key default gen_random_uuid(),
@@ -442,6 +507,7 @@ set search_path = pg_catalog, atp_test
 as $function$
 declare
   v_analysis_state atp_test.analysis_state;
+  v_operation_state atp_test.operation_state;
 begin
   if new.action_state <> 'prepared' then
     raise exception 'Outgoing action must be inserted as prepared';
@@ -456,6 +522,16 @@ begin
   if v_analysis_state not in ('validated', 'current') then
     raise exception
       'Outgoing action requires a validated/current analysis';
+  end if;
+
+  select operation_state
+  into v_operation_state
+  from atp_test.operations
+  where operation_id = new.creation_operation_id
+    and call_id = new.call_id;
+
+  if v_operation_state is distinct from 'succeeded' then
+    raise exception 'Outgoing action creation operation must be succeeded';
   end if;
 
   return new;
@@ -503,6 +579,10 @@ for each row execute function atp_test.validate_outgoing_action_insert();
 create trigger trg_outgoing_actions_guard_update
 before update on atp_test.outgoing_actions
 for each row execute function atp_test.guard_outgoing_action_update();
+
+create trigger trg_outgoing_actions_guard_delete
+before delete on atp_test.outgoing_actions
+for each row execute function atp_test.guard_db05_history_delete();
 
 -- One physical send attempt. outcome_unknown is intentionally not retryable
 -- until reconciliation proves that the external side effect did not happen.
@@ -784,6 +864,23 @@ create table atp_test.analysis_disputes (
     on delete restrict
 );
 
+create function atp_test.guard_analysis_dispute_initial_state()
+returns trigger
+language plpgsql
+set search_path = pg_catalog
+as $function$
+begin
+  if new.dispute_state <> 'open'
+     or new.resolution_reason is not null
+     or new.resolved_by_ref is not null
+     or new.resolved_at is not null
+  then
+    raise exception 'Dispute must be inserted as open';
+  end if;
+  return new;
+end
+$function$;
+
 create function atp_test.guard_analysis_dispute_update()
 returns trigger
 language plpgsql
@@ -828,9 +925,17 @@ begin
 end
 $function$;
 
+create trigger trg_analysis_disputes_guard_initial
+before insert on atp_test.analysis_disputes
+for each row execute function atp_test.guard_analysis_dispute_initial_state();
+
 create trigger trg_analysis_disputes_guard_update
 before update on atp_test.analysis_disputes
 for each row execute function atp_test.guard_analysis_dispute_update();
+
+create trigger trg_analysis_disputes_guard_delete
+before delete on atp_test.analysis_disputes
+for each row execute function atp_test.guard_db05_history_delete();
 
 -- Typed correction record. It records a controlled correction but never
 -- rewrites the original source/analysis row itself.
@@ -957,6 +1062,7 @@ as $function$
 declare
   v_old_semantic jsonb;
   v_new_semantic jsonb;
+  v_apply_state atp_test.operation_state;
 begin
   if old.correction_state <> 'proposed' then
     raise exception 'Applied/rejected correction is immutable';
@@ -979,6 +1085,18 @@ begin
     raise exception 'Invalid correction transition';
   end if;
 
+  if new.correction_state = 'applied' then
+    select operation_state
+    into v_apply_state
+    from atp_test.operations
+    where operation_id = new.apply_operation_id
+      and call_id = new.call_id;
+
+    if v_apply_state is distinct from 'succeeded' then
+      raise exception 'Applied correction requires succeeded apply operation';
+    end if;
+  end if;
+
   return new;
 end
 $function$;
@@ -990,6 +1108,10 @@ for each row execute function atp_test.guard_correction_initial_state();
 create trigger trg_corrections_guard_update
 before update on atp_test.corrections
 for each row execute function atp_test.guard_correction_update();
+
+create trigger trg_corrections_guard_delete
+before delete on atp_test.corrections
+for each row execute function atp_test.guard_db05_history_delete();
 
 -- Generic administrative audit metadata. This is intentionally append-only.
 create table atp_test.audit_events (
