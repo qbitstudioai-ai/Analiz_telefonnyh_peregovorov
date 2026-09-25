@@ -10,37 +10,34 @@ Production не разрешён. Созданные SQL/workflow/code не сч
 
 ## Последняя завершённая задача
 
-**DB-01 — создан базовый SQL-слой приёма и надёжности.**
+**DB-02 — создан SQL-слой транскрипции и privacy.**
 
-Созданы:
+Созданы migration/verify/rollback и [описание DB-02](implementation/DB-02.md).
 
-- `supabase/migrations/001_base_ingest_reliability.sql`;
-- `supabase/verify/001_base_ingest_reliability_verify.sql`;
-- `supabase/rollback/001_base_ingest_reliability_rollback.sql`;
-- [описание DB-01](implementation/DB-01.md).
+Статически подтверждено:
 
-Проверено статически:
+- 11 новых DB-02 таблиц;
+- raw transcript, pseudonymized transcript и reverse mapping физически разделены;
+- privacy package/segment set не имеют direct FK на raw transcript/raw segments/mapping;
+- blocked privacy package не допускает LLM operation;
+- exact call/transcript/role ownership защищён composite FK;
+- retention mapping удаляет и protected value, и protected local ref;
+- version/current constraints и processing-quality/speech-metrics связи присутствуют;
+- executable SQL не содержит bytea/blob/service_role/production DDL;
+- признаков типовых реальных секретов не найдено.
 
-- migration создаёт ровно 8 первичных таблиц `atp_test`;
-- SQL lexical structure сбалансирована;
-- executable SQL не содержит `bytea`/blob, `service_role` и production schema DDL;
-- event identity и call identity защищены от второго non-duplicate результата;
-- logical operation имеет idempotency key, retry вынесен в attempts;
-- filter/audio ownership защищены составными FK `operation + call`;
-- rollback отказывается удалять schema при наличии later/unknown tables.
-
-Не проверено: фактическое выполнение PostgreSQL/Supabase. DB-01 создан в GitHub, но не применён.
+Не проверено: фактическое выполнение PostgreSQL/Supabase. DB-01 и DB-02 созданы в GitHub, но не применены.
 
 ## Следующая одна задача
 
-**DB-02 — подготовить migration транскрипции и privacy для test.**
+**DB-03 — подготовить migration конфигураций и общей базы знаний.**
 
 Исполнитель: **ChatGPT**.
 
-Цель: поверх DB-01 реализовать исходные/псевдонимизированные транскрипции, segments, role assignments, privacy packages/mappings, quality и speech metrics с version/provenance/retention связями.
+Цель: реализовать versioned prompt/methodology/filter и knowledge document/fragment/embedding/publication model с exact published membership и product scope.
 
-Критерий готовности: migration/verify/rollback записаны в GitHub, raw/pseudonym/mapping разделены физически, exact versions/operations связаны FK, privacy package не содержит mapping/raw content, retention metadata есть, SQL статически проверен и **не считается применённым**.
+Критерий готовности: migration/verify/rollback в GitHub; draft не смешан с publication, publication фиксирует exact versions, embedding привязан к exact fragment+model/config, current/history/invalidation различимы, SQL статически проверен и не считается применённым.
 
 ## Что ещё не применялось
 
-DB-01/DB-02 SQL, workflow, код, изменения n8n/Supabase/сервера, реальные Credentials, реальные данные/документы компаний, backup и production фактически не применялись и не тестировались.
+DB-01/DB-02/DB-03 SQL, workflow, код, изменения n8n/Supabase/сервера, реальные Credentials, реальные данные/документы компаний, backup и production фактически не применялись и не тестировались.
