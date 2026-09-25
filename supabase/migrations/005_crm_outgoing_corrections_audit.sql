@@ -333,9 +333,15 @@ create table atp_test.callback_links (
     check (delay_seconds is null or delay_seconds >= 0),
   constraint callback_links_decision_metadata
     check (
-      link_state = 'candidate'
-      or (
-        decision_reason is not null
+      (
+        link_state = 'candidate'
+        and decision_reason is null
+        and decided_at is null
+      )
+      or
+      (
+        link_state in ('confirmed', 'rejected')
+        and decision_reason is not null
         and btrim(decision_reason) <> ''
         and decided_at is not null
       )
@@ -1164,7 +1170,7 @@ create table atp_test.audit_events (
   constraint audit_events_safe_details_object
     check (jsonb_typeof(safe_details) = 'object'),
   constraint audit_events_result_time
-    check (result_at is null or result_at >= requested_at)
+    check (result_at is not null and result_at >= requested_at)
 );
 
 create function atp_test.guard_audit_event_append_only()
