@@ -34,7 +34,7 @@
 | [x] DB-04 | ChatGPT | Migration analysis/evidence | Созданы migration/verify/guarded rollback для 11 tables; exact input manifest, typed claims/evidence, exact safe segment/knowledge refs, absence coverage и current evidence gate статически проверены; direct final-state INSERT bypass закрыт; к Supabase не применено |
 | [x] DB-05 | ChatGPT | Migration CRM/outgoing/corrections/audit | Созданы migration/verify/guarded rollback для 7 tables; CRM/human facts отделены от AI outcome, callback использует trusted refs, outgoing action предшествует send, delivered/unknown retry gates, corrections/disputes и append-only audit статически проверены; к Supabase не применено |
 | [x] DB-06 | ChatGPT | Dashboard views/metric SQL | Созданы migration/verify/guarded rollback для 12 views + 7 metric/filter functions; logical-call decomposition, current/reliable/no-dispute averages, N/A criteria, stages, AI/CRM split, callback window, speech provenance и drill-down IDs статически проверены; к Supabase не применено |
-| [ ] DB-07 | ChatGPT | Изоляция и права test | Созданы ограниченные test roles/grants/RLS/functions; negative tests DOC-10 подтверждают изоляцию на test |
+| [x] DB-07 | ChatGPT | Изоляция и права test | Созданы migration/verify/guarded rollback: 8 NOLOGIN capability roles, 6 security-barrier safe views, 4 controlled SECURITY DEFINER functions, PUBLIC/default privilege hardening и positive/negative privilege matrix; RLS внутри single-contour schema обоснованно не используется; к Supabase не применено |
 | [ ] DB-08 | Павел + ChatGPT | Применение migrations в test Supabase | Павел запускает подготовленный SQL в test; ChatGPT по фактическому результату проверяет schema, constraints, права и rollback/recovery; production не затрагивается |
 
 ## Этап B — обработка и контракты
@@ -92,33 +92,32 @@
 
 ## Текущая следующая задача
 
-**DB-07 — изоляция и права test.**
+**DB-08 — применение DB-01—DB-07 в test Supabase.**
 
-Цель: создать ограниченные PostgreSQL test roles/grants/RLS/functions для DB-01—DB-06 и executable negative tests по [ACCESS_AND_ISOLATION](specs/ACCESS_AND_ISOLATION.md), без создания production roles и без применения к Supabase.
+Исполнители: **Павел + ChatGPT**.
 
-Объём DB-07:
+Цель: впервые фактически применить подготовленную цепочку SQL в отдельном test Supabase, выполнить verify-скрипты и подтвердить schema/constraints/metric/access boundaries без изменения production.
 
-- runtime role для n8n/CORE одного test contour;
-- privacy-role с отдельным доступом к mapping/raw data;
-- knowledge reader без publish/edit;
-- dashboard reader/server role;
-- admin/correction capabilities через ограниченные операции;
-- отсутствие direct browser/service_role access;
-- grants/revokes/RLS/security-definer boundary только где обосновано;
-- negative isolation/privilege tests;
-- rollback test roles/policies/functions.
+Порядок DB-08:
+
+1. до запуска подтвердить, что открыт именно test Supabase;
+2. применить migrations 001 → 007 строго по порядку;
+3. после каждой migration зафиксировать фактический результат;
+4. выполнить verify 001 → 007;
+5. отдельно проверить DB-07 role/privilege matrix до подключения реальных login Credentials;
+6. проверить rollback/recovery на отдельной test/quarantine копии или по согласованному безопасному сценарию;
+7. только после PASS создать/привязать отдельные test Credentials вне GitHub;
+8. production не трогать.
 
 Критерий готовности:
 
-- migration/verify/rollback записаны в GitHub;
-- ordinary role не имеет postgres/service_role-like broad privileges;
-- dashboard role не читает pseudonym mapping/raw transcript без отдельного права;
-- knowledge reader читает only published product-scoped knowledge и не publish/edit;
-- test roles не имеют production objects/credentials;
-- direct table writes ограничены по обязанности;
-- privileged write operations имеют explicit functions/audit path;
-- negative tests проверяют denied reads/writes/DDL/secret-like access;
-- SQL проходит статическую проверку;
-- к Supabase не применён.
+- Павел фактически выполнил подготовленный SQL именно в test Supabase;
+- все migrations 001—007 завершились без необъяснённых ошибок;
+- все verify 001—007 дали PASS;
+- schema/constraints/views/functions/roles сверены с GitHub;
+- DB-07 negative privilege checks подтвердили запреты;
+- реальных секретов нет в GitHub и business schema;
+- rollback/recovery сценарий фактически проверен в безопасном test/quarantine контуре;
+- явно записано, что production не изменялся.
 
-Профильные документы DB-07: [ACCESS_AND_ISOLATION](specs/ACCESS_AND_ISOLATION.md), [DASHBOARD_ADMIN](specs/DASHBOARD_ADMIN.md), [TRANSCRIPTION_AND_PRIVACY](specs/TRANSCRIPTION_AND_PRIVACY.md), [ANALYSIS_AND_KNOWLEDGE](specs/ANALYSIS_AND_KNOWLEDGE.md), [RELEASE_CHECKLIST](RELEASE_CHECKLIST.md).
+Профильные документы DB-08: [RELEASE_CHECKLIST](RELEASE_CHECKLIST.md), [ACCESS_AND_ISOLATION](specs/ACCESS_AND_ISOLATION.md), [PROJECT_STATE](PROJECT_STATE.md), [implementation/DB-01](implementation/DB-01.md), [implementation/DB-02](implementation/DB-02.md), [implementation/DB-03](implementation/DB-03.md), [implementation/DB-04](implementation/DB-04.md), [implementation/DB-05](implementation/DB-05.md), [implementation/DB-06](implementation/DB-06.md), [implementation/DB-07](implementation/DB-07.md).
