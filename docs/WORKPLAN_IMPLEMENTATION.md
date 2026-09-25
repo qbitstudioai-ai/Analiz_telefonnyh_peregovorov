@@ -29,7 +29,7 @@
 | Статус / ID | Исполнитель | Результат | Критерий готовности |
 |---|---|---|---|
 | [x] DB-01 | ChatGPT | Базовая migration приёма и надёжности | Созданы migration/verify/guarded rollback для 8 базовых таблиц test-контура; статически проверены баланс SQL, состав таблиц, отсутствие executable bytea/blob/service_role/production DDL и составные FK call-operation; к Supabase не применено |
-| [ ] DB-02 | ChatGPT | Migration транскрипции/privacy | Физически представлены transcript/segments/roles/pseudonymized package/mapping metadata с version links и retention fields без хранения постоянного аудио |
+| [x] DB-02 | ChatGPT | Migration транскрипции/privacy | Созданы migration/verify/rollback для 11 DB-02 tables; raw/pseudonym/mapping физически разделены, privacy package имеет exact safe segment set и не имеет direct raw/mapping FK; retention/version ownership статически проверены; к Supabase не применено |
 | [ ] DB-03 | ChatGPT | Migration конфигураций и знаний | Реализованы versioned prompt/methodology/filter/knowledge document-fragment-embedding-publication структуры и immutable provenance |
 | [ ] DB-04 | ChatGPT | Migration analysis/evidence | Реализованы analyses, criteria, stages, observations, evidence, current/history и input manifest без fake refs |
 | [ ] DB-05 | ChatGPT | Migration CRM/outgoing/corrections/audit | Реализованы CRM confirmations, outgoing actions/delivery attempts, callbacks, corrections и audit trail |
@@ -92,29 +92,30 @@
 
 ## Текущая следующая задача
 
-**DB-02 — migration транскрипции и privacy.**
+**DB-03 — migration конфигураций и знаний.**
 
-Цель: подготовить второй SQL-набор поверх DB-01 для versioned transcription/privacy данных без применения к Supabase.
+Цель: подготовить versioned физический слой конфигураций и общей базы знаний поверх DB-01/DB-02, без применения к Supabase.
 
-Объём DB-02:
+Объём DB-03:
 
-- исходные транскрипции;
-- сегменты с таймкодами/technical speaker;
-- версии назначения ролей МЕНЕДЖЕР/КЛИЕНТ;
-- псевдонимизированные транскрипции;
-- privacy packages/gate result;
-- защищённые pseudonym mappings metadata;
-- processing quality;
-- speech metrics.
+- prompt versions;
+- methodology versions + criteria/stage definitions;
+- filter-rule versions;
+- knowledge document versions;
+- knowledge fragment versions;
+- embedding metadata/version provenance;
+- publication versions и exact published membership/product scope;
+- current/superseded/invalidated semantics.
 
 Критерий готовности:
 
 - migration/verify/rollback записаны в GitHub;
-- новые сущности связаны с exact call/transcript/operation versions;
-- raw/pseudonym/mapping физически разделены;
-- внешний privacy package не может ссылаться на mapping/raw content;
-- retention metadata предусмотрены;
+- published set фиксирует exact document/fragment versions;
+- draft не попадает в runtime publication;
+- reader/product scope представлен физически без копирования исходного документа;
+- embedding привязан к exact fragment + model/config;
+- одна current version в каждом version family;
 - SQL проходит статическую проверку;
 - к Supabase не применён.
 
-Профильные документы DB-02: [DATA_DICTIONARY](DATA_DICTIONARY.md), [TRANSCRIPTION_AND_PRIVACY](specs/TRANSCRIPTION_AND_PRIVACY.md), [VERSIONING](specs/VERSIONING.md), [INTEGRATION_CONTRACTS](specs/INTEGRATION_CONTRACTS.md), [ACCESS_AND_ISOLATION](specs/ACCESS_AND_ISOLATION.md), [RELEASE_CHECKLIST](RELEASE_CHECKLIST.md).
+Профильные документы DB-03: [DATA_DICTIONARY](DATA_DICTIONARY.md), [ANALYSIS_AND_KNOWLEDGE](specs/ANALYSIS_AND_KNOWLEDGE.md), [VERSIONING](specs/VERSIONING.md), [ACCESS_AND_ISOLATION](specs/ACCESS_AND_ISOLATION.md), [DASHBOARD_ADMIN](specs/DASHBOARD_ADMIN.md), [RELEASE_CHECKLIST](RELEASE_CHECKLIST.md).
