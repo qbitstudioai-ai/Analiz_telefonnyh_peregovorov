@@ -28,7 +28,7 @@
 | [x] DOC-15 | Даны точные определения метрик руководителя в составе DASH-01 | Создан `docs/specs/METRICS.md`: формулы, знаменатели, период, надёжность, этапы, результаты, перезвоны, ошибки и параметры речи; дашборд не вводит свои формулы |
 | [x] DOC-16 | Описана админ-панель Павла | [DASHBOARD_ADMIN](specs/DASHBOARD_ADMIN.md) разделяет пользовательские роли/capabilities, draft/activation/correction/operations, audit trail, test/production и 36 проверяемых сценариев; UI, Auth/RLS и production не реализованы |
 | [x] DOC-17 | Доведена спецификация общей базы знаний нескольких продуктов | [ANALYSIS_AND_KNOWLEDGE](specs/ANALYSIS_AND_KNOWLEDGE.md) определяет канонический источник, draft/validation/publication/depublication/invalidation, product scope, reader/editor/publisher, vector/embedding provenance и 36 проверяемых сценариев |
-| [ ] DOC-18 | Описаны мониторинг, резервирование, тестирование и безопасный выпуск | Создан `docs/RELEASE_CHECKLIST.md` и эксплуатационные требования; обязательные блокирующие проверки перечислены без утверждения, что они пройдены |
+| [x] DOC-18 | Описаны мониторинг, резервирование, тестирование и безопасный выпуск | [RELEASE_CHECKLIST](RELEASE_CHECKLIST.md) определяет release passport, blocking gates, monitoring/alerts, retention-aware backup/restore, load/failure tests, secret rules, rollback/reconciliation и 17 безусловных No-Go blockers без утверждения, что проверки уже пройдены |
 | [ ] DOC-19 | Выполнен итоговый аудит документации перед переходом к реализации | DOCUMENTATION_AUDIT подтверждает связность, отсутствие противоречий/битых ссылок и перечисляет все ещё открытые бизнес-решения |
 
 ## Переход к техническому проектированию
