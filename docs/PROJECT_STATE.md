@@ -87,8 +87,8 @@ Read-only preflight завершён PASS: запросы на `shablon_analiz_t
 - `024_sozdanie_predstavlenii_i_metrik_dashborda_db06.sql` — Success;
 - `025_proverka_predstavlenii_i_metrik_dashborda_db06.sql` — PASS;
 - `026_otkat_predstavlenii_i_metrik_dashborda_db06_NE_ZAPUSKAT.sql` — recovery, не запускать;
-- `027_sozdanie_izolyacii_i_prav_dostupa_db07.sql` — **следующий разрешённый SQL**;
-- `028_proverka_izolyacii_i_prav_dostupa_db07.sql` — запускать только после успешного шага 027;
+- `027_sozdanie_izolyacii_i_prav_dostupa_db07.sql` — фактически выполнен, **Success**;
+- `028_proverka_izolyacii_i_prav_dostupa_db07.sql` — **следующий разрешённый SQL**, verify DB-07;
 - `029_otkat_izolyacii_i_prav_dostupa_db07_NE_ZAPUSKAT.sql` — recovery, не запускать без отдельного решения.
 
 ## Фактический статус применения
@@ -106,7 +106,8 @@ Read-only preflight завершён PASS: запросы на `shablon_analiz_t
 - DB-05 verify — **PASS**;
 - DB-06 migration — **применена**;
 - DB-06 verify — **PASS**;
-- DB-07 migration — ещё не применялась;
+- DB-07 migration — **применена**, Supabase вернул `Success. No rows returned`;
+- DB-07 verify — ещё не запускался;
 - реальные Credentials, n8n workflow, серверные сервисы и dashboard к schema `shablon_analiz_telefonnyh_peregovorov` ещё не подключены и не проверены.
 
-Следующий шаг: DB-07 migration `027_sozdanie_izolyacii_i_prav_dostupa_db07.sql`.
+Следующий шаг: DB-07 verify `028_proverka_izolyacii_i_prav_dostupa_db07.sql`.

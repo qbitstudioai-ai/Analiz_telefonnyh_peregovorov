@@ -37,7 +37,7 @@
 | [x] DB-07 | ChatGPT | Изоляция и права шаблонного контура | Канонический migration/verify/guarded rollback: 9 NOLOGIN capability roles, 18 security-barrier runtime/safe views, 5 defense-in-depth RLS policies на raw/mapping, 2 audited SECURITY DEFINER proposal functions, PUBLIC/default privilege hardening и positive/negative matrix; физический контур обновлён DB-08A до `shablon_analiz_telefonnyh_peregovorov`; к Supabase ещё не применено |
 | [x] DB-08A | ChatGPT | Адаптация DB-01—DB-07 к рабочей schema `shablon` | Migration/verify/rollback были переведены с `atp_test` на рабочий контур `shablon`; SQL к Supabase не применялся |
 | [x] DB-08A.1 | ChatGPT | Окончательное имя рабочего контура | До применения SQL schema переименована в `shablon_analiz_telefonnyh_peregovorov` во всех migration/verify/rollback и документации; DB-07 roles используют `shablon_analiz_telefonnyh_peregovorov_*`; DB-05 audit использует `scope_ref='shablon_analiz_telefonnyh_peregovorov'`; к Supabase ещё не применено |
-| [~] DB-08B | Павел + ChatGPT | Применение migrations в рабочем Supabase | DB-01—DB-06 migration + verify PASS; DB-07 усиленно проверена: 9 NOLOGIN roles, 18 security-barrier views, 5 RLS policies, 2 SECURITY DEFINER functions и negative privilege checks; следующий шаг — `027_sozdanie_izolyacii_i_prav_dostupa_db07.sql` |
+| [~] DB-08B | Павел + ChatGPT | Применение migrations в рабочем Supabase | DB-01—DB-06 migration + verify PASS; DB-07 migration `027` фактически применена с `Success`; следующий шаг — `028_proverka_izolyacii_i_prav_dostupa_db07.sql` |
 
 ## Этап B — обработка и контракты
 

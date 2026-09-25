@@ -35,8 +35,8 @@
 - `024_sozdanie_predstavlenii_i_metrik_dashborda_db06.sql` — Success;
 - `025_proverka_predstavlenii_i_metrik_dashborda_db06.sql` — PASS;
 - `026_otkat_predstavlenii_i_metrik_dashborda_db06_NE_ZAPUSKAT.sql` — recovery, самостоятельно не запускать;
-- `027_sozdanie_izolyacii_i_prav_dostupa_db07.sql` — следующий SQL;
-- `028_proverka_izolyacii_i_prav_dostupa_db07.sql` — verify DB-07 после успешного 027;
+- `027_sozdanie_izolyacii_i_prav_dostupa_db07.sql` — Success;
+- `028_proverka_izolyacii_i_prav_dostupa_db07.sql` — следующий SQL, verify DB-07;
 - `029_otkat_izolyacii_i_prav_dostupa_db07_NE_ZAPUSKAT.sql` — recovery, самостоятельно не запускать.
 
 DB-06 завершена: migration + verify PASS. DB-07 перед выдачей усиленно проверена по roles/views/RLS/SECURITY DEFINER/grants и negative privilege checks.
