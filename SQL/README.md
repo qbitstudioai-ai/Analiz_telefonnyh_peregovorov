@@ -28,7 +28,10 @@
 - `007_proverka_sloya_transkripcii_i_privacy_db02.sql` — PASS;
 - `008_otkat_sloya_transkripcii_i_privacy_db02_NE_ZAPUSKAT.sql` — recovery, не запускать;
 - `009_sozdanie_konfiguracii_i_bazy_znanii_db03.sql` — Success;
-- `010_proverka_konfiguracii_i_bazy_znanii_db03.sql` — следующий SQL, verify DB-03;
-- `011_otkat_konfiguracii_i_bazy_znanii_db03_NE_ZAPUSKAT.sql` — recovery, самостоятельно не запускать.
+- `010_proverka_konfiguracii_i_bazy_znanii_db03.sql` — PASS;
+- `011_otkat_konfiguracii_i_bazy_znanii_db03_NE_ZAPUSKAT.sql` — recovery, не запускать;
+- `012_sozdanie_analiza_i_dokazatelstv_db04.sql` — следующий SQL;
+- `013_proverka_analiza_i_dokazatelstv_db04.sql` — verify DB-04 после успешного шага 012;
+- `014_otkat_analiza_i_dokazatelstv_db04_NE_ZAPUSKAT.sql` — recovery, самостоятельно не запускать.
 
-После DB-03 нумерация продолжится с `012_...`.
+После DB-04 нумерация продолжится с `015_...`.
