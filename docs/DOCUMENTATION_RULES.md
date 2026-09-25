@@ -22,6 +22,7 @@
 | Анализ и знания | [ANALYSIS_AND_KNOWLEDGE](specs/ANALYSIS_AND_KNOWLEDGE.md) |
 | Обратная связь и дашборд | [FEEDBACK_AND_DASHBOARD](specs/FEEDBACK_AND_DASHBOARD.md) |
 | Происхождение, хранение и расчёт данных дашборда | [DASHBOARD_DATA_MAP](DASHBOARD_DATA_MAP.md) |
+| Логические сущности и связи данных Supabase | [DATA_DICTIONARY](DATA_DICTIONARY.md) |
 | Формулы и знаменатели показателей | [METRICS](specs/METRICS.md) |
 | Роли и поведение ChatGPT | [CHATGPT_INSTRUCTIONS](CHATGPT_INSTRUCTIONS.md) |
 | Порядок задач шаблона | [WORKPLAN_TEMPLATE](WORKPLAN_TEMPLATE.md) |
