@@ -88,8 +88,9 @@ Read-only preflight завершён PASS: запросы на `shablon_analiz_t
 - `025_proverka_predstavlenii_i_metrik_dashborda_db06.sql` — PASS;
 - `026_otkat_predstavlenii_i_metrik_dashborda_db06_NE_ZAPUSKAT.sql` — recovery, не запускать;
 - `027_sozdanie_izolyacii_i_prav_dostupa_db07.sql` — фактически выполнен, **Success**;
-- `028_proverka_izolyacii_i_prav_dostupa_db07.sql` — **следующий разрешённый SQL**, verify DB-07;
-- `029_otkat_izolyacii_i_prav_dostupa_db07_NE_ZAPUSKAT.sql` — recovery, не запускать без отдельного решения.
+- `028_proverka_izolyacii_i_prav_dostupa_db07.sql` — фактически запущен, **FAIL P0001**: verify ожидал 0 capability-role memberships, фактически найдено 9;
+- `029_otkat_izolyacii_i_prav_dostupa_db07_NE_ZAPUSKAT.sql` — recovery, **не запускать**;
+- `030_diagnostika_chlenstva_rolei_db07.sql` — **следующий разрешённый SQL**, read-only диагностика memberships и остатков probe-schema.
 
 ## Фактический статус применения
 
@@ -107,7 +108,7 @@ Read-only preflight завершён PASS: запросы на `shablon_analiz_t
 - DB-06 migration — **применена**;
 - DB-06 verify — **PASS**;
 - DB-07 migration — **применена**, Supabase вернул `Success. No rows returned`;
-- DB-07 verify — ещё не запускался;
+- DB-07 verify `028` — **FAIL P0001** на проверке memberships; остальные проверки после этой точки ещё не подтверждены;
 - реальные Credentials, n8n workflow, серверные сервисы и dashboard к schema `shablon_analiz_telefonnyh_peregovorov` ещё не подключены и не проверены.
 
-Следующий шаг: DB-07 verify `028_proverka_izolyacii_i_prav_dostupa_db07.sql`.
+Следующий шаг: read-only `030_diagnostika_chlenstva_rolei_db07.sql`. До анализа результата не повторять 028 и не запускать 029.
