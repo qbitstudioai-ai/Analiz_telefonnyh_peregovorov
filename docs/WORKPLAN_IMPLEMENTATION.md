@@ -32,7 +32,7 @@
 | [x] DB-02 | ChatGPT | Migration транскрипции/privacy | Созданы migration/verify/rollback для 11 DB-02 tables; raw/pseudonym/mapping физически разделены, privacy package имеет exact safe segment set и не имеет direct raw/mapping FK; retention/version ownership статически проверены; к Supabase не применено |
 | [x] DB-03 | ChatGPT | Migration конфигураций и знаний | Созданы migration/verify/rollback для 13 tables + internal published-only view; draft-first config lifecycle, immutable publication membership, exact doc/fragment/embedding provenance, product scope и external-embedding policy статически проверены; к Supabase не применено |
 | [x] DB-04 | ChatGPT | Migration analysis/evidence | Созданы migration/verify/guarded rollback для 11 tables; exact input manifest, typed claims/evidence, exact safe segment/knowledge refs, absence coverage и current evidence gate статически проверены; direct final-state INSERT bypass закрыт; к Supabase не применено |
-| [ ] DB-05 | ChatGPT | Migration CRM/outgoing/corrections/audit | Реализованы CRM confirmations, outgoing actions/delivery attempts, callbacks, corrections и audit trail |
+| [x] DB-05 | ChatGPT | Migration CRM/outgoing/corrections/audit | Созданы migration/verify/guarded rollback для 7 tables; CRM/human facts отделены от AI outcome, callback использует trusted refs, outgoing action предшествует send, delivered/unknown retry gates, corrections/disputes и append-only audit статически проверены; к Supabase не применено |
 | [ ] DB-06 | ChatGPT | Dashboard views/metric SQL | Представления и функции реализуют METRICS/DASHBOARD_DATA_MAP без альтернативных формул |
 | [ ] DB-07 | ChatGPT | Изоляция и права test | Созданы ограниченные test roles/grants/RLS/functions; negative tests DOC-10 подтверждают изоляцию на test |
 | [ ] DB-08 | Павел + ChatGPT | Применение migrations в test Supabase | Павел запускает подготовленный SQL в test; ChatGPT по фактическому результату проверяет schema, constraints, права и rollback/recovery; production не затрагивается |
@@ -92,32 +92,33 @@
 
 ## Текущая следующая задача
 
-**DB-05 — migration CRM/outgoing/corrections/audit.**
+**DB-06 — dashboard views/metric SQL.**
 
-Цель: физически реализовать подтверждённые CRM/человеком бизнес-факты, связи callback, исходящие действия и попытки доставки, ручные corrections и audit trail поверх DB-01—DB-04, без применения к Supabase.
+Цель: реализовать согласованные server-side views/functions дашборда поверх DB-01—DB-05 строго по [METRICS](specs/METRICS.md) и [DASHBOARD_DATA_MAP](DASHBOARD_DATA_MAP.md), без подключения UI и без применения к Supabase.
 
-Объём DB-05:
+Объём DB-06:
 
-- CRM/human confirmations отдельно от AI outcome;
-- missed-call/callback links;
-- outgoing actions до внешнего send;
-- delivery attempts и outcome_unknown;
-- запрет повторного confirmed side effect;
-- corrections/disputes без бесследного overwrite;
-- immutable audit trail;
-- actor/source/reason/before-after refs;
-- безопасные idempotency/operation links.
+- общая картина звонков;
+- менеджеры;
+- критерии;
+- этапы;
+- ошибки/сильные стороны;
+- список звонков;
+- AI outcome и CRM confirmations раздельно;
+- качество обработки;
+- единая логика current/reliable/period;
+- drill-down до call IDs/evidence.
 
 Критерий готовности:
 
 - migration/verify/rollback записаны в GitHub;
-- CRM fact физически не подменяет AI inferred outcome;
-- outgoing action создаётся до delivery attempt;
-- confirmed delivery блокирует эквивалентный повтор;
-- outcome_unknown остаётся отдельным состоянием и требует reconciliation;
-- correction хранит исходное и новое состояние/версию, автора и причину;
-- audit trail не является обычной mutable business row;
+- формулы не дублируют и не меняют METRICS;
+- preliminary analysis не попадает в официальный average;
+- not applicable не превращается в zero;
+- AI outcome не выдаётся за CRM fact;
+- duplicate event не увеличивает logical-call metrics;
+- агрегаты раскрываются до образующих call IDs;
 - SQL проходит статическую проверку;
 - к Supabase не применён.
 
-Профильные документы DB-05: [DATA_DICTIONARY](DATA_DICTIONARY.md), [CALL_LIFECYCLE](specs/CALL_LIFECYCLE.md), [RELIABILITY_AND_IDEMPOTENCY](specs/RELIABILITY_AND_IDEMPOTENCY.md), [INTEGRATION_CONTRACTS](specs/INTEGRATION_CONTRACTS.md), [DASHBOARD_ADMIN](specs/DASHBOARD_ADMIN.md), [VERSIONING](specs/VERSIONING.md), [DASHBOARD_DATA_MAP](DASHBOARD_DATA_MAP.md).
+Профильные документы DB-06: [METRICS](specs/METRICS.md), [DASHBOARD_DATA_MAP](DASHBOARD_DATA_MAP.md), [FEEDBACK_AND_DASHBOARD](specs/FEEDBACK_AND_DASHBOARD.md), [DATA_DICTIONARY](DATA_DICTIONARY.md), [VERSIONING](specs/VERSIONING.md).
