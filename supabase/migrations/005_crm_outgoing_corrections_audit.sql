@@ -630,8 +630,18 @@ create table atp_test.delivery_attempts (
     ),
   constraint delivery_attempts_retry_shape
     check (
-      outcome_state <> 'failed_retryable'
-      or safe_retry_allowed
+      (outcome_state = 'failed_retryable' and safe_retry_allowed)
+      or
+      (outcome_state <> 'failed_retryable' and not safe_retry_allowed)
+    ),
+  constraint delivery_attempts_succeeded_shape
+    check (
+      outcome_state <> 'succeeded'
+      or (
+        provider_status = 'delivered'
+        and transport_result = 'transport_succeeded'
+        and delivered_at is not null
+      )
     ),
   constraint delivery_attempts_unknown_shape
     check (
