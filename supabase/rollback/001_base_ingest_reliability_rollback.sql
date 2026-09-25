@@ -10,7 +10,7 @@ begin;
 do $guard$
 declare
   v_expected_count integer;
-  v_extra_tables text[];
+  v_extra_tables text;
 begin
   if not exists (
     select 1
@@ -42,7 +42,7 @@ begin
       v_expected_count;
   end if;
 
-  select array_agg(tablename order by tablename)
+  select string_agg(tablename::text, ', ' order by tablename::text)
   into v_extra_tables
   from pg_tables
   where schemaname = 'atp_test'
