@@ -51,6 +51,7 @@ begin
     'atp_test_privacy',
     'atp_test_raw_transcript_reader',
     'atp_test_knowledge_reader',
+    'atp_test_knowledge_admin',
     'atp_test_dashboard',
     'atp_test_admin_api',
     'atp_test_monitor'
@@ -74,6 +75,9 @@ begin
         'v_runtime_filter_rules_active',
         'v_runtime_knowledge_call_analysis',
         'v_dashboard_analysis_provenance',
+        'v_dashboard_safe_transcript_segments',
+        'v_dashboard_evidence_conversation',
+        'v_dashboard_evidence_absence',
         'v_dashboard_knowledge_evidence',
         'v_dashboard_corrections_safe',
         'v_dashboard_disputes_safe',
@@ -104,6 +108,9 @@ create role atp_test_raw_transcript_reader
 create role atp_test_knowledge_reader
   nologin nosuperuser nocreatedb nocreaterole noinherit noreplication nobypassrls;
 
+create role atp_test_knowledge_admin
+  nologin nosuperuser nocreatedb nocreaterole noinherit noreplication nobypassrls;
+
 create role atp_test_dashboard
   nologin nosuperuser nocreatedb nocreaterole noinherit noreplication nobypassrls;
 
@@ -117,7 +124,15 @@ create role atp_test_monitor
 -- PostgreSQL defaults. Existing application capability roles are granted below.
 revoke all on schema atp_test from public;
 revoke all on all tables in schema atp_test from public;
+revoke all on all sequences in schema atp_test from public;
 revoke execute on all functions in schema atp_test from public;
+
+alter default privileges in schema atp_test
+  revoke all on tables from public;
+alter default privileges in schema atp_test
+  revoke all on sequences from public;
+alter default privileges in schema atp_test
+  revoke execute on functions from public;
 
 grant usage on schema atp_test to
   atp_test_orchestrator,
@@ -125,6 +140,7 @@ grant usage on schema atp_test to
   atp_test_privacy,
   atp_test_raw_transcript_reader,
   atp_test_knowledge_reader,
+  atp_test_knowledge_admin,
   atp_test_dashboard,
   atp_test_admin_api,
   atp_test_monitor;
@@ -268,12 +284,93 @@ select
   a.current_at
 from atp_test.analysis_versions a;
 
+-- Dashboard transcript surface is restricted to segments in a privacy-passed
+-- package. Raw text, raw segment text and reverse mapping are never exposed.
+create view atp_test.v_dashboard_safe_transcript_segments
+with (security_barrier = true) as
+select
+  pp.call_id,
+  pp.privacy_package_id,
+  pp.pseudonymized_transcript_id,
+  pp.version_no as privacy_package_version_no,
+  pp.version_state as privacy_package_version_state,
+  pps.package_order,
+  ps.pseudonymized_segment_id,
+  ps.segment_key,
+  ps.segment_order,
+  ps.start_ms,
+  ps.end_ms,
+  ps.speaker_label,
+  ps.business_role,
+  ps.pseudonymized_text,
+  ps.content_sha256 as pseudonymized_segment_sha256,
+  ps.text_deleted_at
+from atp_test.privacy_packages pp
+join atp_test.privacy_package_segments pps
+  on pps.privacy_package_id = pp.privacy_package_id
+ and pps.pseudonymized_transcript_id = pp.pseudonymized_transcript_id
+ and pps.call_id = pp.call_id
+join atp_test.pseudonymized_segments ps
+  on ps.pseudonymized_segment_id = pps.pseudonymized_segment_id
+ and ps.pseudonymized_transcript_id = pps.pseudonymized_transcript_id
+ and ps.call_id = pps.call_id
+where pp.privacy_status = 'passed'
+  and pp.version_state <> 'invalidated';
+
+create view atp_test.v_dashboard_evidence_conversation
+with (security_barrier = true) as
+select
+  ecr.analysis_id,
+  ecr.evidence_id,
+  ecr.conversation_ref_id,
+  ecr.privacy_package_id,
+  ecr.pseudonymized_segment_id,
+  ecr.ref_order,
+  ecr.start_ms,
+  ecr.end_ms,
+  ecr.business_role,
+  ecr.quote_snapshot,
+  ecr.quote_sha256,
+  s.call_id,
+  s.segment_key,
+  s.segment_order,
+  s.pseudonymized_text,
+  s.pseudonymized_segment_sha256
+from atp_test.evidence_conversation_refs ecr
+join atp_test.v_dashboard_safe_transcript_segments s
+  on s.privacy_package_id = ecr.privacy_package_id
+ and s.pseudonymized_segment_id = ecr.pseudonymized_segment_id;
+
+create view atp_test.v_dashboard_evidence_absence
+with (security_barrier = true) as
+select
+  eac.analysis_id,
+  a.call_id,
+  eac.evidence_id,
+  eac.privacy_package_id,
+  eac.methodology_version_id,
+  eac.processing_quality_id,
+  eac.scope_kind,
+  eac.stage_code,
+  eac.start_ms,
+  eac.end_ms,
+  eac.coverage_sufficient,
+  eac.result_absent,
+  eac.checked_rule_code,
+  eac.notes
+from atp_test.evidence_absence_checks eac
+join atp_test.analysis_versions a
+  on a.analysis_id = eac.analysis_id
+join atp_test.privacy_packages pp
+  on pp.privacy_package_id = eac.privacy_package_id
+where pp.privacy_status = 'passed';
+
 -- Knowledge text visible to dashboard only when it was an exact input/evidence
 -- of a concrete analysis.
 create view atp_test.v_dashboard_knowledge_evidence
 with (security_barrier = true) as
 select
-  ek.evidence_knowledge_ref_id,
+  ek.knowledge_ref_id,
   ek.evidence_id,
   ek.analysis_id,
   ai.knowledge_publication_id,
@@ -605,6 +702,38 @@ to atp_test_raw_transcript_reader;
 grant select on atp_test.v_runtime_knowledge_call_analysis
 to atp_test_knowledge_reader;
 
+-- Knowledge/config administration is a separate privileged capability and is
+-- never used as a normal runtime reader.
+grant select, insert, update on
+  atp_test.prompt_versions,
+  atp_test.methodology_versions,
+  atp_test.methodology_criteria,
+  atp_test.methodology_stages,
+  atp_test.filter_rule_versions,
+  atp_test.knowledge_documents,
+  atp_test.knowledge_document_versions,
+  atp_test.knowledge_fragments,
+  atp_test.knowledge_embeddings,
+  atp_test.knowledge_publications,
+  atp_test.knowledge_publication_documents,
+  atp_test.knowledge_publication_fragments,
+  atp_test.knowledge_publication_fragment_products
+to atp_test_knowledge_admin;
+
+grant select on
+  atp_test.v_runtime_prompt_active,
+  atp_test.v_runtime_methodology_active,
+  atp_test.v_runtime_methodology_criteria_active,
+  atp_test.v_runtime_methodology_stages_active,
+  atp_test.v_runtime_filter_rules_active,
+  atp_test.v_runtime_knowledge_fragments,
+  atp_test.v_runtime_knowledge_call_analysis,
+  atp_test.v_admin_audit_safe
+to atp_test_knowledge_admin;
+
+grant insert on atp_test.audit_events
+to atp_test_knowledge_admin;
+
 -- Dashboard server surfaces. It can read pseudonymized conversation/evidence,
 -- never raw transcript or mapping.
 grant select on
@@ -621,18 +750,13 @@ grant select on
   atp_test.v_dashboard_rezultaty,
   atp_test.v_dashboard_kachestvo,
   atp_test.v_dashboard_analysis_provenance,
+  atp_test.v_dashboard_safe_transcript_segments,
+  atp_test.v_dashboard_evidence_conversation,
+  atp_test.v_dashboard_evidence_absence,
   atp_test.v_dashboard_knowledge_evidence,
   atp_test.v_dashboard_corrections_safe,
   atp_test.v_dashboard_disputes_safe,
-  atp_test.v_dashboard_feedback_safe,
-  atp_test.pseudonymized_transcripts,
-  atp_test.pseudonymized_segments,
-  atp_test.privacy_packages,
-  atp_test.privacy_package_segments,
-  atp_test.evidence_sets,
-  atp_test.evidence_conversation_refs,
-  atp_test.evidence_knowledge_refs,
-  atp_test.evidence_absence_checks
+  atp_test.v_dashboard_feedback_safe
 to atp_test_dashboard;
 
 grant execute on function
@@ -839,6 +963,9 @@ grant select on
   atp_test.v_dashboard_rezultaty,
   atp_test.v_dashboard_kachestvo,
   atp_test.v_dashboard_analysis_provenance,
+  atp_test.v_dashboard_safe_transcript_segments,
+  atp_test.v_dashboard_evidence_conversation,
+  atp_test.v_dashboard_evidence_absence,
   atp_test.v_dashboard_knowledge_evidence,
   atp_test.v_dashboard_corrections_safe,
   atp_test.v_dashboard_disputes_safe,
