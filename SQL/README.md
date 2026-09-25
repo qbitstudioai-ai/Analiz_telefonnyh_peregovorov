@@ -17,21 +17,14 @@
 
 `SQL/DB-08B/` — фактическое применение DB-01—DB-07 в рабочем Supabase, schema `shablon_analiz_telefonnyh_peregovorov`.
 
-Текущая последовательность:
+Актуальная последовательность:
 
-- `001_proverka_kontura.sql` — PASS;
-- `002_sozdanie_bazovoi_shemy_db01.sql` — Success;
-- `003_proverka_bazovoi_shemy_db01.sql` — исторический FAIL verify;
-- `004_otkat_bazovoi_shemy_db01_NE_ZAPUSKAT.sql` — recovery, не запускать;
-- `005_povtornaya_proverka_bazovoi_shemy_db01.sql` — PASS;
-- `006_sozdanie_sloya_transkripcii_i_privacy_db02.sql` — Success;
-- `007_proverka_sloya_transkripcii_i_privacy_db02.sql` — PASS;
-- `008_otkat_sloya_transkripcii_i_privacy_db02_NE_ZAPUSKAT.sql` — recovery, не запускать;
-- `009_sozdanie_konfiguracii_i_bazy_znanii_db03.sql` — Success;
-- `010_proverka_konfiguracii_i_bazy_znanii_db03.sql` — PASS;
-- `011_otkat_konfiguracii_i_bazy_znanii_db03_NE_ZAPUSKAT.sql` — recovery, не запускать;
-- `012_sozdanie_analiza_i_dokazatelstv_db04.sql` — следующий SQL;
-- `013_proverka_analiza_i_dokazatelstv_db04.sql` — verify DB-04 после успешного шага 012;
-- `014_otkat_analiza_i_dokazatelstv_db04_NE_ZAPUSKAT.sql` — recovery, самостоятельно не запускать.
+- `001`—`011` — DB-01—DB-03 завершены; DB-01—DB-03 verify PASS;
+- `012_sozdanie_analiza_i_dokazatelstv_db04.sql` — фактический FAIL 42830, исторический выполненный SQL;
+- `013_proverka_analiza_i_dokazatelstv_db04.sql` — не запускался;
+- `014_otkat_analiza_i_dokazatelstv_db04_NE_ZAPUSKAT.sql` — recovery, самостоятельно не запускать;
+- `015_proverka_sostoyaniya_posle_oshibki_db04.sql` — следующий SQL, read-only;
+- `016_povtornoe_sozdanie_analiza_i_dokazatelstv_db04.sql` — исправленная DB-04 migration, только после PASS 015;
+- `017_proverka_analiza_i_dokazatelstv_db04.sql` — актуальный verify после успешного 016.
 
-После DB-04 нумерация продолжится с `015_...`.
+Исправление DB-04: добавлен точный UNIQUE target `analysis_claims (claim_id, analysis_id)` для FK из `evidence_sets`.
