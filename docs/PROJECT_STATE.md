@@ -10,35 +10,38 @@ SQL, JSON workflow, программный код, n8n, Supabase, сервер �
 
 ## Последняя завершённая задача
 
-**DOC-13 — описано версионирование артефактов и анализа.**
+**DOC-14 — описана доказательная база выводов.**
 
-Создан [VERSIONING](specs/VERSIONING.md).
+Создан [EVIDENCE_MODEL](specs/EVIDENCE_MODEL.md).
 
 Зафиксировано:
 
-- подтверждённая использованная version immutable; исправление создаёт новую version или отдельное correction event;
-- version_id является точной ссылкой, а current не определяется простым max(version_number);
-- current, historical/superseded и invalidated имеют разный смысл;
-- retry той же operation с теми же input_refs не является новой semantic version;
-- перспективное изменение промта/методики/model/knowledge влияет на будущие операции и не переписывает историю автоматически;
-- исправляющее изменение конкретной транскрипции/ролей/privacy может invalidate зависимый current и требует новой downstream-цепочки;
-- входы analysis замораживаются при старте operation и не переключаются на новые настройки посреди выполнения;
-- каждый analysis хранит immutable input manifest: transcript, roles, pseudonymized/privacy package, prompt, methodology, model/config, knowledge publication + exact fragments, history context, contract и влияющий CORE/quality version;
-- новая analysis version становится current только после успешной проверки;
-- failed candidate не снимает валидный current; invalidated current может временно оставить звонок без действующего анализа до reanalysis;
-- новый current analysis не создаёт повторную отправку обратной связи автоматически;
-- provider с плавающим model alias не выдаётся за полностью воспроизводимый build;
-- определены 26 обязательных проверяемых сценариев будущей реализации.
+- факт разговора, факт компании, правило оценки и вывод анализа являются разными сущностями смысла;
+- evidence всегда принадлежит конкретной immutable analysis version и конкретному target результата;
+- conversation evidence ссылается на exact transcript/segment version, таймкод и pinned role assignment;
+- knowledge-based claim ссылается на exact publication/document/fragment version, реально доступный analysis;
+- factual mismatch требует составного набора: реплика менеджера + rule + факт знаний;
+- отсутствие действия проверяется через absence_check по определённой области разговора, а не через выдуманную цитату;
+- reference integrity отделена от semantic truth: verified означает реальную корректную ссылку, но не гарантирует истинность вывода модели;
+- coverage complete/partial показывает, присутствуют ли обязательные части evidence по правилу;
+- fake/non-input segment/document/chunk refs из LLM блокируются;
+- evidence-gate выполняется до подтверждения/current analysis;
+- quality/privacy/retention ограничения не скрываются;
+- dashboard раскрывает индивидуальную оценку до evidence; агрегат — сначала до образующих звонков;
+- новое analysis version получает собственный evidence set, старые refs не перепривязываются;
+- определены 34 обязательных проверяемых сценария будущей реализации.
 
-SQL-механизм current pointer, locking, hashes, массовый reanalysis policy и admin UX ещё не выбраны.
+SQL evidence schema, UI viewer, единый численный confidence и универсальные semantic thresholds не выбирались.
 
 ## Следующая одна задача
 
-**DOC-14 — описать доказательную базу выводов.**
+**DOC-16 — описать админ-панель Павла и границы пользовательского управления.**
 
-Цель: создать docs/specs/EVIDENCE_MODEL.md и определить связь каждого проверяемого вывода/оценки с конкретным analysis version, цитатой/segment ref и таймкодом, правилом/критерием, knowledge fragment/document/version при использовании знаний и статусом проверки доказательства.
+DOC-15 уже закрыт в составе DASH-01.
 
-Критерий готовности: по любому значимому выводу можно понять, что именно было сказано, где в разговоре, какое правило применено, использовался ли факт компании и на какой версии материала основан вывод; LLM не может создать «доказательство» ссылкой на несуществующий вход.
+Цель: создать docs/specs/DASHBOARD_ADMIN.md и определить, что может менять Павел/администратор, что доступно руководителю, какие действия требуют аудита/новой версии, какие операции запрещены через обычный интерфейс и как отделены test/production и компании — без реализации UI или прав Supabase.
+
+Критерий готовности: для основных настроек, знаний, методики, ручных исправлений и служебных действий понятны роль, разрешённая операция, аудит, влияние на версии и запреты; административный интерфейс не становится обходом DOC-10/DOC-13/DOC-14.
 
 ## Что не применялось
 
