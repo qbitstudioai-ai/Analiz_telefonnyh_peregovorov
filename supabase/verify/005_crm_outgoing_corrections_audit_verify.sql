@@ -216,6 +216,66 @@ begin
       'DB-05 verification failed: delivery attempt exact operation-attempt FK missing';
   end if;
 
+  -- Delivery state semantics: retryability and success are explicit.
+  select pg_get_constraintdef(con.oid)
+  into v_definition
+  from pg_constraint con
+  where con.conrelid = 'atp_test.delivery_attempts'::regclass
+    and con.conname = 'delivery_attempts_retry_shape';
+
+  if v_definition is null
+     or lower(v_definition) not like '%failed_retryable%'
+     or lower(v_definition) not like '%safe_retry_allowed%'
+  then
+    raise exception
+      'DB-05 verification failed: delivery retryability CHECK missing/wrong';
+  end if;
+
+  select pg_get_constraintdef(con.oid)
+  into v_definition
+  from pg_constraint con
+  where con.conrelid = 'atp_test.delivery_attempts'::regclass
+    and con.conname = 'delivery_attempts_succeeded_shape';
+
+  if v_definition is null
+     or lower(v_definition) not like '%provider_status%'
+     or lower(v_definition) not like '%delivered%'
+     or lower(v_definition) not like '%transport_succeeded%'
+  then
+    raise exception
+      'DB-05 verification failed: succeeded delivery is not tied to confirmed delivery';
+  end if;
+
+  -- Callback candidate/final decision metadata must not be ambiguous.
+  select pg_get_constraintdef(con.oid)
+  into v_definition
+  from pg_constraint con
+  where con.conrelid = 'atp_test.callback_links'::regclass
+    and con.conname = 'callback_links_decision_metadata';
+
+  if v_definition is null
+     or lower(v_definition) not like '%candidate%'
+     or lower(v_definition) not like '%confirmed%'
+     or lower(v_definition) not like '%rejected%'
+  then
+    raise exception
+      'DB-05 verification failed: callback decision metadata CHECK missing/wrong';
+  end if;
+
+  -- Audit rows always represent a completed result classification.
+  select pg_get_constraintdef(con.oid)
+  into v_definition
+  from pg_constraint con
+  where con.conrelid = 'atp_test.audit_events'::regclass
+    and con.conname = 'audit_events_result_time';
+
+  if v_definition is null
+     or lower(v_definition) not like '%result_at is not null%'
+  then
+    raise exception
+      'DB-05 verification failed: audit result time is not required';
+  end if;
+
   -- The send guard must block confirmed delivery and unresolved unknown outcome.
   select pg_get_functiondef(p.oid)
   into v_definition
