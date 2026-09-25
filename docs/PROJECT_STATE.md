@@ -10,40 +10,41 @@ Production не разрешён. Созданные SQL/workflow/code не сч
 
 ## Последняя завершённая задача
 
-**DB-06 — создан server-side SQL-слой dashboard metrics.**
+**DB-07 — создан SQL-слой test access/isolation.**
 
-Созданы migration/verify/rollback и [описание DB-06](implementation/DB-06.md).
+Созданы migration/verify/rollback и [описание DB-07](implementation/DB-07.md).
 
 Статически подтверждено:
 
-- 12 DB-06 views и 7 shared metric/filter functions;
-- dashboard считается по logical calls, а не webhook events;
-- четыре terminal categories взаимно исключаются;
-- official score использует current reliable analysis без open dispute;
-- preliminary/technically incomplete считаются отдельно;
-- N/A criterion не превращается в zero;
-- stage denominator использует applicable calls;
-- observation denominator выводится из applicable criterion/stage context;
-- AI outcome и CRM/human fact остаются раздельными result sources;
-- callback without-call считается только после переданного окна компании;
-- speech metrics при current analysis совпадают с exact transcript/role inputs;
-- все агрегаты используют один shared period/filter contract;
-- metric functions возвращают drill-down call IDs;
-- migration/rollback совпадают по 12 views и 7 functions;
+- 8 NOLOGIN capability roles без superuser/createdb/createrole/replication/bypassrls;
+- 6 security-barrier safe views;
+- 4 controlled SECURITY DEFINER correction/dispute functions с pinned search_path;
+- PUBLIC лишён ambient schema/table/function access в atp_test;
+- future functions владельца migration не получают PUBLIC EXECUTE автоматически;
+- orchestrator не читает raw/mapping и не администрирует знания;
+- privacy role является единственной обычной runtime capability с raw transcript/pseudonym mapping access;
+- CORE работает с pseudonymized inputs и product-scoped published knowledge без raw/mapping/base-draft knowledge;
+- product knowledge reader читает только published call_analysis view и не publish/edit;
+- dashboard read-only и не получает raw/mapping/base knowledge/direct correction writes;
+- correction operator пишет только через controlled functions + audit;
+- monitoring видит только минимизированные technical views;
+- cross-schema negative checks подготовлены для другого test contour и production probe;
+- RLS внутри single-company+environment schema сознательно не добавлен: tenant discriminator внутри contour отсутствует, поэтому изоляция обеспечивается schema + отдельной Credential + grants;
+- migration/rollback совпадают по 8 roles, 6 views и 4 functions;
 - SQL lexical structure сбалансирована;
-- CASCADE, executable service_role, bytea/blob, production DDL и признаки типовых секретов отсутствуют.
+- plaintext password, executable service_role, bytea/blob, production DDL, CASCADE и признаки типовых реальных секретов отсутствуют.
 
-Не проверено: фактическое выполнение PostgreSQL/Supabase и численные fixture results. DB-01—DB-06 созданы в GitHub, но не применены.
+Не проверено: фактическое выполнение PostgreSQL/Supabase и реальные privilege denials. DB-01—DB-07 созданы в GitHub, но не применены.
 
 ## Следующая одна задача
 
-**DB-07 — подготовить изоляцию и права test.**
+**DB-08 — применить migrations DB-01—DB-07 в test Supabase и выполнить verify.**
 
-Исполнитель: **ChatGPT**.
+Исполнители: **Павел + ChatGPT**.
 
-Цель: физически ограничить test runtime roles по обязанностям и подготовить negative permission tests без production roles/credentials.
+Павел выполняет только готовые SQL-действия в test Supabase и сообщает фактический результат. ChatGPT ведёт порядок, анализирует ошибки, сверяет schema/constraints/roles и фиксирует PASS/FAIL.
 
-Критерий готовности: migration/verify/rollback в GitHub; ordinary roles не имеют broad admin access, raw/mapping/knowledge/dashboard boundaries разделены, writes разрешены только обязанностям, negative tests проверяют denied operations, SQL статически проверен и не считается применённым.
+Критерий готовности: migrations 001—007 и verify 001—007 фактически выполнены в test; privilege/isolation checks подтверждены; rollback/recovery проверен безопасно; секреты/production не затронуты. До такого подтверждения схема остаётся только созданной в GitHub.
 
 ## Что ещё не применялось
 
