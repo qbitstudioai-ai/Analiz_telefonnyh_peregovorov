@@ -1,6 +1,6 @@
 # План подготовки шаблона
 
-Текущий режим — **разрешённая реализация в рабочем Supabase только внутри schema `shablon_analiz_telefonnyh_peregovorov` по [WORKPLAN_IMPLEMENTATION](WORKPLAN_IMPLEMENTATION.md)**. GATE-01 открыл реализацию, а GATE-02 от 25 сентября 2026 года разрешил конкретный рабочий контур `shablon_analiz_telefonnyh_peregovorov`. Посторонние схемы/данные, destructive actions и переключение реального трафика не входят в это разрешение автоматически.
+Текущий режим — **разрешённая реализация по [WORKPLAN_IMPLEMENTATION](WORKPLAN_IMPLEMENTATION.md)**. DB-08B завершена: рабочий Supabase-контур `shablon_analiz_telefonnyh_peregovorov` создан и verify DB-01—DB-07 PASS. Следующая задача — CORE-01 в репозитории. Посторонние schemas/data, destructive actions, новые Credentials, server deploy и переключение реального трафика не входят в разрешение автоматически.
 
 Документационный план ниже завершён и сохраняется как основание требований. Текущая одна задача и статусы реализации ведутся в [WORKPLAN_IMPLEMENTATION](WORKPLAN_IMPLEMENTATION.md).
 

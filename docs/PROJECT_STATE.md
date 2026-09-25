@@ -4,114 +4,99 @@
 
 ## Режим
 
-**Разрешена реализация по одной задаче в рабочем Supabase только внутри schema `shablon_analiz_telefonnyh_peregovorov`.**
+**Разрешена реализация по одной задаче по `WORKPLAN_IMPLEMENTATION.md`.**
 
-Решение Павла от 25 сентября 2026 года заменяет прежнее ограничение «только test/локально» для этого контура.
+Физический контур Supabase `shablon_analiz_telefonnyh_peregovorov` уже создан и проверен в рамках DB-08B. Следующая разрешённая работа — кодовая задача `CORE-01` в репозитории.
 
 Разрешено:
 
-- создать и развивать schema `shablon_analiz_telefonnyh_peregovorov`;
-- создать внутри неё реальные таблицы, связи, views, functions, RLS и capability roles по согласованным migrations;
-- подключать к `shablon_analiz_telefonnyh_peregovorov` рабочие сервисные Credentials по мере соответствующих задач;
-- выполнять verify, если проверка не оставляет фиктивные данные и не затрагивает посторонние схемы.
+- продолжать реализацию задач плана в GitHub;
+- для уже согласованного Supabase-контура выполнять только явно предусмотренные последующими задачами действия;
+- создавать код и автотесты CORE без деплоя;
+- подключать рабочие сервисные Credentials только в отдельной соответствующей задаче после явной проверки scope.
 
 Не входит в разрешение автоматически:
 
-- изменение или удаление существующих посторонних схем/таблиц/данных;
-- destructive rollback в рабочем Supabase без отдельной проверки и разрешения;
+- изменение или удаление существующих посторонних schemas/tables/data;
+- destructive rollback в рабочем Supabase;
+- подключение новых Credentials вне отдельной задачи;
+- изменение сервера или deployment;
 - переключение реального клиентского трафика;
+- любые production-изменения;
 - публикация секретов в GitHub.
 
 ## Последний завершённый подэтап
 
-**DB-08B / DB-06 — dashboard views и metric SQL фактически применены и проверены PASS.**
+**DB-08B — физическая модель Supabase DB-01—DB-07 фактически применена и проверена PASS.**
 
 Фактически подтверждено Павлом в рабочем Supabase:
 
-- DB-01—DB-05 migration + verify — PASS;
-- `024_sozdanie_predstavlenii_i_metrik_dashborda_db06.sql` — `Success. No rows returned`;
-- `025_proverka_predstavlenii_i_metrik_dashborda_db06.sql` — `Success. No rows returned`;
-- verify DB-06 завершился без необработанной ошибки и выполнил финальный `ROLLBACK`.
+- DB-01 migration + verify — PASS;
+- DB-02 migration + verify — PASS;
+- DB-03 migration + verify — PASS;
+- DB-04 migration + verify — PASS после исправления двух DDL-дефектов;
+- DB-05 migration + verify — PASS;
+- DB-06 migration + verify — PASS;
+- DB-07 migration `027` — `Success. No rows returned`;
+- DB-07 verify `028` выявил неверное предположение о PostgreSQL 17 creator-admin memberships;
+- read-only `030` подтвердил 9 безопасных automatic creator-admin memberships: `ADMIN=true / INHERIT=false / SET=false`, без probe-schema leftovers;
+- DB-07 verify `031` выявил два alias-конфликта `v_role`;
+- исправленный DB-07 verify `033` — `Success. No rows returned`;
+- DB-07 negative privilege/RLS/grant matrix — PASS;
+- destructive rollback не выполнялся;
+- recovery-подход фактически подтверждён безопасно: транзакционные ошибки DB-04 не оставили частичных объектов, а ошибки verify DB-07 не оставили временных probe-schema;
+- реальные LOGIN/service Credentials, n8n, серверные сервисы и dashboard к новому контуру пока не подключены.
 
-DB-06: **применена + verify PASS**.
+DB-08B: **завершена**.
 
 ## Следующая одна задача
 
-**DB-08B — фактически применить migrations DB-01—DB-07 в рабочем Supabase schema `shablon_analiz_telefonnyh_peregovorov` и выполнить verify.**
+**CORE-01 — общие contract/version/idempotency validators.**
 
-Исполнители: **Павел + ChatGPT**.
+Исполнитель: **VSCode**.
 
-Павел уже выполнил первую read-only часть preflight: соединение показывает database `postgres`, user `postgres`, current schema `public`, PostgreSQL 17.6. Это подтверждает только параметры текущего соединения, но ещё не подтверждает отсутствие целевой schema.
+Цель:
 
-Read-only preflight завершён PASS: запросы на `shablon_analiz_telefonnyh_peregovorov`, старые `shablon`/`atp_test`, объекты, функции и capability roles вернули 0 строк. Конфликтов перед DB-01 не обнаружено.
+- реализовать общие валидаторы контрактов, версий, scope и idempotency;
+- покрыть автотестами `accepted / duplicate / rejected`, operation states, scope и unknown contract;
+- не менять Supabase schema;
+- не создавать Credentials;
+- не трогать n8n;
+- не выполнять deploy.
 
-Критерий готовности:
+До выдачи задания VSCode новая сессия должна сверить текущую структуру репозитория и профильные требования: `docs/specs/INTEGRATION_CONTRACTS.md`, `docs/specs/RELIABILITY_AND_IDEMPOTENCY.md`, `docs/specs/VERSIONING.md`, `docs/DATA_DICTIONARY.md`.
 
-- migrations 001→007 фактически выполнены в schema `shablon_analiz_telefonnyh_peregovorov`;
-- verify 001→007 фактически PASS;
-- schema/constraints/FK/views/functions/roles/RLS/grants сверены;
-- отрицательные privilege checks подтверждены;
-- рабочие Credentials для текущего DB-контура подключаются только после PASS DB-07;
-- rollback/recovery проверяется без destructive воздействия на единственный рабочий экземпляр;
-- существующие посторонние схемы/данные не затронуты.
+Критерий готовности CORE-01: автотесты подтверждают согласованное поведение validators; изменения записаны в GitHub и проверены ChatGPT после отчёта VSCode.
 
-## Текущий следующий SQL
+## SQL / DB-08B
 
-Операционные SQL теперь фиксируются в отдельной папке `SQL/`.
+Операционная последовательность DB-08B завершена.
 
-Для DB-08B используется последовательная нумерация с понятными названиями:
+Последние шаги:
 
-- `001_proverka_kontura.sql` — PASS;
-- `002_sozdanie_bazovoi_shemy_db01.sql` — Success;
-- `003_proverka_bazovoi_shemy_db01.sql` — исторический FAIL проверочного SQL;
-- `004_otkat_bazovoi_shemy_db01_NE_ZAPUSKAT.sql` — recovery, не запускать;
-- `005_povtornaya_proverka_bazovoi_shemy_db01.sql` — PASS;
-- `006_sozdanie_sloya_transkripcii_i_privacy_db02.sql` — Success;
-- `007_proverka_sloya_transkripcii_i_privacy_db02.sql` — PASS;
-- `008_otkat_sloya_transkripcii_i_privacy_db02_NE_ZAPUSKAT.sql` — recovery, не запускать;
-- `009_sozdanie_konfiguracii_i_bazy_znanii_db03.sql` — Success;
-- `010_proverka_konfiguracii_i_bazy_znanii_db03.sql` — PASS;
-- `011_otkat_konfiguracii_i_bazy_znanii_db03_NE_ZAPUSKAT.sql` — recovery, не запускать;
-- `012_sozdanie_analiza_i_dokazatelstv_db04.sql` — фактически запущен, **FAIL 42830**: отсутствовал unique target `(claim_id, analysis_id)` для FK `evidence_sets`;
-- `013_proverka_analiza_i_dokazatelstv_db04.sql` — не запускался;
-- `014_otkat_analiza_i_dokazatelstv_db04_NE_ZAPUSKAT.sql` — recovery, **не запускать**;
-- `015_proverka_sostoyaniya_posle_oshibki_db04.sql` — фактически выполнен, **PASS / 0 rows**; частичных DB-04 объектов не найдено;
-- `016_povtornoe_sozdanie_analiza_i_dokazatelstv_db04.sql` — фактически запущен, **FAIL 42830**: unique `(analysis_id, privacy_package_id)` создавался позже зависимых FK;
-- `017_proverka_analiza_i_dokazatelstv_db04.sql` — не запускался;
-- `018_proverka_sostoyaniya_posle_vtoroi_oshibki_db04.sql` — фактически выполнен, **PASS / 0 rows**; частичных DB-04 объектов после второй ошибки не найдено;
-- `019_povtornoe_sozdanie_analiza_i_dokazatelstv_db04.sql` — Success;
-- `020_proverka_analiza_i_dokazatelstv_db04.sql` — PASS;
-- `021_sozdanie_crm_otpravok_ispravlenii_i_audita_db05.sql` — Success;
-- `022_proverka_crm_otpravok_ispravlenii_i_audita_db05.sql` — PASS;
-- `023_otkat_crm_otpravok_ispravlenii_i_audita_db05_NE_ZAPUSKAT.sql` — recovery, не запускать;
-- `024_sozdanie_predstavlenii_i_metrik_dashborda_db06.sql` — Success;
-- `025_proverka_predstavlenii_i_metrik_dashborda_db06.sql` — PASS;
-- `026_otkat_predstavlenii_i_metrik_dashborda_db06_NE_ZAPUSKAT.sql` — recovery, не запускать;
-- `027_sozdanie_izolyacii_i_prav_dostupa_db07.sql` — фактически выполнен, **Success**;
-- `028_proverka_izolyacii_i_prav_dostupa_db07.sql` — фактически запущен, **FAIL P0001**: verify ожидал 0 capability-role memberships, фактически найдено 9;
-- `029_otkat_izolyacii_i_prav_dostupa_db07_NE_ZAPUSKAT.sql` — recovery, **не запускать**;
-- `030_diagnostika_chlenstva_rolei_db07.sql` — фактически выполнен; подтверждены 9 автоматических creator-admin memberships `postgres`, все `ADMIN=true / INHERIT=false / SET=false`, grantor `supabase_admin`; probe-schema leftovers отсутствуют;
-- `031_povtornaya_proverka_izolyacii_i_prav_dostupa_db07.sql` — фактически запущен, **FAIL 42702**: конфликт имени PL/pgSQL variable `v_role` с колонкой alias `role_list(v_role)`;
-- `032_otkat_izolyacii_i_prav_dostupa_db07_NE_ZAPUSKAT.sql` — recovery, не запускать;
-- `033_povtornaya_proverka_izolyacii_i_prav_dostupa_db07.sql` — **следующий разрешённый SQL**, verify с устранёнными alias-конфликтами.
+- `027_sozdanie_izolyacii_i_prav_dostupa_db07.sql` — Success;
+- `028_proverka_izolyacii_i_prav_dostupa_db07.sql` — исторический FAIL P0001;
+- `029_otkat_izolyacii_i_prav_dostupa_db07_NE_ZAPUSKAT.sql` — не запускался;
+- `030_diagnostika_chlenstva_rolei_db07.sql` — PASS, read-only диагностика;
+- `031_povtornaya_proverka_izolyacii_i_prav_dostupa_db07.sql` — исторический FAIL 42702;
+- `032_otkat_izolyacii_i_prav_dostupa_db07_NE_ZAPUSKAT.sql` — не запускался;
+- `033_povtornaya_proverka_izolyacii_i_prav_dostupa_db07.sql` — **PASS**.
+
+**Следующего SQL для запуска сейчас нет.** Rollback-файлы самостоятельно не запускать.
 
 ## Фактический статус применения
 
 - DB-08B preflight — PASS;
-- DB-01 migration — **применена**;
-- DB-01 verify — **PASS**;
-- DB-02 migration — **применена**;
-- DB-02 verify — **PASS**;
-- DB-03 migration — **применена**;
-- DB-03 verify — **PASS**;
-- DB-04 migration — **применена**;
-- DB-04 verify — **PASS**;
-- DB-05 migration — **применена**;
-- DB-05 verify — **PASS**;
-- DB-06 migration — **применена**;
-- DB-06 verify — **PASS**;
-- DB-07 migration — **применена**, Supabase вернул `Success. No rows returned`;
-- DB-07 verify `028` — **FAIL P0001** из-за неверного предположения verify о 0 memberships; диагностика `030` подтвердила штатный PostgreSQL 17 creator-admin pattern без `INHERIT`/`SET`; повторный verify `031` прошёл membership-check, но завершился **FAIL 42702** ниже по файлу из-за двух неоднозначных alias `v_role`; оба alias-конфликта исправлены, следующий verify ещё не выполнен;
-- реальные Credentials, n8n workflow, серверные сервисы и dashboard к schema `shablon_analiz_telefonnyh_peregovorov` ещё не подключены и не проверены.
+- DB-01—DB-07 migrations — **применены**;
+- DB-01—DB-07 verify — **PASS**;
+- DB-07 access/isolation negative checks — **PASS**;
+- DB-07: 9 NOLOGIN capability roles, 18 security-barrier views, 5 RLS policies, 2 SECURITY DEFINER functions фактически созданы и проверены;
+- destructive rollback — **не выполнялся**;
+- recovery evidence — **PASS в безопасной транзакционной форме**;
+- реальные LOGIN/service Credentials — **не подключены**;
+- n8n workflows — **не импортированы и не проверены**;
+- серверные сервисы — **не изменялись**;
+- dashboard — **не подключён и не проверен**;
+- production traffic — **не переключался**.
 
-Следующий шаг: DB-07 verify `033_povtornaya_proverka_izolyacii_i_prav_dostupa_db07.sql`. Старые 028/029/031 больше не запускать.
+Следующая задача: **CORE-01**, код и автотесты в репозитории, исполнитель VSCode, deploy не входит.

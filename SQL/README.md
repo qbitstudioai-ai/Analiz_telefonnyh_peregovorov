@@ -41,6 +41,6 @@
 - `030_diagnostika_chlenstva_rolei_db07.sql` — диагностика выполнена: 9 безопасных PostgreSQL 17 creator-admin memberships, probe leftovers отсутствуют;
 - `031_povtornaya_proverka_izolyacii_i_prav_dostupa_db07.sql` — FAIL 42702: два конфликта PL/pgSQL variable `v_role` с alias-column;
 - `032_otkat_izolyacii_i_prav_dostupa_db07_NE_ZAPUSKAT.sql` — исправленный recovery, самостоятельно не запускать;
-- `033_povtornaya_proverka_izolyacii_i_prav_dostupa_db07.sql` — следующий SQL, verify DB-07 после устранения обоих alias-конфликтов.
+- `033_povtornaya_proverka_izolyacii_i_prav_dostupa_db07.sql` — PASS.
 
-DB-06 завершена: migration + verify PASS. DB-07 перед выдачей усиленно проверена по roles/views/RLS/SECURITY DEFINER/grants и negative privilege checks.
+DB-08B завершена: DB-01—DB-07 migrations применены и verify PASS. Следующего SQL для запуска сейчас нет. Все rollback-файлы остаются recovery-only и самостоятельно не запускаются.

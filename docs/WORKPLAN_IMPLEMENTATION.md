@@ -34,10 +34,10 @@
 | [x] DB-04 | ChatGPT + Павел | Migration analysis/evidence | После двух исправленных DDL-дефектов migration фактически применена в рабочем Supabase; verify PASS; подтверждены 11 tables, typed claims/evidence, exact safe segment/knowledge refs, absence coverage и evidence gate; verify-данные откатились |
 | [x] DB-05 | ChatGPT + Павел | Migration CRM/outgoing/corrections/audit | Migration фактически применена в рабочем Supabase; verify PASS; подтверждены 7 tables, CRM/human separation, outgoing-before-send, delivery/reconciliation guards, corrections/disputes и append-only audit; verify-данные откатились |
 | [x] DB-06 | ChatGPT + Павел | Dashboard views/metric SQL | Migration фактически применена в рабочем Supabase; verify PASS; подтверждены 12 views + 7 metric/filter functions, shared filters, logical-call metrics, dispute/N/A gates и drill-down IDs; verify завершился rollback |
-| [x] DB-07 | ChatGPT | Изоляция и права шаблонного контура | Канонический migration/verify/guarded rollback: 9 NOLOGIN capability roles, 18 security-barrier runtime/safe views, 5 defense-in-depth RLS policies на raw/mapping, 2 audited SECURITY DEFINER proposal functions, PUBLIC/default privilege hardening и positive/negative matrix; физический контур обновлён DB-08A до `shablon_analiz_telefonnyh_peregovorov`; к Supabase ещё не применено |
+| [x] DB-07 | ChatGPT + Павел | Изоляция и права шаблонного контура | Migration фактически применена; после исправления PostgreSQL 17 creator-admin membership assumption и двух alias-конфликтов итоговый verify `033` PASS; подтверждены 9 NOLOGIN roles, 18 security-barrier views, 5 RLS policies, 2 SECURITY DEFINER functions, PUBLIC/default privilege hardening и positive/negative access matrix |
 | [x] DB-08A | ChatGPT | Адаптация DB-01—DB-07 к рабочей schema `shablon` | Migration/verify/rollback были переведены с `atp_test` на рабочий контур `shablon`; SQL к Supabase не применялся |
 | [x] DB-08A.1 | ChatGPT | Окончательное имя рабочего контура | До применения SQL schema переименована в `shablon_analiz_telefonnyh_peregovorov` во всех migration/verify/rollback и документации; DB-07 roles используют `shablon_analiz_telefonnyh_peregovorov_*`; DB-05 audit использует `scope_ref='shablon_analiz_telefonnyh_peregovorov'`; к Supabase ещё не применено |
-| [~] DB-08B | Павел + ChatGPT | Применение migrations в рабочем Supabase | DB-01—DB-06 migration + verify PASS; DB-07 migration применена; 028 выявил PostgreSQL 17 creator-admin memberships и исправлен; 031 прошёл membership-check, но FAIL 42702 на двух `v_role` alias-конфликтах; оба конфликта исправлены; следующий шаг — verify `033_povtornaya_proverka_izolyacii_i_prav_dostupa_db07.sql` |
+| [x] DB-08B | Павел + ChatGPT | Применение migrations в рабочем Supabase | DB-01—DB-07 migrations фактически применены и verify PASS; DB-07 negative privilege matrix PASS; recovery безопасно подтверждён транзакционными откатами без частичных/probe объектов; destructive rollback не запускался; внешние Credentials не подключены |
 
 ## Этап B — обработка и контракты
 
@@ -104,34 +104,38 @@
 
 ## Текущая следующая задача
 
-**DB-08B — применение DB-01—DB-07 в рабочем Supabase schema `shablon_analiz_telefonnyh_peregovorov`.**
+**CORE-01 — общие contract/version/idempotency validators.**
 
-Исполнители: **Павел + ChatGPT**.
+Исполнитель: **VSCode**.
 
-Цель: впервые фактически применить подготовленную цепочку SQL в согласованном рабочем Supabase, не затрагивая посторонние схемы/данные, затем выполнить verify и подтвердить физические связи и access boundaries.
+Цель: реализовать общий слой проверки контрактов, версий, scope, operation result/state и idempotency до сборки n8n workflows.
 
-Порядок DB-08B:
+Обязательное чтение перед изменениями:
 
-1. до запуска подтвердить, что открыт нужный рабочий Supabase-проект;
-2. безопасный preflight выполнен PASS: целевой/старые schemas, объекты, функции и capability roles не найдены;
-3. рабочие SQL для фактического запуска хранить в `SQL/DB-08B/`; применить migrations 001 → 007 строго по порядку;
-4. после каждой migration зафиксировать фактический результат;
-5. выполнить verify 001 → 007;
-6. отдельно проверить DB-07 role/privilege/RLS matrix;
-7. реальные LOGIN/Credentials создавать или привязывать только после PASS DB-07;
-8. rollback/recovery не выполнять destructively на единственном рабочем экземпляре; использовать транзакционный/quarantine сценарий;
-9. посторонние schemas/data и реальный клиентский трафик не трогать.
+- `README.md`;
+- `docs/CHATGPT_INSTRUCTIONS.md`;
+- `docs/PROJECT_STATE.md`;
+- `docs/specs/INTEGRATION_CONTRACTS.md`;
+- `docs/specs/RELIABILITY_AND_IDEMPOTENCY.md`;
+- `docs/specs/VERSIONING.md`;
+- `docs/DATA_DICTIONARY.md`.
+
+Границы CORE-01:
+
+- код и автотесты в репозитории;
+- Supabase schema/SQL не изменять;
+- n8n workflow не создавать и не импортировать;
+- Credentials не создавать и не подключать;
+- сервер и deployment не изменять;
+- production не затрагивать.
 
 Критерий готовности:
 
-- SQL фактически выполнен именно в согласованном рабочем Supabase;
-- schema `shablon_analiz_telefonnyh_peregovorov` создана и содержит ожидаемые tables/FK/views/functions/roles/policies;
-- migrations 001—007 завершились без необъяснённых ошибок;
-- verify 001—007 дали PASS;
-- DB-07 negative privilege checks подтвердили запреты;
-- межтабличные связи являются реальными FK/constraints, а не заглушками;
-- секретов нет в GitHub;
-- recovery-подход фактически проверен безопасным способом без разрушения рабочего контура;
-- явно зафиксировано, какие внешние сервисные Credentials уже подключены, а какие ещё нет.
-
-Профильные документы DB-08B: [RELEASE_CHECKLIST](RELEASE_CHECKLIST.md), [ACCESS_AND_ISOLATION](specs/ACCESS_AND_ISOLATION.md), [PROJECT_STATE](PROJECT_STATE.md), [implementation/DB-01](implementation/DB-01.md), [implementation/DB-02](implementation/DB-02.md), [implementation/DB-03](implementation/DB-03.md), [implementation/DB-04](implementation/DB-04.md), [implementation/DB-05](implementation/DB-05.md), [implementation/DB-06](implementation/DB-06.md), [implementation/DB-07](implementation/DB-07.md).
+- автотесты покрывают `accepted / duplicate / rejected`;
+- проверены operation states;
+- проверены scope boundaries;
+- unknown/unsupported contract/version отклоняется предсказуемо;
+- idempotency validator не смешивает duplicate event с новым событием того же звонка;
+- тесты и код проходят проверки проекта;
+- VSCode делает commit/push и возвращает SHA;
+- ChatGPT после отчёта самостоятельно сверяет изменения в GitHub.
