@@ -28,7 +28,7 @@
 
 | Статус / ID | Исполнитель | Результат | Критерий готовности |
 |---|---|---|---|
-| [ ] DB-01 | ChatGPT | Базовая migration приёма и надёжности | В репозитории есть полный test-only SQL для событий звонков, логических звонков, менеджеров/связей, фильтрации, операций/attempts и временных audio metadata; SQL не содержит секретов, имеет constraints/idempotency keys и проверочный/rollback блок; ещё не применён |
+| [x] DB-01 | ChatGPT | Базовая migration приёма и надёжности | Созданы migration/verify/guarded rollback для 8 базовых таблиц test-контура; статически проверены баланс SQL, состав таблиц, отсутствие executable bytea/blob/service_role/production DDL и составные FK call-operation; к Supabase не применено |
 | [ ] DB-02 | ChatGPT | Migration транскрипции/privacy | Физически представлены transcript/segments/roles/pseudonymized package/mapping metadata с version links и retention fields без хранения постоянного аудио |
 | [ ] DB-03 | ChatGPT | Migration конфигураций и знаний | Реализованы versioned prompt/methodology/filter/knowledge document-fragment-embedding-publication структуры и immutable provenance |
 | [ ] DB-04 | ChatGPT | Migration analysis/evidence | Реализованы analyses, criteria, stages, observations, evidence, current/history и input manifest без fake refs |
@@ -92,29 +92,29 @@
 
 ## Текущая следующая задача
 
-**DB-01 — базовая migration приёма и надёжности.**
+**DB-02 — migration транскрипции и privacy.**
 
-Цель: подготовить первый полный SQL-файл для test-only физического слоя, не применяя его к Supabase.
+Цель: подготовить второй SQL-набор поверх DB-01 для versioned transcription/privacy данных без применения к Supabase.
 
-Объём DB-01:
+Объём DB-02:
 
-- события источника;
-- логические звонки;
-- менеджеры;
-- связи звонков;
-- решения фильтра;
-- логические операции;
-- попытки операций;
-- metadata временных audio artifacts.
+- исходные транскрипции;
+- сегменты с таймкодами/technical speaker;
+- версии назначения ролей МЕНЕДЖЕР/КЛИЕНТ;
+- псевдонимизированные транскрипции;
+- privacy packages/gate result;
+- защищённые pseudonym mappings metadata;
+- processing quality;
+- speech metrics.
 
 Критерий готовности:
 
-- один готовый migration SQL в репозитории;
-- один готовый verification/rollback SQL или безопасные блоки в том же наборе;
-- ограничения обеспечивают contour-local uniqueness/idempotency по требованиям DOC-04/DOC-11/DOC-12;
-- нет permanent audio/blob;
-- нет service secrets;
+- migration/verify/rollback записаны в GitHub;
+- новые сущности связаны с exact call/transcript/operation versions;
+- raw/pseudonym/mapping физически разделены;
+- внешний privacy package не может ссылаться на mapping/raw content;
+- retention metadata предусмотрены;
 - SQL проходит статическую проверку;
-- **не утверждается применённым**, пока Павел фактически не запустил его в test Supabase и не сообщил результат.
+- к Supabase не применён.
 
-Профильные документы DB-01: [DATA_DICTIONARY](DATA_DICTIONARY.md), [INTEGRATION_CONTRACTS](specs/INTEGRATION_CONTRACTS.md), [RELIABILITY_AND_IDEMPOTENCY](specs/RELIABILITY_AND_IDEMPOTENCY.md), [CALL_LIFECYCLE](specs/CALL_LIFECYCLE.md), [AUDIO_RETENTION](specs/AUDIO_RETENTION.md), [ACCESS_AND_ISOLATION](specs/ACCESS_AND_ISOLATION.md).
+Профильные документы DB-02: [DATA_DICTIONARY](DATA_DICTIONARY.md), [TRANSCRIPTION_AND_PRIVACY](specs/TRANSCRIPTION_AND_PRIVACY.md), [VERSIONING](specs/VERSIONING.md), [INTEGRATION_CONTRACTS](specs/INTEGRATION_CONTRACTS.md), [ACCESS_AND_ISOLATION](specs/ACCESS_AND_ISOLATION.md), [RELEASE_CHECKLIST](RELEASE_CHECKLIST.md).
