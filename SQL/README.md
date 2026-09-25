@@ -32,8 +32,8 @@
 - `021_sozdanie_crm_otpravok_ispravlenii_i_audita_db05.sql` — Success;
 - `022_proverka_crm_otpravok_ispravlenii_i_audita_db05.sql` — PASS;
 - `023_otkat_crm_otpravok_ispravlenii_i_audita_db05_NE_ZAPUSKAT.sql` — recovery, самостоятельно не запускать;
-- `024_sozdanie_predstavlenii_i_metrik_dashborda_db06.sql` — следующий SQL;
-- `025_proverka_predstavlenii_i_metrik_dashborda_db06.sql` — verify DB-06 после успешного 024;
+- `024_sozdanie_predstavlenii_i_metrik_dashborda_db06.sql` — Success;
+- `025_proverka_predstavlenii_i_metrik_dashborda_db06.sql` — следующий SQL, verify DB-06;
 - `026_otkat_predstavlenii_i_metrik_dashborda_db06_NE_ZAPUSKAT.sql` — recovery, самостоятельно не запускать.
 
 DB-05 завершена: migration + verify PASS. DB-06 перед выдачей проверена на порядок зависимостей всех 12 views и 7 functions.
