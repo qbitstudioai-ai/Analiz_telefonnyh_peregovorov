@@ -877,7 +877,7 @@ LLM не может сослаться на segment/chunk, отсутствую�
 - исходная транскрипция имеет собственную политику;
 - псевдонимизированная транскрипция имеет отдельную политику;
 - таблица соответствий имеет отдельную наиболее строгую политику;
-- удаление должно учитывать backup по DOC-09/DOC-18;
+- удаление должно учитывать backup по [TRANSCRIPTION_AND_PRIVACY](specs/TRANSCRIPTION_AND_PRIVACY.md) и [RELEASE_CHECKLIST](RELEASE_CHECKLIST.md);
 - версия анализа/доказательств может пережить удаление исходного текста только если это разрешено политикой и остаётся достаточная безопасная воспроизводимость.
 
 ## Обязательные инварианты
@@ -947,7 +947,7 @@ LLM не может сослаться на segment/chunk, отсутствую�
 - полный workflow публикации знаний;
 - физическая SQL-модель доказательств; логический смысл закреплён в [EVIDENCE_MODEL](specs/EVIDENCE_MODEL.md).
 
-Версионирование определено в [VERSIONING](specs/VERSIONING.md), доказательства — в [EVIDENCE_MODEL](specs/EVIDENCE_MODEL.md), lifecycle публикации общей базы знаний — в [ANALYSIS_AND_KNOWLEDGE](specs/ANALYSIS_AND_KNOWLEDGE.md); DOC-18 завершит backup/release/эксплуатацию.
+Версионирование определено в [VERSIONING](specs/VERSIONING.md), доказательства — в [EVIDENCE_MODEL](specs/EVIDENCE_MODEL.md), lifecycle публикации общей базы знаний — в [ANALYSIS_AND_KNOWLEDGE](specs/ANALYSIS_AND_KNOWLEDGE.md), backup/release/эксплуатационные gates — в [RELEASE_CHECKLIST](RELEASE_CHECKLIST.md).
 
 ## Критерий DOC-12
 
