@@ -806,6 +806,124 @@ begin
   end;
 
   -- Exact embedding input provenance must match exact fragment content hash.
+  insert into atp_test.knowledge_embeddings (
+    fragment_id,
+    version_no,
+    provider,
+    model_name,
+    model_version,
+    config_version,
+    config,
+    dimensions,
+    vector_data,
+    input_sha256,
+    embedding_state,
+    validation_status,
+    version_state,
+    external_api,
+    actor_ref,
+    calculated_at
+  )
+  values (
+    v_fragment_id,
+    1,
+    'verify_local_bad_hash',
+    'verify_embedding_bad_hash',
+    'test-build',
+    'verify-bad-hash-config-v1',
+    '{}'::jsonb,
+    3,
+    array[0.3, 0.4, 0.5]::real[],
+    'different-fragment-hash',
+    'ready',
+    'passed',
+    'candidate',
+    false,
+    'verify_embedding_worker',
+    now()
+  )
+  returning embedding_id into v_bad_embedding_id;
+
+  insert into atp_test.knowledge_publications (
+    family_ref,
+    version_no,
+    publication_state,
+    validation_status,
+    manifest_sha256,
+    actor_ref
+  )
+  values (
+    'verify_embedding_hash_family',
+    1,
+    'draft',
+    'pending',
+    'verify-embedding-hash-manifest',
+    'verify_publisher'
+  )
+  returning publication_id into v_bad_publication_id;
+
+  insert into atp_test.knowledge_publication_documents (
+    publication_id,
+    document_version_id,
+    document_id,
+    document_order
+  )
+  values (
+    v_bad_publication_id,
+    v_document_version_id,
+    v_document_id,
+    0
+  );
+
+  insert into atp_test.knowledge_publication_fragments (
+    publication_id,
+    fragment_id,
+    document_version_id,
+    document_id,
+    embedding_id,
+    requires_embedding,
+    fragment_order
+  )
+  values (
+    v_bad_publication_id,
+    v_fragment_id,
+    v_document_version_id,
+    v_document_id,
+    v_bad_embedding_id,
+    true,
+    0
+  );
+
+  insert into atp_test.knowledge_publication_fragment_products (
+    publication_id,
+    fragment_id,
+    product_code
+  )
+  values (
+    v_bad_publication_id,
+    v_fragment_id,
+    'call_analysis'
+  );
+
+  begin
+    update atp_test.knowledge_publications
+    set
+      validation_status = 'passed',
+      publication_state = 'published',
+      published_at = now(),
+      is_current = true
+    where publication_id = v_bad_publication_id;
+
+    raise exception
+      'DB-03 verification failed: embedding with mismatched fragment hash was published';
+  exception
+    when raise_exception then
+      if sqlerrm like 'DB-03 verification failed:%' then
+        raise;
+      end if;
+  end;
+
+  -- Published knowledge document policy is semantic and must not be mutable.
   update atp_test.knowledge_document_versions
   set external_embedding_allowed = true,
       embedding_policy_ref = 'verify-policy-ref'
