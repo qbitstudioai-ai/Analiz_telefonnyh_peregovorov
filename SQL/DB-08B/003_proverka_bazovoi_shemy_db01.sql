@@ -14,6 +14,7 @@ declare
   v_other_call_id uuid;
   v_canonical_event_id uuid;
   v_filter_operation_id uuid;
+  v_cross_call_filter_operation_id uuid;
   v_filter_attempt_id uuid;
   v_filter_decision_id uuid;
   v_audio_operation_id uuid;
@@ -308,6 +309,31 @@ begin
   )
   returning call_id into v_other_call_id;
 
+  -- Create a separate, unused filter operation owned by the first call.
+  -- The cross-call negative test below must reach the composite FK instead
+  -- of being intercepted first by uq_filter_decisions_operation.
+  insert into shablon_analiz_telefonnyh_peregovorov.operations (
+    scope_ref,
+    call_id,
+    operation_type,
+    idempotency_key,
+    contract_version,
+    correlation_id,
+    input_refs,
+    decision
+  )
+  values (
+    'shablon_analiz_telefonnyh_peregovorov',
+    v_call_id,
+    'filter_call',
+    'filter-call-key-cross-call-probe',
+    'contract-v1',
+    'corr-filter-cross-call-probe',
+    jsonb_build_object('call_id', v_call_id, 'verification_probe', true),
+    'accepted'
+  )
+  returning operation_id into v_cross_call_filter_operation_id;
+
   -- A filter operation from one call must not be attachable to another call.
   begin
     insert into shablon_analiz_telefonnyh_peregovorov.filter_decisions (
@@ -322,7 +348,7 @@ begin
       'accepted',
       'verify-filter-rules-v1',
       '{}'::jsonb,
-      v_filter_operation_id
+      v_cross_call_filter_operation_id
     );
 
     raise exception

@@ -67,15 +67,15 @@ Read-only preflight завершён PASS: запросы на `shablon_analiz_t
 
 - `001_proverka_kontura.sql` — фактически выполнен, PASS;
 - `002_sozdanie_bazovoi_shemy_db01.sql` — фактически выполнен, **Success**;
-- `003_proverka_bazovoi_shemy_db01.sql` — **следующий разрешённый SQL**;
+- `003_proverka_bazovoi_shemy_db01.sql` — исправлен после первого FAIL и снова является **следующим разрешённым SQL**;
 - `004_otkat_bazovoi_shemy_db01_NE_ZAPUSKAT.sql` — recovery-файл, не запускать без отдельного решения.
 
 ## Фактический статус применения
 
 - DB-08B preflight — PASS;
 - DB-01 migration — **применена**, Supabase вернул `Success. No rows returned`;
-- DB-01 verify — **ещё не запускался**;
+- DB-01 verify — **запускался и дал FAIL из-за дефекта самого verify SQL**: ожидался `foreign_key_violation`, но раньше сработал `uq_filter_decisions_operation`; migration/данные DB-01 этим результатом не признаны ошибочными;
 - DB-02—DB-07 migrations — ещё не применялись;
 - реальные Credentials, n8n workflow, серверные сервисы и dashboard к schema `shablon_analiz_telefonnyh_peregovorov` ещё не подключены и не проверены.
 
-До PASS файла `003_proverka_bazovoi_shemy_db01.sql` нельзя утверждать, что DB-01 фактически проверена.
+Исправление verify: добавлена отдельная неиспользованная filter operation для cross-call negative test, чтобы проверка доходила до составного FK, а не упиралась в уникальность `operation_id`. До PASS исправленного файла `003_proverka_bazovoi_shemy_db01.sql` нельзя утверждать, что DB-01 фактически проверена.

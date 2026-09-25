@@ -21,7 +21,7 @@
 
 - `001_proverka_kontura.sql` — выполнен, PASS;
 - `002_sozdanie_bazovoi_shemy_db01.sql` — выполнен, Success;
-- `003_proverka_bazovoi_shemy_db01.sql` — следующий SQL для запуска;
+- `003_proverka_bazovoi_shemy_db01.sql` — первый запуск выявил дефект verify; файл исправлен и является следующим SQL для повторного запуска;
 - `004_otkat_bazovoi_shemy_db01_NE_ZAPUSKAT.sql` — recovery-файл, самостоятельно не запускать.
 
 Следующие SQL этой задачи будут продолжать нумерацию с `005_...`.
