@@ -27,6 +27,7 @@
 | Доказательства выводов, цитаты, таймкоды и knowledge refs | [EVIDENCE_MODEL](specs/EVIDENCE_MODEL.md) |
 | Формулы и знаменатели показателей | [METRICS](specs/METRICS.md) |
 | Административные роли, capabilities, аудит и запреты UI | [DASHBOARD_ADMIN](specs/DASHBOARD_ADMIN.md) |
+| Monitoring, backup/restore, testing, rollback и release gates | [RELEASE_CHECKLIST](RELEASE_CHECKLIST.md) |
 | Роли и поведение ChatGPT | [CHATGPT_INSTRUCTIONS](CHATGPT_INSTRUCTIONS.md) |
 | Порядок задач шаблона | [WORKPLAN_TEMPLATE](WORKPLAN_TEMPLATE.md) |
 | Внедрение готового шаблона | [WORKPLAN_CLIENT_DEPLOYMENT](WORKPLAN_CLIENT_DEPLOYMENT.md) |
