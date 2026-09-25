@@ -28,6 +28,9 @@
 - `017_proverka_analiza_i_dokazatelstv_db04.sql` — не запускался;
 - `018_proverka_sostoyaniya_posle_vtoroi_oshibki_db04.sql` — PASS / 0 rows, частичных объектов нет;
 - `019_povtornoe_sozdanie_analiza_i_dokazatelstv_db04.sql` — Success;
-- `020_proverka_analiza_i_dokazatelstv_db04.sql` — следующий SQL, verify DB-04.
+- `020_proverka_analiza_i_dokazatelstv_db04.sql` — PASS;
+- `021_sozdanie_crm_otpravok_ispravlenii_i_audita_db05.sql` — следующий SQL;
+- `022_proverka_crm_otpravok_ispravlenii_i_audita_db05.sql` — verify DB-05 после успешного 021;
+- `023_otkat_crm_otpravok_ispravlenii_i_audita_db05_NE_ZAPUSKAT.sql` — recovery, самостоятельно не запускать.
 
-Исправление DB-04: добавлен точный UNIQUE target `analysis_claims (claim_id, analysis_id)` для FK из `evidence_sets`.
+DB-04 завершена: migration + verify PASS. DB-05 перед выдачей проверена на порядок и уникальные цели всех 21 FK.
