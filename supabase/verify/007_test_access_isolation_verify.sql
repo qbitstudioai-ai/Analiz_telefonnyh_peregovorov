@@ -12,6 +12,12 @@ create table atp_verify_other.sentinel (
   sentinel_id integer primary key
 );
 
+create schema atp_verify_prod;
+revoke all on schema atp_verify_prod from public;
+create table atp_verify_prod.sentinel (
+  sentinel_id integer primary key
+);
+
 do $verify$
 declare
   v_role text;
@@ -33,6 +39,7 @@ begin
     'atp_test_privacy',
     'atp_test_raw_transcript_reader',
     'atp_test_knowledge_reader',
+    'atp_test_knowledge_admin',
     'atp_test_dashboard',
     'atp_test_admin_api',
     'atp_test_monitor'
@@ -71,12 +78,185 @@ begin
        or has_schema_privilege(v_role, 'atp_verify_other', 'CREATE')
        or has_table_privilege(v_role, 'atp_verify_other.sentinel', 'SELECT')
        or has_table_privilege(v_role, 'atp_verify_other.sentinel', 'INSERT')
+       or has_schema_privilege(v_role, 'atp_verify_prod', 'USAGE')
+       or has_schema_privilege(v_role, 'atp_verify_prod', 'CREATE')
+       or has_table_privilege(v_role, 'atp_verify_prod.sentinel', 'SELECT')
+       or has_table_privilege(v_role, 'atp_verify_prod.sentinel', 'INSERT')
     then
       raise exception
         'DB-07 verification failed: role % escaped into another schema',
         v_role;
     end if;
   end loop;
+
+  -- Capability roles are not connected to real LOGIN identities yet.
+  select count(*)
+  into v_count
+  from pg_auth_members m
+  join pg_roles parent on parent.oid = m.roleid
+  where parent.rolname in (
+    'atp_test_orchestrator',
+    'atp_test_core',
+    'atp_test_privacy',
+    'atp_test_raw_transcript_reader',
+    'atp_test_knowledge_reader',
+    'atp_test_knowledge_admin',
+    'atp_test_dashboard',
+    'atp_test_admin_api',
+    'atp_test_monitor'
+  );
+
+  if v_count <> 0 then
+    raise exception
+      'DB-07 verification failed: capability roles unexpectedly have % member(s)',
+      v_count;
+  end if;
+
+  -- PUBLIC must not have ambient relation access.
+  select count(*)
+  into v_count
+  from pg_class c_rel
+  join pg_namespace n on n.oid = c_rel.relnamespace
+  cross join lateral aclexplode(
+    coalesce(c_rel.relacl, acldefault('r', c_rel.relowner))
+  ) acl
+  where n.nspname = 'atp_test'
+    and c_rel.relkind in ('r', 'p', 'v', 'm')
+    and acl.grantee = 0;
+
+  if v_count <> 0 then
+    raise exception
+      'DB-07 verification failed: PUBLIC relation privileges remain in atp_test';
+  end if;
+
+  -- PUBLIC EXECUTE is removed from every function, not only admin functions.
+  select count(*)
+  into v_count
+  from pg_proc p
+  join pg_namespace n on n.oid = p.pronamespace
+  cross join lateral aclexplode(
+    coalesce(p.proacl, acldefault('f', p.proowner))
+  ) acl
+  where n.nspname = 'atp_test'
+    and acl.grantee = 0
+    and acl.privilege_type = 'EXECUTE';
+
+  if v_count <> 0 then
+    raise exception
+      'DB-07 verification failed: PUBLIC EXECUTE remains on % atp_test function(s)',
+      v_count;
+  end if;
+
+  -- New functions created by the migration owner must not regain PUBLIC EXECUTE.
+  select count(*)
+  into v_count
+  from pg_default_acl d
+  join pg_namespace n on n.oid = d.defaclnamespace
+  cross join lateral aclexplode(d.defaclacl) acl
+  where n.nspname = 'atp_test'
+    and d.defaclrole = (
+      select oid from pg_roles where rolname = current_user
+    )
+    and d.defaclobjtype = 'f'
+    and acl.grantee = 0
+    and acl.privilege_type = 'EXECUTE';
+
+  if v_count <> 0 then
+    raise exception
+      'DB-07 verification failed: future atp_test functions still default to PUBLIC EXECUTE';
+  end if;
+
+  -- Business schema is not a password/token/secret/credential store.
+  select string_agg(
+    table_name || '.' || column_name,
+    ', ' order by table_name, column_name
+  )
+  into v_bad
+  from information_schema.columns
+  where table_schema = 'atp_test'
+    and (
+      column_name ilike '%password%'
+      or column_name ilike '%token%'
+      or column_name ilike '%secret%'
+      or column_name ilike '%credential%'
+    );
+
+  if v_bad is not null then
+    raise exception
+      'DB-07 verification failed: secret-like business column(s): %',
+      v_bad;
+  end if;
+
+  -- No capability role receives DELETE/TRUNCATE on any atp_test relation.
+  select string_agg(role_name || ':' || relname, ', ' order by role_name, relname)
+  into v_bad
+  from (
+    select
+      role_name,
+      c_rel.relname
+    from unnest(array[
+      'atp_test_orchestrator',
+      'atp_test_core',
+      'atp_test_privacy',
+      'atp_test_raw_transcript_reader',
+      'atp_test_knowledge_reader',
+      'atp_test_knowledge_admin',
+      'atp_test_dashboard',
+      'atp_test_admin_api',
+      'atp_test_monitor'
+    ]) role_name
+    cross join pg_class c_rel
+    join pg_namespace n on n.oid = c_rel.relnamespace
+    where n.nspname = 'atp_test'
+      and c_rel.relkind in ('r', 'p', 'v', 'm')
+      and (
+        has_table_privilege(role_name, c_rel.oid, 'DELETE')
+        or has_table_privilege(role_name, c_rel.oid, 'TRUNCATE')
+      )
+  ) forbidden;
+
+  if v_bad is not null then
+    raise exception
+      'DB-07 verification failed: destructive privilege(s): %',
+      v_bad;
+  end if;
+
+  -- All DB-07 safe/runtime views must keep security_barrier=true.
+  select string_agg(c_rel.relname, ', ' order by c_rel.relname)
+  into v_bad
+  from pg_class c_rel
+  join pg_namespace n on n.oid = c_rel.relnamespace
+  where n.nspname = 'atp_test'
+    and c_rel.relname in (
+      'v_runtime_prompt_active',
+      'v_runtime_methodology_active',
+      'v_runtime_methodology_criteria_active',
+      'v_runtime_methodology_stages_active',
+      'v_runtime_filter_rules_active',
+      'v_runtime_knowledge_call_analysis',
+      'v_dashboard_analysis_provenance',
+      'v_dashboard_safe_transcript_segments',
+      'v_dashboard_evidence_conversation',
+      'v_dashboard_evidence_absence',
+      'v_dashboard_knowledge_evidence',
+      'v_dashboard_corrections_safe',
+      'v_dashboard_disputes_safe',
+      'v_dashboard_feedback_safe',
+      'v_admin_audit_safe',
+      'v_monitor_operations',
+      'v_monitor_audio_cleanup',
+      'v_monitor_delivery'
+    )
+    and not (
+      coalesce(c_rel.reloptions, '{}'::text[])
+      @> array['security_barrier=true']::text[]
+    );
+
+  if v_bad is not null then
+    raise exception
+      'DB-07 verification failed: view(s) lost security_barrier: %',
+      v_bad;
+  end if;
 
   -- RLS defense-in-depth is enabled on the three sensitive raw/mapping tables.
   select count(*)
@@ -282,6 +462,47 @@ begin
       'DB-07 verification failed: product-scoped knowledge view definition is wrong';
   end if;
 
+  -- Knowledge administration is separated from runtime reader and call data.
+  if not has_table_privilege(
+       'atp_test_knowledge_admin',
+       'atp_test.knowledge_document_versions',
+       'UPDATE'
+     )
+     or not has_table_privilege(
+       'atp_test_knowledge_admin',
+       'atp_test.knowledge_publications',
+       'INSERT'
+     )
+     or not has_table_privilege(
+       'atp_test_knowledge_admin',
+       'atp_test.v_admin_audit_safe',
+       'SELECT'
+     )
+  then
+    raise exception
+      'DB-07 verification failed: knowledge-admin positive control missing';
+  end if;
+
+  if has_table_privilege(
+       'atp_test_knowledge_admin',
+       'atp_test.calls',
+       'SELECT'
+     )
+     or has_table_privilege(
+       'atp_test_knowledge_admin',
+       'atp_test.raw_transcripts',
+       'SELECT'
+     )
+     or has_table_privilege(
+       'atp_test_knowledge_admin',
+       'atp_test.pseudonym_mappings',
+       'SELECT'
+     )
+  then
+    raise exception
+      'DB-07 verification failed: knowledge admin can read call/privacy data';
+  end if;
+
   -- Active configuration surfaces cannot reveal drafts/unvalidated rows.
   select pg_get_viewdef('atp_test.v_runtime_prompt_active'::regclass, true)
   into v_definition;
@@ -305,6 +526,21 @@ begin
   if not has_table_privilege('atp_test_dashboard', 'atp_test.v_dashboard_zvonki', 'SELECT')
      or not has_table_privilege(
        'atp_test_dashboard',
+       'atp_test.v_dashboard_safe_transcript_segments',
+       'SELECT'
+     )
+     or not has_table_privilege(
+       'atp_test_dashboard',
+       'atp_test.v_dashboard_evidence_conversation',
+       'SELECT'
+     )
+     or not has_table_privilege(
+       'atp_test_dashboard',
+       'atp_test.v_dashboard_evidence_absence',
+       'SELECT'
+     )
+     or not has_table_privilege(
+       'atp_test_dashboard',
        'atp_test.v_dashboard_knowledge_evidence',
        'SELECT'
      )
@@ -326,9 +562,24 @@ begin
      or has_table_privilege('atp_test_dashboard', 'atp_test.analysis_versions', 'UPDATE')
      or has_table_privilege('atp_test_dashboard', 'atp_test.business_confirmations', 'UPDATE')
      or has_table_privilege('atp_test_dashboard', 'atp_test.audit_events', 'INSERT')
+     or has_table_privilege('atp_test_dashboard', 'atp_test.pseudonymized_segments', 'SELECT')
+     or has_table_privilege('atp_test_dashboard', 'atp_test.evidence_conversation_refs', 'SELECT')
+     or has_table_privilege('atp_test_dashboard', 'atp_test.evidence_absence_checks', 'SELECT')
   then
     raise exception
       'DB-07 verification failed: dashboard has forbidden raw/direct-write privilege';
+  end if;
+
+  select pg_get_viewdef(
+    'atp_test.v_dashboard_safe_transcript_segments'::regclass,
+    true
+  )
+  into v_definition;
+
+  if v_definition not ilike '%privacy_status%passed%'
+  then
+    raise exception
+      'DB-07 verification failed: dashboard safe transcript is not privacy-passed only';
   end if;
 
   -- Admin API uses controlled functions, not direct business-table write.
@@ -447,6 +698,7 @@ begin
     'atp_test_privacy',
     'atp_test_raw_transcript_reader',
     'atp_test_knowledge_reader',
+    'atp_test_knowledge_admin',
     'atp_test_dashboard',
     'atp_test_admin_api',
     'atp_test_monitor'
