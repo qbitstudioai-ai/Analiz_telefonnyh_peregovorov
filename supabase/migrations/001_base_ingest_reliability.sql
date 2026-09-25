@@ -334,7 +334,9 @@ create table atp_test.operations (
       or operation_state in ('not_started', 'failed_requires_fix')
     ),
   constraint operations_no_self_supersede
-    check (supersedes_operation_id is null or supersedes_operation_id <> operation_id)
+    check (supersedes_operation_id is null or supersedes_operation_id <> operation_id),
+  constraint operations_operation_call_unique
+    unique (operation_id, call_id)
 );
 
 comment on table atp_test.operations is
@@ -402,7 +404,7 @@ create table atp_test.filter_decisions (
   reason_code text,
   filter_rules_version_ref text not null,
   input_facts jsonb not null default '{}'::jsonb,
-  operation_id uuid not null references atp_test.operations(operation_id) on delete restrict,
+  operation_id uuid not null,
   decided_at timestamptz not null default now(),
 
   constraint filter_decisions_rule_ref_not_blank
@@ -413,7 +415,13 @@ create table atp_test.filter_decisions (
     check (
       outcome = 'accepted'
       or (reason_code is not null and btrim(reason_code) <> '')
-    )
+    ),
+  constraint filter_decisions_decision_call_unique
+    unique (filter_decision_id, call_id),
+  constraint fk_filter_decisions_operation_call
+    foreign key (operation_id, call_id)
+    references atp_test.operations(operation_id, call_id)
+    on delete restrict
 );
 
 comment on table atp_test.filter_decisions is
@@ -427,8 +435,8 @@ create index ix_filter_decisions_call_time
 
 alter table atp_test.calls
   add constraint fk_calls_current_filter_decision
-  foreign key (current_filter_decision_id)
-  references atp_test.filter_decisions(filter_decision_id)
+  foreign key (current_filter_decision_id, call_id)
+  references atp_test.filter_decisions(filter_decision_id, call_id)
   on delete restrict;
 
 -- Logical entity: svyazi_zvonkov.
@@ -482,7 +490,7 @@ create index ix_call_links_previous_call
 create table atp_test.temporary_audio_artifacts (
   audio_artifact_id uuid primary key default gen_random_uuid(),
   call_id uuid not null references atp_test.calls(call_id) on delete restrict,
-  acquisition_operation_id uuid not null references atp_test.operations(operation_id) on delete restrict,
+  acquisition_operation_id uuid not null,
   artifact_identity_key text not null,
   local_artifact_ref text not null,
   source_ref text not null,
@@ -528,7 +536,11 @@ create table atp_test.temporary_audio_artifacts (
     check (
       cleanup_state <> 'delete_failed'
       or (cleanup_error_code is not null and btrim(cleanup_error_code) <> '')
-    )
+    ),
+  constraint fk_temporary_audio_operation_call
+    foreign key (acquisition_operation_id, call_id)
+    references atp_test.operations(operation_id, call_id)
+    on delete restrict
 );
 
 comment on table atp_test.temporary_audio_artifacts is
