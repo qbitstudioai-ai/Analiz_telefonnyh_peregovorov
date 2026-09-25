@@ -90,7 +90,9 @@ Read-only preflight завершён PASS: запросы на `shablon_analiz_t
 - `027_sozdanie_izolyacii_i_prav_dostupa_db07.sql` — фактически выполнен, **Success**;
 - `028_proverka_izolyacii_i_prav_dostupa_db07.sql` — фактически запущен, **FAIL P0001**: verify ожидал 0 capability-role memberships, фактически найдено 9;
 - `029_otkat_izolyacii_i_prav_dostupa_db07_NE_ZAPUSKAT.sql` — recovery, **не запускать**;
-- `030_diagnostika_chlenstva_rolei_db07.sql` — **следующий разрешённый SQL**, read-only диагностика memberships и остатков probe-schema.
+- `030_diagnostika_chlenstva_rolei_db07.sql` — фактически выполнен; подтверждены 9 автоматических creator-admin memberships `postgres`, все `ADMIN=true / INHERIT=false / SET=false`, grantor `supabase_admin`; probe-schema leftovers отсутствуют;
+- `031_povtornaya_proverka_izolyacii_i_prav_dostupa_db07.sql` — **следующий разрешённый SQL**, исправленный verify DB-07;
+- `032_otkat_izolyacii_i_prav_dostupa_db07_NE_ZAPUSKAT.sql` — исправленный recovery, не запускать без отдельного решения.
 
 ## Фактический статус применения
 
@@ -108,7 +110,7 @@ Read-only preflight завершён PASS: запросы на `shablon_analiz_t
 - DB-06 migration — **применена**;
 - DB-06 verify — **PASS**;
 - DB-07 migration — **применена**, Supabase вернул `Success. No rows returned`;
-- DB-07 verify `028` — **FAIL P0001** на проверке memberships; остальные проверки после этой точки ещё не подтверждены;
+- DB-07 verify `028` — **FAIL P0001** из-за неверного предположения verify о 0 memberships; диагностика `030` подтвердила штатный PostgreSQL 17 creator-admin pattern без `INHERIT`/`SET`; повторный verify ещё не выполнен;
 - реальные Credentials, n8n workflow, серверные сервисы и dashboard к schema `shablon_analiz_telefonnyh_peregovorov` ещё не подключены и не проверены.
 
-Следующий шаг: read-only `030_diagnostika_chlenstva_rolei_db07.sql`. До анализа результата не повторять 028 и не запускать 029.
+Следующий шаг: исправленный DB-07 verify `031_povtornaya_proverka_izolyacii_i_prav_dostupa_db07.sql`. Старые 028/029 больше не запускать.

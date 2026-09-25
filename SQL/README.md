@@ -38,6 +38,8 @@
 - `027_sozdanie_izolyacii_i_prav_dostupa_db07.sql` — Success;
 - `028_proverka_izolyacii_i_prav_dostupa_db07.sql` — FAIL P0001: verify нашёл 9 capability-role memberships;
 - `029_otkat_izolyacii_i_prav_dostupa_db07_NE_ZAPUSKAT.sql` — recovery, самостоятельно не запускать;
-- `030_diagnostika_chlenstva_rolei_db07.sql` — следующий SQL, read-only диагностика фактических memberships.
+- `030_diagnostika_chlenstva_rolei_db07.sql` — диагностика выполнена: 9 безопасных PostgreSQL 17 creator-admin memberships, probe leftovers отсутствуют;
+- `031_povtornaya_proverka_izolyacii_i_prav_dostupa_db07.sql` — следующий SQL, исправленный verify DB-07;
+- `032_otkat_izolyacii_i_prav_dostupa_db07_NE_ZAPUSKAT.sql` — исправленный recovery, самостоятельно не запускать.
 
 DB-06 завершена: migration + verify PASS. DB-07 перед выдачей усиленно проверена по roles/views/RLS/SECURITY DEFINER/grants и negative privilege checks.
