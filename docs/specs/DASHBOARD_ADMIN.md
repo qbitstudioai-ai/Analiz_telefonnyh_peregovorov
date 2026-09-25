@@ -106,7 +106,7 @@
 
 Миграции, backup/restore, создание schema, DB-admin и аварийные операции не являются функциями обычной админ-панели.
 
-Для них используются отдельные privileged identities и процедуры DOC-18.
+Для них используются отдельные privileged identities и процедуры [RELEASE_CHECKLIST](../RELEASE_CHECKLIST.md).
 
 ## Capability вместо одной роли super-admin
 
@@ -432,7 +432,7 @@ Capability view_raw_transcript отделена от обычного view_analy
 - test reanalysis не меняет production current analysis;
 - production rollback, если он понадобится, означает явный возврат на ранее разрешённую version/конфигурацию, а не удаление истории.
 
-Технический release/rollback процесс завершит DOC-18.
+Технический release/rollback и reconciliation процесс определён в [RELEASE_CHECKLIST](../RELEASE_CHECKLIST.md).
 
 ## Предпросмотр влияния
 
@@ -527,7 +527,7 @@ Bulk reanalysis создаёт новые operations/versions и не означ
 
 Удаление по retention или законному основанию — отдельный контролируемый процесс с scope, reason, policy/version и подтверждением результата.
 
-Фактическое удаление production данных сейчас и в будущем требует отдельного разрешения и правил DOC-18.
+Фактическое удаление production данных сейчас и в будущем требует отдельного разрешения и соблюдения [RELEASE_CHECKLIST](../RELEASE_CHECKLIST.md).
 
 ## Ошибки и отказ
 
@@ -545,7 +545,7 @@ Bulk reanalysis создаёт новые operations/versions и не означ
 
 draft → validate/test → approved/allowed activation → active for new operations → historical/superseded.
 
-Конкретный approval workflow зависит от типа настройки и DOC-17/DOC-18.
+Конкретный approval workflow зависит от типа настройки, [ANALYSIS_AND_KNOWLEDGE](ANALYSIS_AND_KNOWLEDGE.md) и [RELEASE_CHECKLIST](../RELEASE_CHECKLIST.md).
 
 Для correction:
 
@@ -602,7 +602,7 @@ request/dispute → authorized correction → new version/event → dependent va
 - кто именно у конкретного заказчика получает business approval capabilities;
 - SQL audit schema;
 - DOC-17 knowledge publication workflow details;
-- DOC-18 production deployment/rollback details.
+- конкретные production deployment values; общие release/rollback requirements определены в [RELEASE_CHECKLIST](../RELEASE_CHECKLIST.md).
 
 Эти решения не могут превращать обычный admin UI в unrestricted infrastructure access.
 
