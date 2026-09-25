@@ -30,7 +30,10 @@
 - `019_povtornoe_sozdanie_analiza_i_dokazatelstv_db04.sql` — Success;
 - `020_proverka_analiza_i_dokazatelstv_db04.sql` — PASS;
 - `021_sozdanie_crm_otpravok_ispravlenii_i_audita_db05.sql` — Success;
-- `022_proverka_crm_otpravok_ispravlenii_i_audita_db05.sql` — следующий SQL, verify DB-05;
-- `023_otkat_crm_otpravok_ispravlenii_i_audita_db05_NE_ZAPUSKAT.sql` — recovery, самостоятельно не запускать.
+- `022_proverka_crm_otpravok_ispravlenii_i_audita_db05.sql` — PASS;
+- `023_otkat_crm_otpravok_ispravlenii_i_audita_db05_NE_ZAPUSKAT.sql` — recovery, самостоятельно не запускать;
+- `024_sozdanie_predstavlenii_i_metrik_dashborda_db06.sql` — следующий SQL;
+- `025_proverka_predstavlenii_i_metrik_dashborda_db06.sql` — verify DB-06 после успешного 024;
+- `026_otkat_predstavlenii_i_metrik_dashborda_db06_NE_ZAPUSKAT.sql` — recovery, самостоятельно не запускать.
 
-DB-04 завершена: migration + verify PASS. DB-05 перед выдачей проверена на порядок и уникальные цели всех 21 FK.
+DB-05 завершена: migration + verify PASS. DB-06 перед выдачей проверена на порядок зависимостей всех 12 views и 7 functions.
