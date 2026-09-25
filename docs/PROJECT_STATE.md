@@ -10,34 +10,38 @@ Production не разрешён. Созданные SQL/workflow/code не сч
 
 ## Последняя завершённая задача
 
-**DB-02 — создан SQL-слой транскрипции и privacy.**
+**DB-03 — создан SQL-слой конфигураций и общей базы знаний.**
 
-Созданы migration/verify/rollback и [описание DB-02](implementation/DB-02.md).
+Созданы migration/verify/rollback и [описание DB-03](implementation/DB-03.md).
 
 Статически подтверждено:
 
-- 11 новых DB-02 таблиц;
-- raw transcript, pseudonymized transcript и reverse mapping физически разделены;
-- privacy package/segment set не имеют direct FK на raw transcript/raw segments/mapping;
-- blocked privacy package не допускает LLM operation;
-- exact call/transcript/role ownership защищён composite FK;
-- retention mapping удаляет и protected value, и protected local ref;
-- version/current constraints и processing-quality/speech-metrics связи присутствуют;
-- executable SQL не содержит bytea/blob/service_role/production DDL;
+- 13 DB-03 tables + 1 internal published-only knowledge view;
+- prompt/methodology/filter версии обязаны начинаться как draft и после activation не редактируются in-place;
+- methodology criteria/stages заморожены после выхода parent из draft;
+- filter decision теперь имеет FK на exact filter-rule version;
+- canonical document, document version, fragment version и embedding version разделены;
+- publication фиксирует exact document/fragment/embedding membership;
+- published membership/manifest нельзя вернуть в draft/ready или переписать;
+- каждый published fragment имеет explicit product scope;
+- external embedding проверяется по exact document policy и exact fragment hash;
+- один canonical fragment может обслуживать несколько продуктов без копирования исходного документа;
+- raw internal runtime view не предназначен для прямого GRANT product-reader; product-scoped permission boundary будет DB-07;
+- executable SQL не содержит production schema DDL/service_role/bytea/blob;
 - признаков типовых реальных секретов не найдено.
 
-Не проверено: фактическое выполнение PostgreSQL/Supabase. DB-01 и DB-02 созданы в GitHub, но не применены.
+Не проверено: фактическое выполнение PostgreSQL/Supabase. DB-01—DB-03 созданы в GitHub, но не применены.
 
 ## Следующая одна задача
 
-**DB-03 — подготовить migration конфигураций и общей базы знаний.**
+**DB-04 — подготовить migration analysis и evidence.**
 
 Исполнитель: **ChatGPT**.
 
-Цель: реализовать versioned prompt/methodology/filter и knowledge document/fragment/embedding/publication model с exact published membership и product scope.
+Цель: физически реализовать immutable analysis input manifest, criteria/stages/observations/AI outcome и проверяемую evidence-модель, которая допускает current analysis только после evidence gate.
 
-Критерий готовности: migration/verify/rollback в GitHub; draft не смешан с publication, publication фиксирует exact versions, embedding привязан к exact fragment+model/config, current/history/invalidation различимы, SQL статически проверен и не считается применённым.
+Критерий готовности: migration/verify/rollback в GitHub; analysis pins exact upstream versions, fake/non-input segment/knowledge refs блокируются, evidence types/coverage физически различимы, current analysis требует passed evidence gate, SQL статически проверен и не считается применённым.
 
 ## Что ещё не применялось
 
-DB-01/DB-02/DB-03 SQL, workflow, код, изменения n8n/Supabase/сервера, реальные Credentials, реальные данные/документы компаний, backup и production фактически не применялись и не тестировались.
+DB-01—DB-04 SQL, workflow, код, изменения n8n/Supabase/сервера, реальные Credentials, реальные данные/документы компаний, backup и production фактически не применялись и не тестировались.
