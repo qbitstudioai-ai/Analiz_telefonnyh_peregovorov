@@ -76,8 +76,8 @@ Read-only preflight завершён PASS: запросы на `shablon_analiz_t
 - `012_sozdanie_analiza_i_dokazatelstv_db04.sql` — фактически запущен, **FAIL 42830**: отсутствовал unique target `(claim_id, analysis_id)` для FK `evidence_sets`;
 - `013_proverka_analiza_i_dokazatelstv_db04.sql` — не запускался;
 - `014_otkat_analiza_i_dokazatelstv_db04_NE_ZAPUSKAT.sql` — recovery, **не запускать**;
-- `015_proverka_sostoyaniya_posle_oshibki_db04.sql` — **следующий разрешённый SQL**, read-only;
-- `016_povtornoe_sozdanie_analiza_i_dokazatelstv_db04.sql` — исправленная migration, запускать только после PASS шага 015;
+- `015_proverka_sostoyaniya_posle_oshibki_db04.sql` — фактически выполнен, **PASS / 0 rows**; частичных DB-04 объектов не найдено;
+- `016_povtornoe_sozdanie_analiza_i_dokazatelstv_db04.sql` — **следующий разрешённый SQL**, исправленная migration;
 - `017_proverka_analiza_i_dokazatelstv_db04.sql` — актуальный verify после успешного шага 016.
 
 ## Фактический статус применения
@@ -89,8 +89,8 @@ Read-only preflight завершён PASS: запросы на `shablon_analiz_t
 - DB-02 verify — **PASS**;
 - DB-03 migration — **применена**;
 - DB-03 verify — **PASS**;
-- DB-04 migration — первая попытка **FAIL 42830**, до `COMMIT` не дошла; фактическое отсутствие частичных DB-04 объектов ещё должно быть подтверждено read-only шагом 015;
+- DB-04 migration — первая попытка **FAIL 42830**, до `COMMIT` не дошла; read-only шаг 015 подтвердил **0 частичных DB-04 объектов**;
 - DB-05—DB-07 migrations — ещё не применялись;
 - реальные Credentials, n8n workflow, серверные сервисы и dashboard к schema `shablon_analiz_telefonnyh_peregovorov` ещё не подключены и не проверены.
 
-Следующий шаг: read-only проверка `015_proverka_sostoyaniya_posle_oshibki_db04.sql`. Исправленная migration 016 разрешается только после PASS этой проверки.
+Следующий шаг: исправленная DB-04 migration `016_povtornoe_sozdanie_analiza_i_dokazatelstv_db04.sql`.
