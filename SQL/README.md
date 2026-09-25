@@ -33,7 +33,10 @@
 - `022_proverka_crm_otpravok_ispravlenii_i_audita_db05.sql` — PASS;
 - `023_otkat_crm_otpravok_ispravlenii_i_audita_db05_NE_ZAPUSKAT.sql` — recovery, самостоятельно не запускать;
 - `024_sozdanie_predstavlenii_i_metrik_dashborda_db06.sql` — Success;
-- `025_proverka_predstavlenii_i_metrik_dashborda_db06.sql` — следующий SQL, verify DB-06;
-- `026_otkat_predstavlenii_i_metrik_dashborda_db06_NE_ZAPUSKAT.sql` — recovery, самостоятельно не запускать.
+- `025_proverka_predstavlenii_i_metrik_dashborda_db06.sql` — PASS;
+- `026_otkat_predstavlenii_i_metrik_dashborda_db06_NE_ZAPUSKAT.sql` — recovery, самостоятельно не запускать;
+- `027_sozdanie_izolyacii_i_prav_dostupa_db07.sql` — следующий SQL;
+- `028_proverka_izolyacii_i_prav_dostupa_db07.sql` — verify DB-07 после успешного 027;
+- `029_otkat_izolyacii_i_prav_dostupa_db07_NE_ZAPUSKAT.sql` — recovery, самостоятельно не запускать.
 
-DB-05 завершена: migration + verify PASS. DB-06 перед выдачей проверена на порядок зависимостей всех 12 views и 7 functions.
+DB-06 завершена: migration + verify PASS. DB-07 перед выдачей усиленно проверена по roles/views/RLS/SECURITY DEFINER/grants и negative privilege checks.

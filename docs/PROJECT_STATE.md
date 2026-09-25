@@ -24,16 +24,16 @@
 
 ## Последний завершённый подэтап
 
-**DB-08B / DB-05 — CRM-факты, доставка, исправления и аудит фактически применены и проверены PASS.**
+**DB-08B / DB-06 — dashboard views и metric SQL фактически применены и проверены PASS.**
 
 Фактически подтверждено Павлом в рабочем Supabase:
 
-- DB-01—DB-04 migration + verify — PASS;
-- `021_sozdanie_crm_otpravok_ispravlenii_i_audita_db05.sql` — `Success. No rows returned`;
-- `022_proverka_crm_otpravok_ispravlenii_i_audita_db05.sql` — `Success. No rows returned`;
-- verify DB-05 завершился без необработанной ошибки и выполнил финальный `ROLLBACK`.
+- DB-01—DB-05 migration + verify — PASS;
+- `024_sozdanie_predstavlenii_i_metrik_dashborda_db06.sql` — `Success. No rows returned`;
+- `025_proverka_predstavlenii_i_metrik_dashborda_db06.sql` — `Success. No rows returned`;
+- verify DB-06 завершился без необработанной ошибки и выполнил финальный `ROLLBACK`.
 
-DB-05: **применена + verify PASS**.
+DB-06: **применена + verify PASS**.
 
 ## Следующая одна задача
 
@@ -84,9 +84,12 @@ Read-only preflight завершён PASS: запросы на `shablon_analiz_t
 - `021_sozdanie_crm_otpravok_ispravlenii_i_audita_db05.sql` — Success;
 - `022_proverka_crm_otpravok_ispravlenii_i_audita_db05.sql` — PASS;
 - `023_otkat_crm_otpravok_ispravlenii_i_audita_db05_NE_ZAPUSKAT.sql` — recovery, не запускать;
-- `024_sozdanie_predstavlenii_i_metrik_dashborda_db06.sql` — фактически выполнен, **Success**;
-- `025_proverka_predstavlenii_i_metrik_dashborda_db06.sql` — **следующий разрешённый SQL**, verify DB-06;
-- `026_otkat_predstavlenii_i_metrik_dashborda_db06_NE_ZAPUSKAT.sql` — recovery, не запускать без отдельного решения.
+- `024_sozdanie_predstavlenii_i_metrik_dashborda_db06.sql` — Success;
+- `025_proverka_predstavlenii_i_metrik_dashborda_db06.sql` — PASS;
+- `026_otkat_predstavlenii_i_metrik_dashborda_db06_NE_ZAPUSKAT.sql` — recovery, не запускать;
+- `027_sozdanie_izolyacii_i_prav_dostupa_db07.sql` — **следующий разрешённый SQL**;
+- `028_proverka_izolyacii_i_prav_dostupa_db07.sql` — запускать только после успешного шага 027;
+- `029_otkat_izolyacii_i_prav_dostupa_db07_NE_ZAPUSKAT.sql` — recovery, не запускать без отдельного решения.
 
 ## Фактический статус применения
 
@@ -101,9 +104,9 @@ Read-only preflight завершён PASS: запросы на `shablon_analiz_t
 - DB-04 verify — **PASS**;
 - DB-05 migration — **применена**;
 - DB-05 verify — **PASS**;
-- DB-06 migration — **применена**, Supabase вернул `Success. No rows returned`;
-- DB-06 verify — ещё не запускался;
+- DB-06 migration — **применена**;
+- DB-06 verify — **PASS**;
 - DB-07 migration — ещё не применялась;
 - реальные Credentials, n8n workflow, серверные сервисы и dashboard к schema `shablon_analiz_telefonnyh_peregovorov` ещё не подключены и не проверены.
 
-Следующий шаг: DB-06 verify `025_proverka_predstavlenii_i_metrik_dashborda_db06.sql`.
+Следующий шаг: DB-07 migration `027_sozdanie_izolyacii_i_prav_dostupa_db07.sql`.
