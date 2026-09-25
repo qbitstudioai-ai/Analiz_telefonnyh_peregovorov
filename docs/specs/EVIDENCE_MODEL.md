@@ -346,7 +346,7 @@ Evidence может быть structurally valid, но опираться на п
 
 Dashboard может показывать разрешённый pseudonymized quote + timestamp + explanation.
 
-Если руководитель имеет отдельное право на исходный текст по будущему DOC-16, сервер всё равно проверяет контур и source ref; браузер не получает произвольный доступ к БД.
+Если руководитель имеет отдельное право на исходный текст по [DASHBOARD_ADMIN](DASHBOARD_ADMIN.md), сервер всё равно проверяет контур и source ref; браузер не получает произвольный доступ к БД.
 
 ## Evidence и versioning
 
@@ -412,7 +412,7 @@ Dashboard не генерирует новую цитату и не подмен
 - создаётся correction/dispute event с автором, причиной и временем;
 - при изменении source/claim создаётся новая version по VERSIONING;
 - current может быть пересмотрен только проверяемым процессом;
-- права/UX определит DOC-16.
+- права/UX определены в [DASHBOARD_ADMIN](DASHBOARD_ADMIN.md).
 
 ## Минимальный логический состав evidence
 
