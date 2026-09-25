@@ -426,16 +426,16 @@ create unique index uq_pseudonymized_transcripts_one_current
   on atp_test.pseudonymized_transcripts (call_id)
   where version_state = 'current';
 
+-- Unique target for same-call predecessor FK.
+alter table atp_test.pseudonymized_transcripts
+  add constraint pseudonymized_transcripts_pseudo_call_unique
+  unique (pseudonymized_transcript_id, call_id);
+
 alter table atp_test.pseudonymized_transcripts
   add constraint fk_pseudonymized_transcripts_predecessor
   foreign key (predecessor_pseudonymized_id, call_id)
   references atp_test.pseudonymized_transcripts(pseudonymized_transcript_id, call_id)
   on delete restrict;
-
--- Unique target for predecessor FK.
-alter table atp_test.pseudonymized_transcripts
-  add constraint pseudonymized_transcripts_pseudo_call_unique
-  unique (pseudonymized_transcript_id, call_id);
 
 -- Safe segment copy for external/package use.
 create table atp_test.pseudonymized_segments (
@@ -618,23 +618,29 @@ create table atp_test.pseudonym_mappings (
     check (btrim(pseudonym_scope_ref) <> ''),
   constraint pseudonym_mappings_pseudonym_not_blank
     check (btrim(pseudonym) <> ''),
-  constraint pseudonym_mappings_has_protected_target
+  constraint pseudonym_mappings_target_or_deleted
     check (
-      (protected_value is not null and btrim(protected_value) <> '')
+      (
+        value_deleted_at is null
+        and (
+          (protected_value is not null and btrim(protected_value) <> '')
+          or
+          (protected_local_ref is not null and btrim(protected_local_ref) <> '')
+        )
+      )
       or
-      (protected_local_ref is not null and btrim(protected_local_ref) <> '')
-      or
-      value_deleted_at is not null
+      (
+        value_deleted_at is not null
+        and protected_value is null
+        and protected_local_ref is null
+      )
     ),
   constraint pseudonym_mappings_purpose_not_blank
     check (btrim(purpose_code) <> ''),
   constraint pseudonym_mappings_retention_ref_not_blank
     check (btrim(retention_policy_ref) <> ''),
-  constraint pseudonym_mappings_deleted_value_consistent
-    check (
-      value_deleted_at is null
-      or protected_value is null
-    )
+  constraint pseudonym_mappings_deleted_time_valid
+    check (value_deleted_at is null or value_deleted_at >= created_at)
 );
 
 comment on table atp_test.pseudonym_mappings is
