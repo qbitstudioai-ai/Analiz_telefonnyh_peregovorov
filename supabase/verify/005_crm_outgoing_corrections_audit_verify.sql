@@ -1,5 +1,5 @@
 -- DB-05 verification
--- TEST/LOCAL ONLY.
+-- APPROVED WORKING CONTOUR. Verification is limited to schema shablon.
 -- Run after DB-01..DB-05 migrations.
 -- The whole verification is rolled back and does not persist test rows.
 
@@ -14,9 +14,9 @@ declare
   v_audit_id uuid;
 begin
   if not exists (
-    select 1 from pg_namespace where nspname = 'atp_test'
+    select 1 from pg_namespace where nspname = 'shablon'
   ) then
-    raise exception 'DB-05 verification failed: schema atp_test does not exist';
+    raise exception 'DB-05 verification failed: schema shablon does not exist';
   end if;
 
   select string_agg(required_relation, ', ' order by required_relation)
@@ -31,7 +31,7 @@ begin
       ('corrections'),
       ('audit_events')
   ) as required(required_relation)
-  where to_regclass('atp_test.' || required.required_relation) is null;
+  where to_regclass('shablon.' || required.required_relation) is null;
 
   if v_missing is not null then
     raise exception
@@ -43,7 +43,7 @@ begin
   into v_count
   from pg_type t
   join pg_namespace n on n.oid = t.typnamespace
-  where n.nspname = 'atp_test'
+  where n.nspname = 'shablon'
     and t.typname in (
       'business_confirmation_source',
       'business_confirmation_event_kind',
@@ -67,7 +67,7 @@ begin
   into v_count
   from pg_proc p
   join pg_namespace n on n.oid = p.pronamespace
-  where n.nspname = 'atp_test'
+  where n.nspname = 'shablon'
     and p.proname in (
       'validate_business_confirmation_insert',
       'guard_business_confirmation_immutable',
@@ -98,7 +98,7 @@ begin
   join pg_class c on c.oid = tg.tgrelid
   join pg_namespace n on n.oid = c.relnamespace
   where not tg.tgisinternal
-    and n.nspname = 'atp_test'
+    and n.nspname = 'shablon'
     and tg.tgname in (
       'trg_business_confirmations_validate_insert',
       'trg_business_confirmations_immutable',
@@ -130,7 +130,7 @@ begin
   if not exists (
     select 1
     from pg_constraint con
-    where con.conrelid = 'atp_test.operation_attempts'::regclass
+    where con.conrelid = 'shablon.operation_attempts'::regclass
       and con.conname = 'operation_attempts_attempt_operation_unique'
       and con.contype = 'u'
   ) then
@@ -141,7 +141,7 @@ begin
   if not exists (
     select 1
     from pg_constraint con
-    where con.conrelid = 'atp_test.role_assignment_versions'::regclass
+    where con.conrelid = 'shablon.role_assignment_versions'::regclass
       and con.conname = 'role_assignment_versions_role_call_unique'
       and con.contype = 'u'
   ) then
@@ -153,7 +153,7 @@ begin
   if exists (
     select 1
     from information_schema.columns
-    where table_schema = 'atp_test'
+    where table_schema = 'shablon'
       and table_name = 'business_confirmations'
       and column_name in ('analysis_id', 'ai_outcome_id', 'claim_id')
   ) then
@@ -164,7 +164,7 @@ begin
   if not exists (
     select 1
     from information_schema.columns
-    where table_schema = 'atp_test'
+    where table_schema = 'shablon'
       and table_name = 'ai_inferred_outcomes'
       and column_name = 'analysis_id'
   ) then
@@ -176,7 +176,7 @@ begin
   select pg_get_constraintdef(con.oid)
   into v_definition
   from pg_constraint con
-  where con.conrelid = 'atp_test.outgoing_actions'::regclass
+  where con.conrelid = 'shablon.outgoing_actions'::regclass
     and con.conname = 'outgoing_actions_analysis_same_call';
 
   if v_definition is null
@@ -190,7 +190,7 @@ begin
   select pg_get_constraintdef(con.oid)
   into v_definition
   from pg_constraint con
-  where con.conrelid = 'atp_test.delivery_attempts'::regclass
+  where con.conrelid = 'shablon.delivery_attempts'::regclass
     and con.conname = 'delivery_attempts_action_same_call';
 
   if v_definition is null
@@ -205,7 +205,7 @@ begin
   select pg_get_constraintdef(con.oid)
   into v_definition
   from pg_constraint con
-  where con.conrelid = 'atp_test.delivery_attempts'::regclass
+  where con.conrelid = 'shablon.delivery_attempts'::regclass
     and con.conname = 'delivery_attempts_attempt_same_operation';
 
   if v_definition is null
@@ -220,7 +220,7 @@ begin
   select pg_get_constraintdef(con.oid)
   into v_definition
   from pg_constraint con
-  where con.conrelid = 'atp_test.delivery_attempts'::regclass
+  where con.conrelid = 'shablon.delivery_attempts'::regclass
     and con.conname = 'delivery_attempts_retry_shape';
 
   if v_definition is null
@@ -234,7 +234,7 @@ begin
   select pg_get_constraintdef(con.oid)
   into v_definition
   from pg_constraint con
-  where con.conrelid = 'atp_test.delivery_attempts'::regclass
+  where con.conrelid = 'shablon.delivery_attempts'::regclass
     and con.conname = 'delivery_attempts_succeeded_shape';
 
   if v_definition is null
@@ -250,7 +250,7 @@ begin
   select pg_get_constraintdef(con.oid)
   into v_definition
   from pg_constraint con
-  where con.conrelid = 'atp_test.callback_links'::regclass
+  where con.conrelid = 'shablon.callback_links'::regclass
     and con.conname = 'callback_links_decision_metadata';
 
   if v_definition is null
@@ -266,7 +266,7 @@ begin
   select pg_get_constraintdef(con.oid)
   into v_definition
   from pg_constraint con
-  where con.conrelid = 'atp_test.audit_events'::regclass
+  where con.conrelid = 'shablon.audit_events'::regclass
     and con.conname = 'audit_events_result_time';
 
   if v_definition is null
@@ -281,7 +281,7 @@ begin
   into v_definition
   from pg_proc p
   join pg_namespace n on n.oid = p.pronamespace
-  where n.nspname = 'atp_test'
+  where n.nspname = 'shablon'
     and p.proname = 'guard_delivery_attempt_insert';
 
   if v_definition is null
@@ -297,7 +297,7 @@ begin
   into v_definition
   from pg_proc p
   join pg_namespace n on n.oid = p.pronamespace
-  where n.nspname = 'atp_test'
+  where n.nspname = 'shablon'
     and p.proname = 'guard_delivery_attempt_update';
 
   if v_definition is null
@@ -313,7 +313,7 @@ begin
   select pg_get_constraintdef(con.oid)
   into v_definition
   from pg_constraint con
-  where con.conrelid = 'atp_test.corrections'::regclass
+  where con.conrelid = 'shablon.corrections'::regclass
     and con.conname = 'corrections_target_exactly_one';
 
   if v_definition is null
@@ -325,7 +325,7 @@ begin
 
   -- Regression: a dispute cannot be inserted already resolved.
   begin
-    insert into atp_test.analysis_disputes (
+    insert into shablon.analysis_disputes (
       call_id,
       analysis_id,
       author_ref,
@@ -360,7 +360,7 @@ begin
 
   -- Regression: a correction cannot be inserted directly as applied.
   begin
-    insert into atp_test.corrections (
+    insert into shablon.corrections (
       call_id,
       target_type,
       target_manager_id,
@@ -399,7 +399,7 @@ begin
 
   -- Regression: an outgoing action cannot be inserted cancelled/final.
   begin
-    insert into atp_test.outgoing_actions (
+    insert into shablon.outgoing_actions (
       call_id,
       analysis_id,
       logical_action_key,
@@ -443,7 +443,7 @@ begin
   end;
 
   -- Audit can be appended without a business FK and must then be immutable.
-  insert into atp_test.audit_events (
+  insert into shablon.audit_events (
     actor_ref,
     actor_capability,
     action_type,
@@ -470,7 +470,7 @@ begin
   returning audit_event_id into v_audit_id;
 
   begin
-    update atp_test.audit_events
+    update shablon.audit_events
     set reason = 'attempted mutation'
     where audit_event_id = v_audit_id;
 
@@ -487,7 +487,7 @@ begin
   end;
 
   begin
-    delete from atp_test.audit_events
+    delete from shablon.audit_events
     where audit_event_id = v_audit_id;
 
     raise exception

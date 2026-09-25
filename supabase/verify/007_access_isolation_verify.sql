@@ -1,5 +1,5 @@
 -- DB-07 verification
--- TEST/LOCAL ONLY.
+-- APPROVED WORKING CONTOUR. Verification is limited to schema shablon.
 -- Run after DB-01..DB-07 migrations.
 -- Verifies capability roles, grants, RLS/policies and restricted surfaces.
 -- The whole verification is rolled back.
@@ -27,22 +27,22 @@ declare
   v_acl_public_execute boolean;
 begin
   if not exists (
-    select 1 from pg_namespace where nspname = 'atp_test'
+    select 1 from pg_namespace where nspname = 'shablon'
   ) then
-    raise exception 'DB-07 verification failed: schema atp_test does not exist';
+    raise exception 'DB-07 verification failed: schema shablon does not exist';
   end if;
 
   -- Every DB-07 role is a NOLOGIN, non-admin, non-bypass capability role.
   foreach v_role in array array[
-    'atp_test_orchestrator',
-    'atp_test_core',
-    'atp_test_privacy',
-    'atp_test_raw_transcript_reader',
-    'atp_test_knowledge_reader',
-    'atp_test_knowledge_admin',
-    'atp_test_dashboard',
-    'atp_test_admin_api',
-    'atp_test_monitor'
+    'shablon_orchestrator',
+    'shablon_core',
+    'shablon_privacy',
+    'shablon_raw_transcript_reader',
+    'shablon_knowledge_reader',
+    'shablon_knowledge_admin',
+    'shablon_dashboard',
+    'shablon_admin_api',
+    'shablon_monitor'
   ]
   loop
     if not exists (
@@ -62,15 +62,15 @@ begin
         v_role;
     end if;
 
-    if not has_schema_privilege(v_role, 'atp_test', 'USAGE') then
+    if not has_schema_privilege(v_role, 'shablon', 'USAGE') then
       raise exception
-        'DB-07 verification failed: role % lacks allowed atp_test USAGE',
+        'DB-07 verification failed: role % lacks allowed shablon USAGE',
         v_role;
     end if;
 
-    if has_schema_privilege(v_role, 'atp_test', 'CREATE') then
+    if has_schema_privilege(v_role, 'shablon', 'CREATE') then
       raise exception
-        'DB-07 verification failed: role % can CREATE in atp_test',
+        'DB-07 verification failed: role % can CREATE in shablon',
         v_role;
     end if;
 
@@ -95,15 +95,15 @@ begin
   from pg_auth_members m
   join pg_roles parent on parent.oid = m.roleid
   where parent.rolname in (
-    'atp_test_orchestrator',
-    'atp_test_core',
-    'atp_test_privacy',
-    'atp_test_raw_transcript_reader',
-    'atp_test_knowledge_reader',
-    'atp_test_knowledge_admin',
-    'atp_test_dashboard',
-    'atp_test_admin_api',
-    'atp_test_monitor'
+    'shablon_orchestrator',
+    'shablon_core',
+    'shablon_privacy',
+    'shablon_raw_transcript_reader',
+    'shablon_knowledge_reader',
+    'shablon_knowledge_admin',
+    'shablon_dashboard',
+    'shablon_admin_api',
+    'shablon_monitor'
   );
 
   if v_count <> 0 then
@@ -120,13 +120,13 @@ begin
   cross join lateral aclexplode(
     coalesce(c_rel.relacl, acldefault('r', c_rel.relowner))
   ) acl
-  where n.nspname = 'atp_test'
+  where n.nspname = 'shablon'
     and c_rel.relkind in ('r', 'p', 'v', 'm')
     and acl.grantee = 0;
 
   if v_count <> 0 then
     raise exception
-      'DB-07 verification failed: PUBLIC relation privileges remain in atp_test';
+      'DB-07 verification failed: PUBLIC relation privileges remain in shablon';
   end if;
 
   -- PUBLIC EXECUTE is removed from every function, not only admin functions.
@@ -137,13 +137,13 @@ begin
   cross join lateral aclexplode(
     coalesce(p.proacl, acldefault('f', p.proowner))
   ) acl
-  where n.nspname = 'atp_test'
+  where n.nspname = 'shablon'
     and acl.grantee = 0
     and acl.privilege_type = 'EXECUTE';
 
   if v_count <> 0 then
     raise exception
-      'DB-07 verification failed: PUBLIC EXECUTE remains on % atp_test function(s)',
+      'DB-07 verification failed: PUBLIC EXECUTE remains on % shablon function(s)',
       v_count;
   end if;
 
@@ -153,7 +153,7 @@ begin
   from pg_default_acl d
   join pg_namespace n on n.oid = d.defaclnamespace
   cross join lateral aclexplode(d.defaclacl) acl
-  where n.nspname = 'atp_test'
+  where n.nspname = 'shablon'
     and d.defaclrole = (
       select oid from pg_roles where rolname = current_user
     )
@@ -163,7 +163,7 @@ begin
 
   if v_count <> 0 then
     raise exception
-      'DB-07 verification failed: future atp_test functions still default to PUBLIC EXECUTE';
+      'DB-07 verification failed: future shablon functions still default to PUBLIC EXECUTE';
   end if;
 
   -- Business schema is not a password/token/secret/credential store.
@@ -173,7 +173,7 @@ begin
   )
   into v_bad
   from information_schema.columns
-  where table_schema = 'atp_test'
+  where table_schema = 'shablon'
     and (
       column_name ilike '%password%'
       or column_name ilike '%token%'
@@ -187,7 +187,7 @@ begin
       v_bad;
   end if;
 
-  -- No capability role receives DELETE/TRUNCATE on any atp_test relation.
+  -- No capability role receives DELETE/TRUNCATE on any shablon relation.
   select string_agg(role_name || ':' || relname, ', ' order by role_name, relname)
   into v_bad
   from (
@@ -195,19 +195,19 @@ begin
       role_name,
       c_rel.relname
     from unnest(array[
-      'atp_test_orchestrator',
-      'atp_test_core',
-      'atp_test_privacy',
-      'atp_test_raw_transcript_reader',
-      'atp_test_knowledge_reader',
-      'atp_test_knowledge_admin',
-      'atp_test_dashboard',
-      'atp_test_admin_api',
-      'atp_test_monitor'
+      'shablon_orchestrator',
+      'shablon_core',
+      'shablon_privacy',
+      'shablon_raw_transcript_reader',
+      'shablon_knowledge_reader',
+      'shablon_knowledge_admin',
+      'shablon_dashboard',
+      'shablon_admin_api',
+      'shablon_monitor'
     ]) role_name
     cross join pg_class c_rel
     join pg_namespace n on n.oid = c_rel.relnamespace
-    where n.nspname = 'atp_test'
+    where n.nspname = 'shablon'
       and c_rel.relkind in ('r', 'p', 'v', 'm')
       and (
         has_table_privilege(role_name, c_rel.oid, 'DELETE')
@@ -226,7 +226,7 @@ begin
   into v_bad
   from pg_class c_rel
   join pg_namespace n on n.oid = c_rel.relnamespace
-  where n.nspname = 'atp_test'
+  where n.nspname = 'shablon'
     and c_rel.relname in (
       'v_runtime_prompt_active',
       'v_runtime_methodology_active',
@@ -263,7 +263,7 @@ begin
   into v_count
   from pg_class c
   join pg_namespace n on n.oid = c.relnamespace
-  where n.nspname = 'atp_test'
+  where n.nspname = 'shablon'
     and c.relname in (
       'raw_transcripts',
       'transcript_segments',
@@ -280,7 +280,7 @@ begin
   select count(*)
   into v_count
   from pg_policies p
-  where p.schemaname = 'atp_test'
+  where p.schemaname = 'shablon'
     and p.policyname in (
       'raw_transcripts_privacy_all',
       'raw_transcripts_reader_select',
@@ -296,41 +296,41 @@ begin
   end if;
 
   -- Positive control: orchestrator can operate pipeline/business-delivery state.
-  if not has_table_privilege('atp_test_orchestrator', 'atp_test.calls', 'SELECT')
-     or not has_table_privilege('atp_test_orchestrator', 'atp_test.calls', 'INSERT')
-     or not has_table_privilege('atp_test_orchestrator', 'atp_test.calls', 'UPDATE')
-     or not has_table_privilege('atp_test_orchestrator', 'atp_test.outgoing_actions', 'INSERT')
-     or not has_table_privilege('atp_test_orchestrator', 'atp_test.delivery_attempts', 'UPDATE')
+  if not has_table_privilege('shablon_orchestrator', 'shablon.calls', 'SELECT')
+     or not has_table_privilege('shablon_orchestrator', 'shablon.calls', 'INSERT')
+     or not has_table_privilege('shablon_orchestrator', 'shablon.calls', 'UPDATE')
+     or not has_table_privilege('shablon_orchestrator', 'shablon.outgoing_actions', 'INSERT')
+     or not has_table_privilege('shablon_orchestrator', 'shablon.delivery_attempts', 'UPDATE')
   then
     raise exception
       'DB-07 verification failed: orchestrator positive control missing';
   end if;
 
   -- Negative: orchestrator cannot read raw/mapping or administer knowledge.
-  if has_table_privilege('atp_test_orchestrator', 'atp_test.raw_transcripts', 'SELECT')
-     or has_table_privilege('atp_test_orchestrator', 'atp_test.transcript_segments', 'SELECT')
-     or has_table_privilege('atp_test_orchestrator', 'atp_test.pseudonym_mappings', 'SELECT')
-     or has_table_privilege('atp_test_orchestrator', 'atp_test.knowledge_documents', 'INSERT')
-     or has_table_privilege('atp_test_orchestrator', 'atp_test.knowledge_publications', 'UPDATE')
-     or has_table_privilege('atp_test_orchestrator', 'atp_test.audit_events', 'UPDATE')
-     or has_table_privilege('atp_test_orchestrator', 'atp_test.audit_events', 'DELETE')
+  if has_table_privilege('shablon_orchestrator', 'shablon.raw_transcripts', 'SELECT')
+     or has_table_privilege('shablon_orchestrator', 'shablon.transcript_segments', 'SELECT')
+     or has_table_privilege('shablon_orchestrator', 'shablon.pseudonym_mappings', 'SELECT')
+     or has_table_privilege('shablon_orchestrator', 'shablon.knowledge_documents', 'INSERT')
+     or has_table_privilege('shablon_orchestrator', 'shablon.knowledge_publications', 'UPDATE')
+     or has_table_privilege('shablon_orchestrator', 'shablon.audit_events', 'UPDATE')
+     or has_table_privilege('shablon_orchestrator', 'shablon.audit_events', 'DELETE')
   then
     raise exception
       'DB-07 verification failed: orchestrator has forbidden raw/knowledge/audit privilege';
   end if;
 
   -- CORE positive control.
-  if not has_table_privilege('atp_test_core', 'atp_test.v_runtime_knowledge_call_analysis', 'SELECT')
-     or not has_table_privilege('atp_test_core', 'atp_test.analysis_versions', 'INSERT')
-     or not has_table_privilege('atp_test_core', 'atp_test.analysis_versions', 'UPDATE')
+  if not has_table_privilege('shablon_core', 'shablon.v_runtime_knowledge_call_analysis', 'SELECT')
+     or not has_table_privilege('shablon_core', 'shablon.analysis_versions', 'INSERT')
+     or not has_table_privilege('shablon_core', 'shablon.analysis_versions', 'UPDATE')
      or not has_function_privilege(
-       'atp_test_core',
-       'atp_test.calculate_analysis_overall_score(uuid)',
+       'shablon_core',
+       'shablon.calculate_analysis_overall_score(uuid)',
        'EXECUTE'
      )
      or not has_function_privilege(
-       'atp_test_core',
-       'atp_test.validate_analysis_evidence_gate(uuid)',
+       'shablon_core',
+       'shablon.validate_analysis_evidence_gate(uuid)',
        'EXECUTE'
      )
   then
@@ -339,29 +339,29 @@ begin
   end if;
 
   -- CORE cannot bypass privacy or publish/edit knowledge.
-  if has_table_privilege('atp_test_core', 'atp_test.raw_transcripts', 'SELECT')
-     or has_table_privilege('atp_test_core', 'atp_test.transcript_segments', 'SELECT')
-     or has_table_privilege('atp_test_core', 'atp_test.pseudonym_mappings', 'SELECT')
-     or has_table_privilege('atp_test_core', 'atp_test.knowledge_documents', 'UPDATE')
-     or has_table_privilege('atp_test_core', 'atp_test.knowledge_publications', 'UPDATE')
+  if has_table_privilege('shablon_core', 'shablon.raw_transcripts', 'SELECT')
+     or has_table_privilege('shablon_core', 'shablon.transcript_segments', 'SELECT')
+     or has_table_privilege('shablon_core', 'shablon.pseudonym_mappings', 'SELECT')
+     or has_table_privilege('shablon_core', 'shablon.knowledge_documents', 'UPDATE')
+     or has_table_privilege('shablon_core', 'shablon.knowledge_publications', 'UPDATE')
   then
     raise exception
       'DB-07 verification failed: CORE has forbidden raw/mapping/knowledge-write privilege';
   end if;
 
   -- Privacy positive control and separation from dashboard/admin knowledge.
-  if not has_table_privilege('atp_test_privacy', 'atp_test.raw_transcripts', 'SELECT')
-     or not has_table_privilege('atp_test_privacy', 'atp_test.raw_transcripts', 'INSERT')
-     or not has_table_privilege('atp_test_privacy', 'atp_test.raw_transcripts', 'UPDATE')
-     or not has_table_privilege('atp_test_privacy', 'atp_test.pseudonym_mappings', 'SELECT')
-     or not has_table_privilege('atp_test_privacy', 'atp_test.pseudonym_mappings', 'INSERT')
+  if not has_table_privilege('shablon_privacy', 'shablon.raw_transcripts', 'SELECT')
+     or not has_table_privilege('shablon_privacy', 'shablon.raw_transcripts', 'INSERT')
+     or not has_table_privilege('shablon_privacy', 'shablon.raw_transcripts', 'UPDATE')
+     or not has_table_privilege('shablon_privacy', 'shablon.pseudonym_mappings', 'SELECT')
+     or not has_table_privilege('shablon_privacy', 'shablon.pseudonym_mappings', 'INSERT')
   then
     raise exception
       'DB-07 verification failed: privacy positive control missing';
   end if;
 
-  if has_table_privilege('atp_test_privacy', 'atp_test.v_dashboard_zvonki', 'SELECT')
-     or has_table_privilege('atp_test_privacy', 'atp_test.knowledge_publications', 'UPDATE')
+  if has_table_privilege('shablon_privacy', 'shablon.v_dashboard_zvonki', 'SELECT')
+     or has_table_privilege('shablon_privacy', 'shablon.knowledge_publications', 'UPDATE')
   then
     raise exception
       'DB-07 verification failed: privacy role has unrelated dashboard/knowledge-admin access';
@@ -369,13 +369,13 @@ begin
 
   -- Optional raw reader sees raw text but never mapping.
   if not has_table_privilege(
-       'atp_test_raw_transcript_reader',
-       'atp_test.raw_transcripts',
+       'shablon_raw_transcript_reader',
+       'shablon.raw_transcripts',
        'SELECT'
      )
      or not has_table_privilege(
-       'atp_test_raw_transcript_reader',
-       'atp_test.transcript_segments',
+       'shablon_raw_transcript_reader',
+       'shablon.transcript_segments',
        'SELECT'
      )
   then
@@ -384,13 +384,13 @@ begin
   end if;
 
   if has_table_privilege(
-       'atp_test_raw_transcript_reader',
-       'atp_test.pseudonym_mappings',
+       'shablon_raw_transcript_reader',
+       'shablon.pseudonym_mappings',
        'SELECT'
      )
      or has_table_privilege(
-       'atp_test_raw_transcript_reader',
-       'atp_test.raw_transcripts',
+       'shablon_raw_transcript_reader',
+       'shablon.raw_transcripts',
        'UPDATE'
      )
   then
@@ -400,8 +400,8 @@ begin
 
   -- Knowledge reader: one published call_analysis surface only.
   if not has_table_privilege(
-       'atp_test_knowledge_reader',
-       'atp_test.v_runtime_knowledge_call_analysis',
+       'shablon_knowledge_reader',
+       'shablon.v_runtime_knowledge_call_analysis',
        'SELECT'
      )
   then
@@ -410,38 +410,38 @@ begin
   end if;
 
   if has_table_privilege(
-       'atp_test_knowledge_reader',
-       'atp_test.v_runtime_knowledge_fragments',
+       'shablon_knowledge_reader',
+       'shablon.v_runtime_knowledge_fragments',
        'SELECT'
      )
      or has_table_privilege(
-       'atp_test_knowledge_reader',
-       'atp_test.knowledge_documents',
+       'shablon_knowledge_reader',
+       'shablon.knowledge_documents',
        'SELECT'
      )
      or has_table_privilege(
-       'atp_test_knowledge_reader',
-       'atp_test.knowledge_document_versions',
+       'shablon_knowledge_reader',
+       'shablon.knowledge_document_versions',
        'SELECT'
      )
      or has_table_privilege(
-       'atp_test_knowledge_reader',
-       'atp_test.knowledge_fragments',
+       'shablon_knowledge_reader',
+       'shablon.knowledge_fragments',
        'SELECT'
      )
      or has_table_privilege(
-       'atp_test_knowledge_reader',
-       'atp_test.knowledge_embeddings',
+       'shablon_knowledge_reader',
+       'shablon.knowledge_embeddings',
        'SELECT'
      )
      or has_table_privilege(
-       'atp_test_knowledge_reader',
-       'atp_test.knowledge_publications',
+       'shablon_knowledge_reader',
+       'shablon.knowledge_publications',
        'SELECT'
      )
      or has_table_privilege(
-       'atp_test_knowledge_reader',
-       'atp_test.knowledge_publications',
+       'shablon_knowledge_reader',
+       'shablon.knowledge_publications',
        'UPDATE'
      )
   then
@@ -450,7 +450,7 @@ begin
   end if;
 
   select pg_get_viewdef(
-    'atp_test.v_runtime_knowledge_call_analysis'::regclass,
+    'shablon.v_runtime_knowledge_call_analysis'::regclass,
     true
   )
   into v_definition;
@@ -464,18 +464,18 @@ begin
 
   -- Knowledge administration is separated from runtime reader and call data.
   if not has_table_privilege(
-       'atp_test_knowledge_admin',
-       'atp_test.knowledge_document_versions',
+       'shablon_knowledge_admin',
+       'shablon.knowledge_document_versions',
        'UPDATE'
      )
      or not has_table_privilege(
-       'atp_test_knowledge_admin',
-       'atp_test.knowledge_publications',
+       'shablon_knowledge_admin',
+       'shablon.knowledge_publications',
        'INSERT'
      )
      or not has_table_privilege(
-       'atp_test_knowledge_admin',
-       'atp_test.v_admin_audit_safe',
+       'shablon_knowledge_admin',
+       'shablon.v_admin_audit_safe',
        'SELECT'
      )
   then
@@ -484,18 +484,18 @@ begin
   end if;
 
   if has_table_privilege(
-       'atp_test_knowledge_admin',
-       'atp_test.calls',
+       'shablon_knowledge_admin',
+       'shablon.calls',
        'SELECT'
      )
      or has_table_privilege(
-       'atp_test_knowledge_admin',
-       'atp_test.raw_transcripts',
+       'shablon_knowledge_admin',
+       'shablon.raw_transcripts',
        'SELECT'
      )
      or has_table_privilege(
-       'atp_test_knowledge_admin',
-       'atp_test.pseudonym_mappings',
+       'shablon_knowledge_admin',
+       'shablon.pseudonym_mappings',
        'SELECT'
      )
   then
@@ -504,7 +504,7 @@ begin
   end if;
 
   -- Active configuration surfaces cannot reveal drafts/unvalidated rows.
-  select pg_get_viewdef('atp_test.v_runtime_prompt_active'::regclass, true)
+  select pg_get_viewdef('shablon.v_runtime_prompt_active'::regclass, true)
   into v_definition;
   if v_definition not ilike '%config_state = ''active''%'
      or v_definition not ilike '%validation_status = ''passed''%'
@@ -513,7 +513,7 @@ begin
       'DB-07 verification failed: prompt runtime surface is not active+passed only';
   end if;
 
-  select pg_get_viewdef('atp_test.v_runtime_filter_rules_active'::regclass, true)
+  select pg_get_viewdef('shablon.v_runtime_filter_rules_active'::regclass, true)
   into v_definition;
   if v_definition not ilike '%config_state = ''active''%'
      or v_definition not ilike '%validation_status = ''passed''%'
@@ -523,30 +523,30 @@ begin
   end if;
 
   -- Dashboard positive controls.
-  if not has_table_privilege('atp_test_dashboard', 'atp_test.v_dashboard_zvonki', 'SELECT')
+  if not has_table_privilege('shablon_dashboard', 'shablon.v_dashboard_zvonki', 'SELECT')
      or not has_table_privilege(
-       'atp_test_dashboard',
-       'atp_test.v_dashboard_safe_transcript_segments',
+       'shablon_dashboard',
+       'shablon.v_dashboard_safe_transcript_segments',
        'SELECT'
      )
      or not has_table_privilege(
-       'atp_test_dashboard',
-       'atp_test.v_dashboard_evidence_conversation',
+       'shablon_dashboard',
+       'shablon.v_dashboard_evidence_conversation',
        'SELECT'
      )
      or not has_table_privilege(
-       'atp_test_dashboard',
-       'atp_test.v_dashboard_evidence_absence',
+       'shablon_dashboard',
+       'shablon.v_dashboard_evidence_absence',
        'SELECT'
      )
      or not has_table_privilege(
-       'atp_test_dashboard',
-       'atp_test.v_dashboard_knowledge_evidence',
+       'shablon_dashboard',
+       'shablon.v_dashboard_knowledge_evidence',
        'SELECT'
      )
      or not has_function_privilege(
-       'atp_test_dashboard',
-       'atp_test.dashboard_overview(timestamptz,timestamptz,jsonb,timestamptz,interval,text[],text[])',
+       'shablon_dashboard',
+       'shablon.dashboard_overview(timestamptz,timestamptz,jsonb,timestamptz,interval,text[],text[])',
        'EXECUTE'
      )
   then
@@ -555,23 +555,23 @@ begin
   end if;
 
   -- Dashboard cannot read raw/mapping or mutate primary business/history rows.
-  if has_table_privilege('atp_test_dashboard', 'atp_test.raw_transcripts', 'SELECT')
-     or has_table_privilege('atp_test_dashboard', 'atp_test.transcript_segments', 'SELECT')
-     or has_table_privilege('atp_test_dashboard', 'atp_test.pseudonym_mappings', 'SELECT')
-     or has_table_privilege('atp_test_dashboard', 'atp_test.calls', 'INSERT')
-     or has_table_privilege('atp_test_dashboard', 'atp_test.analysis_versions', 'UPDATE')
-     or has_table_privilege('atp_test_dashboard', 'atp_test.business_confirmations', 'UPDATE')
-     or has_table_privilege('atp_test_dashboard', 'atp_test.audit_events', 'INSERT')
-     or has_table_privilege('atp_test_dashboard', 'atp_test.pseudonymized_segments', 'SELECT')
-     or has_table_privilege('atp_test_dashboard', 'atp_test.evidence_conversation_refs', 'SELECT')
-     or has_table_privilege('atp_test_dashboard', 'atp_test.evidence_absence_checks', 'SELECT')
+  if has_table_privilege('shablon_dashboard', 'shablon.raw_transcripts', 'SELECT')
+     or has_table_privilege('shablon_dashboard', 'shablon.transcript_segments', 'SELECT')
+     or has_table_privilege('shablon_dashboard', 'shablon.pseudonym_mappings', 'SELECT')
+     or has_table_privilege('shablon_dashboard', 'shablon.calls', 'INSERT')
+     or has_table_privilege('shablon_dashboard', 'shablon.analysis_versions', 'UPDATE')
+     or has_table_privilege('shablon_dashboard', 'shablon.business_confirmations', 'UPDATE')
+     or has_table_privilege('shablon_dashboard', 'shablon.audit_events', 'INSERT')
+     or has_table_privilege('shablon_dashboard', 'shablon.pseudonymized_segments', 'SELECT')
+     or has_table_privilege('shablon_dashboard', 'shablon.evidence_conversation_refs', 'SELECT')
+     or has_table_privilege('shablon_dashboard', 'shablon.evidence_absence_checks', 'SELECT')
   then
     raise exception
       'DB-07 verification failed: dashboard has forbidden raw/direct-write privilege';
   end if;
 
   select pg_get_viewdef(
-    'atp_test.v_dashboard_safe_transcript_segments'::regclass,
+    'shablon.v_dashboard_safe_transcript_segments'::regclass,
     true
   )
   into v_definition;
@@ -584,18 +584,18 @@ begin
 
   -- Admin API uses controlled functions, not direct business-table write.
   if not has_table_privilege(
-       'atp_test_admin_api',
-       'atp_test.v_admin_audit_safe',
+       'shablon_admin_api',
+       'shablon.v_admin_audit_safe',
        'SELECT'
      )
      or not has_function_privilege(
-       'atp_test_admin_api',
-       'atp_test.admin_submit_analysis_dispute(uuid,uuid,uuid,uuid,text,text)',
+       'shablon_admin_api',
+       'shablon.admin_submit_analysis_dispute(uuid,uuid,uuid,uuid,text,text)',
        'EXECUTE'
      )
      or not has_function_privilege(
-       'atp_test_admin_api',
-       'atp_test.admin_propose_correction(uuid,atp_test.correction_target_type,uuid,text,text,jsonb,jsonb,text,text,uuid)',
+       'shablon_admin_api',
+       'shablon.admin_propose_correction(uuid,shablon.correction_target_type,uuid,text,text,jsonb,jsonb,text,text,uuid)',
        'EXECUTE'
      )
   then
@@ -603,11 +603,11 @@ begin
       'DB-07 verification failed: admin API positive control missing';
   end if;
 
-  if has_table_privilege('atp_test_admin_api', 'atp_test.analysis_disputes', 'INSERT')
-     or has_table_privilege('atp_test_admin_api', 'atp_test.corrections', 'INSERT')
-     or has_table_privilege('atp_test_admin_api', 'atp_test.audit_events', 'INSERT')
-     or has_table_privilege('atp_test_admin_api', 'atp_test.raw_transcripts', 'SELECT')
-     or has_table_privilege('atp_test_admin_api', 'atp_test.pseudonym_mappings', 'SELECT')
+  if has_table_privilege('shablon_admin_api', 'shablon.analysis_disputes', 'INSERT')
+     or has_table_privilege('shablon_admin_api', 'shablon.corrections', 'INSERT')
+     or has_table_privilege('shablon_admin_api', 'shablon.audit_events', 'INSERT')
+     or has_table_privilege('shablon_admin_api', 'shablon.raw_transcripts', 'SELECT')
+     or has_table_privilege('shablon_admin_api', 'shablon.pseudonym_mappings', 'SELECT')
   then
     raise exception
       'DB-07 verification failed: admin API bypasses controlled functions/privacy';
@@ -618,7 +618,7 @@ begin
   into v_count
   from pg_proc p
   join pg_namespace n on n.oid = p.pronamespace
-  where n.nspname = 'atp_test'
+  where n.nspname = 'shablon'
     and p.proname in (
       'admin_submit_analysis_dispute',
       'admin_propose_correction'
@@ -627,7 +627,7 @@ begin
     and exists (
       select 1
       from unnest(coalesce(p.proconfig, '{}'::text[])) cfg
-      where cfg = 'search_path=pg_catalog, atp_test'
+      where cfg = 'search_path=pg_catalog, shablon'
     );
 
   if v_count <> 2 then
@@ -641,7 +641,7 @@ begin
     from pg_proc p
     join pg_namespace n on n.oid = p.pronamespace
     cross join lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a
-    where n.nspname = 'atp_test'
+    where n.nspname = 'shablon'
       and p.proname = 'admin_submit_analysis_dispute'
       and a.grantee = 0
       and a.privilege_type = 'EXECUTE'
@@ -658,7 +658,7 @@ begin
     from pg_proc p
     join pg_namespace n on n.oid = p.pronamespace
     cross join lateral aclexplode(coalesce(p.proacl, acldefault('f', p.proowner))) a
-    where n.nspname = 'atp_test'
+    where n.nspname = 'shablon'
       and p.proname = 'admin_propose_correction'
       and a.grantee = 0
       and a.privilege_type = 'EXECUTE'
@@ -671,19 +671,19 @@ begin
   end if;
 
   -- Monitor can see minimized health, not conversation/business content.
-  if not has_table_privilege('atp_test_monitor', 'atp_test.v_monitor_operations', 'SELECT')
-     or not has_table_privilege('atp_test_monitor', 'atp_test.v_monitor_audio_cleanup', 'SELECT')
-     or not has_table_privilege('atp_test_monitor', 'atp_test.v_monitor_delivery', 'SELECT')
+  if not has_table_privilege('shablon_monitor', 'shablon.v_monitor_operations', 'SELECT')
+     or not has_table_privilege('shablon_monitor', 'shablon.v_monitor_audio_cleanup', 'SELECT')
+     or not has_table_privilege('shablon_monitor', 'shablon.v_monitor_delivery', 'SELECT')
   then
     raise exception
       'DB-07 verification failed: monitor positive control missing';
   end if;
 
-  if has_table_privilege('atp_test_monitor', 'atp_test.raw_transcripts', 'SELECT')
-     or has_table_privilege('atp_test_monitor', 'atp_test.pseudonymized_transcripts', 'SELECT')
-     or has_table_privilege('atp_test_monitor', 'atp_test.knowledge_documents', 'SELECT')
-     or has_table_privilege('atp_test_monitor', 'atp_test.v_dashboard_zvonki', 'SELECT')
-     or has_table_privilege('atp_test_monitor', 'atp_test.outgoing_actions', 'SELECT')
+  if has_table_privilege('shablon_monitor', 'shablon.raw_transcripts', 'SELECT')
+     or has_table_privilege('shablon_monitor', 'shablon.pseudonymized_transcripts', 'SELECT')
+     or has_table_privilege('shablon_monitor', 'shablon.knowledge_documents', 'SELECT')
+     or has_table_privilege('shablon_monitor', 'shablon.v_dashboard_zvonki', 'SELECT')
+     or has_table_privilege('shablon_monitor', 'shablon.outgoing_actions', 'SELECT')
   then
     raise exception
       'DB-07 verification failed: monitor has conversation/business content access';
@@ -693,20 +693,20 @@ begin
   select string_agg(v_role, ', ')
   into v_bad
   from unnest(array[
-    'atp_test_orchestrator',
-    'atp_test_core',
-    'atp_test_privacy',
-    'atp_test_raw_transcript_reader',
-    'atp_test_knowledge_reader',
-    'atp_test_knowledge_admin',
-    'atp_test_dashboard',
-    'atp_test_admin_api',
-    'atp_test_monitor'
+    'shablon_orchestrator',
+    'shablon_core',
+    'shablon_privacy',
+    'shablon_raw_transcript_reader',
+    'shablon_knowledge_reader',
+    'shablon_knowledge_admin',
+    'shablon_dashboard',
+    'shablon_admin_api',
+    'shablon_monitor'
   ]) as role_list(v_role)
-  where has_table_privilege(v_role, 'atp_test.analysis_versions', 'DELETE')
-     or has_table_privilege(v_role, 'atp_test.business_confirmations', 'DELETE')
-     or has_table_privilege(v_role, 'atp_test.delivery_attempts', 'DELETE')
-     or has_table_privilege(v_role, 'atp_test.audit_events', 'DELETE');
+  where has_table_privilege(v_role, 'shablon.analysis_versions', 'DELETE')
+     or has_table_privilege(v_role, 'shablon.business_confirmations', 'DELETE')
+     or has_table_privilege(v_role, 'shablon.delivery_attempts', 'DELETE')
+     or has_table_privilege(v_role, 'shablon.audit_events', 'DELETE');
 
   if v_bad is not null then
     raise exception
@@ -714,28 +714,28 @@ begin
       v_bad;
   end if;
 
-  -- If a production-like schema happens to exist, test roles must not see it.
+  -- If a production-like schema happens to exist, shablon roles must not see it.
   if exists (
     select 1 from pg_namespace where nspname = 'atp_prod'
   ) then
     select string_agg(v_role, ', ')
     into v_bad
     from unnest(array[
-      'atp_test_orchestrator',
-      'atp_test_core',
-      'atp_test_privacy',
-      'atp_test_raw_transcript_reader',
-      'atp_test_knowledge_reader',
-      'atp_test_dashboard',
-      'atp_test_admin_api',
-      'atp_test_monitor'
+      'shablon_orchestrator',
+      'shablon_core',
+      'shablon_privacy',
+      'shablon_raw_transcript_reader',
+      'shablon_knowledge_reader',
+      'shablon_dashboard',
+      'shablon_admin_api',
+      'shablon_monitor'
     ]) as role_list(v_role)
     where has_schema_privilege(v_role, 'atp_prod', 'USAGE')
        or has_schema_privilege(v_role, 'atp_prod', 'CREATE');
 
     if v_bad is not null then
       raise exception
-        'DB-07 verification failed: test role(s) have atp_prod access: %',
+        'DB-07 verification failed: shablon role(s) have atp_prod access: %',
         v_bad;
     end if;
   end if;

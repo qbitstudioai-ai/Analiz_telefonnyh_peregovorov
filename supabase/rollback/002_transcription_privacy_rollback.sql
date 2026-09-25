@@ -1,6 +1,6 @@
 -- DB-02 rollback
--- TEST/LOCAL ONLY.
--- Destructive for DB-02 objects inside atp_test.
+-- APPROVED WORKING CONTOUR. Rollback is limited to schema shablon and requires an explicit safety check before execution.
+-- Destructive for DB-02 objects inside shablon.
 -- Refuses to run when later/unknown relational objects exist.
 
 begin;
@@ -11,9 +11,9 @@ declare
   v_extra_relations text;
 begin
   if not exists (
-    select 1 from pg_namespace where nspname = 'atp_test'
+    select 1 from pg_namespace where nspname = 'shablon'
   ) then
-    raise exception 'DB-02 rollback refused: schema atp_test does not exist';
+    raise exception 'DB-02 rollback refused: schema shablon does not exist';
   end if;
 
   select string_agg(required_table, ', ' order by required_table)
@@ -35,7 +35,7 @@ begin
   where not exists (
     select 1
     from pg_tables
-    where schemaname = 'atp_test'
+    where schemaname = 'shablon'
       and tablename = required.required_table
   );
 
@@ -49,7 +49,7 @@ begin
   into v_extra_relations
   from pg_class c
   join pg_namespace n on n.oid = c.relnamespace
-  where n.nspname = 'atp_test'
+  where n.nspname = 'shablon'
     and c.relkind in ('r', 'p', 'v', 'm')
     and c.relname not in (
       -- DB-01
@@ -77,33 +77,33 @@ begin
 
   if v_extra_relations is not null then
     raise exception
-      'DB-02 rollback refused: later/unknown relations exist in atp_test: %',
+      'DB-02 rollback refused: later/unknown relations exist in shablon: %',
       v_extra_relations;
   end if;
 end
 $guard$;
 
-drop table atp_test.speech_metrics;
-drop table atp_test.processing_quality;
-drop table atp_test.pseudonym_mappings;
-drop table atp_test.privacy_package_segments;
-drop table atp_test.privacy_packages;
-drop table atp_test.pseudonymized_segments;
-drop table atp_test.pseudonymized_transcripts;
-drop table atp_test.role_assignments;
-drop table atp_test.role_assignment_versions;
-drop table atp_test.transcript_segments;
-drop table atp_test.raw_transcripts;
+drop table shablon.speech_metrics;
+drop table shablon.processing_quality;
+drop table shablon.pseudonym_mappings;
+drop table shablon.privacy_package_segments;
+drop table shablon.privacy_packages;
+drop table shablon.pseudonymized_segments;
+drop table shablon.pseudonymized_transcripts;
+drop table shablon.role_assignments;
+drop table shablon.role_assignment_versions;
+drop table shablon.transcript_segments;
+drop table shablon.raw_transcripts;
 
-alter table atp_test.temporary_audio_artifacts
+alter table shablon.temporary_audio_artifacts
   drop constraint temporary_audio_artifact_call_unique;
 
-drop type atp_test.metric_reliability;
-drop type atp_test.processing_reliability;
-drop type atp_test.privacy_status;
-drop type atp_test.role_confidence_status;
-drop type atp_test.business_role;
-drop type atp_test.validation_status;
-drop type atp_test.artifact_version_state;
+drop type shablon.metric_reliability;
+drop type shablon.processing_reliability;
+drop type shablon.privacy_status;
+drop type shablon.role_confidence_status;
+drop type shablon.business_role;
+drop type shablon.validation_status;
+drop type shablon.artifact_version_state;
 
 commit;

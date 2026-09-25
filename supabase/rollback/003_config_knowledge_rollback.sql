@@ -1,7 +1,7 @@
 -- DB-03 rollback
--- TEST/LOCAL ONLY.
+-- APPROVED WORKING CONTOUR. Rollback is limited to schema shablon and requires an explicit safety check before execution.
 -- Removes only DB-03 objects and refuses to run if later/unknown
--- relational objects already exist in atp_test.
+-- relational objects already exist in shablon.
 
 begin;
 
@@ -13,9 +13,9 @@ begin
   if not exists (
     select 1
     from pg_namespace
-    where nspname = 'atp_test'
+    where nspname = 'shablon'
   ) then
-    raise exception 'DB-03 rollback refused: schema atp_test does not exist';
+    raise exception 'DB-03 rollback refused: schema shablon does not exist';
   end if;
 
   select string_agg(required_relation, ', ' order by required_relation)
@@ -41,7 +41,7 @@ begin
     select 1
     from pg_class c
     join pg_namespace n on n.oid = c.relnamespace
-    where n.nspname = 'atp_test'
+    where n.nspname = 'shablon'
       and c.relname = required.required_relation
       and c.relkind in ('r', 'p', 'v', 'm')
   );
@@ -56,7 +56,7 @@ begin
   into v_extra_relations
   from pg_class c
   join pg_namespace n on n.oid = c.relnamespace
-  where n.nspname = 'atp_test'
+  where n.nspname = 'shablon'
     and c.relkind in ('r', 'p', 'v', 'm')
     and c.relname not in (
       -- DB-01
@@ -99,45 +99,45 @@ begin
 
   if v_extra_relations is not null then
     raise exception
-      'DB-03 rollback refused: later/unknown relations exist in atp_test: %',
+      'DB-03 rollback refused: later/unknown relations exist in shablon: %',
       v_extra_relations;
   end if;
 end
 $guard$;
 
-drop view atp_test.v_runtime_knowledge_fragments;
+drop view shablon.v_runtime_knowledge_fragments;
 
-alter table atp_test.filter_decisions
+alter table shablon.filter_decisions
   drop constraint fk_filter_decisions_rules_version;
 
-drop table atp_test.knowledge_publication_fragment_products;
-drop table atp_test.knowledge_publication_fragments;
-drop table atp_test.knowledge_publication_documents;
-drop table atp_test.knowledge_publications;
-drop table atp_test.knowledge_embeddings;
-drop table atp_test.knowledge_fragments;
-drop table atp_test.knowledge_document_versions;
-drop table atp_test.knowledge_documents;
+drop table shablon.knowledge_publication_fragment_products;
+drop table shablon.knowledge_publication_fragments;
+drop table shablon.knowledge_publication_documents;
+drop table shablon.knowledge_publications;
+drop table shablon.knowledge_embeddings;
+drop table shablon.knowledge_fragments;
+drop table shablon.knowledge_document_versions;
+drop table shablon.knowledge_documents;
 
-drop table atp_test.filter_rule_versions;
-drop table atp_test.methodology_stages;
-drop table atp_test.methodology_criteria;
-drop table atp_test.methodology_versions;
-drop table atp_test.prompt_versions;
+drop table shablon.filter_rule_versions;
+drop table shablon.methodology_stages;
+drop table shablon.methodology_criteria;
+drop table shablon.methodology_versions;
+drop table shablon.prompt_versions;
 
-drop function atp_test.guard_knowledge_embedding_update();
-drop function atp_test.guard_knowledge_fragment_update();
-drop function atp_test.guard_knowledge_document_update();
-drop function atp_test.validate_knowledge_publication_activation();
-drop function atp_test.guard_knowledge_publication_update();
-drop function atp_test.guard_knowledge_publication_membership();
-drop function atp_test.guard_methodology_child_mutation();
-drop function atp_test.guard_config_semantic_update();
-drop function atp_test.guard_config_initial_state();
+drop function shablon.guard_knowledge_embedding_update();
+drop function shablon.guard_knowledge_fragment_update();
+drop function shablon.guard_knowledge_document_update();
+drop function shablon.validate_knowledge_publication_activation();
+drop function shablon.guard_knowledge_publication_update();
+drop function shablon.guard_knowledge_publication_membership();
+drop function shablon.guard_methodology_child_mutation();
+drop function shablon.guard_config_semantic_update();
+drop function shablon.guard_config_initial_state();
 
-drop type atp_test.knowledge_publication_state;
-drop type atp_test.embedding_state;
-drop type atp_test.knowledge_editorial_state;
-drop type atp_test.config_version_state;
+drop type shablon.knowledge_publication_state;
+drop type shablon.embedding_state;
+drop type shablon.knowledge_editorial_state;
+drop type shablon.config_version_state;
 
 commit;

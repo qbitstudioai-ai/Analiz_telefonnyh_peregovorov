@@ -1,5 +1,5 @@
 -- DB-02 verification
--- TEST/LOCAL ONLY.
+-- APPROVED WORKING CONTOUR. Verification is limited to schema shablon.
 -- Run after migrations 001 and 002.
 -- Synthetic data is rolled back at the end.
 
@@ -36,7 +36,7 @@ begin
   select count(*)
   into v_table_count
   from pg_tables
-  where schemaname = 'atp_test'
+  where schemaname = 'shablon'
     and tablename in (
       'raw_transcripts',
       'transcript_segments',
@@ -67,9 +67,9 @@ begin
   join pg_class parent on parent.oid = con.confrelid
   join pg_namespace parent_ns on parent_ns.oid = parent.relnamespace
   where con.contype = 'f'
-    and child_ns.nspname = 'atp_test'
+    and child_ns.nspname = 'shablon'
     and child.relname in ('privacy_packages', 'privacy_package_segments')
-    and parent_ns.nspname = 'atp_test'
+    and parent_ns.nspname = 'shablon'
     and parent.relname in ('raw_transcripts', 'transcript_segments', 'pseudonym_mappings');
 
   if v_forbidden_fk_count <> 0 then
@@ -81,7 +81,7 @@ begin
   select count(*)
   into v_forbidden_column_count
   from information_schema.columns
-  where table_schema = 'atp_test'
+  where table_schema = 'shablon'
     and table_name in ('privacy_packages', 'privacy_package_segments')
     and (
       column_name ilike '%raw_text%'
@@ -95,7 +95,7 @@ begin
       v_forbidden_column_count;
   end if;
 
-  insert into atp_test.managers (
+  insert into shablon.managers (
     source_code,
     external_scope_ref,
     external_manager_id,
@@ -109,7 +109,7 @@ begin
   )
   returning manager_id into v_manager_id;
 
-  insert into atp_test.calls (
+  insert into shablon.calls (
     source_adapter_code,
     connection_ref,
     call_identity_key,
@@ -139,7 +139,7 @@ begin
   )
   returning call_id into v_call_id;
 
-  insert into atp_test.calls (
+  insert into shablon.calls (
     source_adapter_code,
     connection_ref,
     call_identity_key,
@@ -159,7 +159,7 @@ begin
   )
   returning call_id into v_other_call_id;
 
-  insert into atp_test.operations (
+  insert into shablon.operations (
     call_id,
     operation_type,
     idempotency_key,
@@ -185,7 +185,7 @@ begin
   )
   returning operation_id into v_audio_operation_id;
 
-  insert into atp_test.temporary_audio_artifacts (
+  insert into shablon.temporary_audio_artifacts (
     call_id,
     acquisition_operation_id,
     artifact_identity_key,
@@ -215,7 +215,7 @@ begin
   )
   returning audio_artifact_id into v_audio_artifact_id;
 
-  insert into atp_test.operations (
+  insert into shablon.operations (
     call_id,
     operation_type,
     idempotency_key,
@@ -241,7 +241,7 @@ begin
   )
   returning operation_id into v_transcribe_operation_id;
 
-  insert into atp_test.raw_transcripts (
+  insert into shablon.raw_transcripts (
     call_id,
     version_no,
     audio_artifact_id,
@@ -277,7 +277,7 @@ begin
   )
   returning transcript_id into v_raw_transcript_id;
 
-  insert into atp_test.transcript_segments (
+  insert into shablon.transcript_segments (
     transcript_id,
     call_id,
     segment_key,
@@ -306,7 +306,7 @@ begin
   )
   returning segment_id into v_segment_manager_id;
 
-  insert into atp_test.transcript_segments (
+  insert into shablon.transcript_segments (
     transcript_id,
     call_id,
     segment_key,
@@ -335,7 +335,7 @@ begin
   )
   returning segment_id into v_segment_client_id;
 
-  insert into atp_test.operations (
+  insert into shablon.operations (
     call_id,
     operation_type,
     idempotency_key,
@@ -361,7 +361,7 @@ begin
   )
   returning operation_id into v_roles_operation_id;
 
-  insert into atp_test.role_assignment_versions (
+  insert into shablon.role_assignment_versions (
     call_id,
     transcript_id,
     version_no,
@@ -379,7 +379,7 @@ begin
   )
   returning role_assignment_version_id into v_role_version_id;
 
-  insert into atp_test.role_assignments (
+  insert into shablon.role_assignments (
     role_assignment_version_id,
     technical_speaker,
     business_role,
@@ -412,7 +412,7 @@ begin
   );
 
   begin
-    insert into atp_test.role_assignments (
+    insert into shablon.role_assignments (
       role_assignment_version_id,
       technical_speaker,
       business_role,
@@ -432,7 +432,7 @@ begin
       null;
   end;
 
-  insert into atp_test.operations (
+  insert into shablon.operations (
     call_id,
     operation_type,
     idempotency_key,
@@ -461,7 +461,7 @@ begin
   )
   returning operation_id into v_privacy_operation_id;
 
-  insert into atp_test.pseudonymized_transcripts (
+  insert into shablon.pseudonymized_transcripts (
     call_id,
     raw_transcript_id,
     role_assignment_version_id,
@@ -491,7 +491,7 @@ begin
   )
   returning pseudonymized_transcript_id into v_pseudo_transcript_id;
 
-  insert into atp_test.pseudonymized_segments (
+  insert into shablon.pseudonymized_segments (
     pseudonymized_transcript_id,
     raw_transcript_id,
     call_id,
@@ -522,7 +522,7 @@ begin
   )
   returning pseudonymized_segment_id into v_pseudo_segment_manager_id;
 
-  insert into atp_test.pseudonymized_segments (
+  insert into shablon.pseudonymized_segments (
     pseudonymized_transcript_id,
     raw_transcript_id,
     call_id,
@@ -553,7 +553,7 @@ begin
   )
   returning pseudonymized_segment_id into v_pseudo_segment_client_id;
 
-  insert into atp_test.pseudonym_mappings (
+  insert into shablon.pseudonym_mappings (
     pseudonymized_transcript_id,
     pseudonym_scope_ref,
     pseudonym,
@@ -575,7 +575,7 @@ begin
 
   v_package_id := gen_random_uuid();
 
-  insert into atp_test.privacy_packages (
+  insert into shablon.privacy_packages (
     privacy_package_id,
     call_id,
     pseudonymized_transcript_id,
@@ -604,7 +604,7 @@ begin
     'current'
   );
 
-  insert into atp_test.privacy_package_segments (
+  insert into shablon.privacy_package_segments (
     privacy_package_id,
     pseudonymized_transcript_id,
     call_id,
@@ -627,7 +627,7 @@ begin
     1
   );
 
-  insert into atp_test.operations (
+  insert into shablon.operations (
     call_id,
     operation_type,
     idempotency_key,
@@ -649,13 +649,13 @@ begin
   )
   returning operation_id into v_llm_operation_id;
 
-  update atp_test.privacy_packages
+  update shablon.privacy_packages
   set llm_operation_id = v_llm_operation_id
   where privacy_package_id = v_package_id;
 
   -- blocked package must never point to an LLM operation.
   begin
-    insert into atp_test.privacy_packages (
+    insert into shablon.privacy_packages (
       call_id,
       pseudonymized_transcript_id,
       role_assignment_version_id,
@@ -694,7 +694,7 @@ begin
   -- Deleted reverse mapping must not keep either the protected value or
   -- a protected local reference.
   begin
-    insert into atp_test.pseudonym_mappings (
+    insert into shablon.pseudonym_mappings (
       pseudonymized_transcript_id,
       pseudonym_scope_ref,
       pseudonym,
@@ -722,7 +722,7 @@ begin
 
   -- Operation/call ownership must prevent cross-call transcript creation.
   begin
-    insert into atp_test.raw_transcripts (
+    insert into shablon.raw_transcripts (
       call_id,
       version_no,
       created_by_operation_id,
@@ -752,7 +752,7 @@ begin
       null;
   end;
 
-  insert into atp_test.operations (
+  insert into shablon.operations (
     call_id,
     operation_type,
     idempotency_key,
@@ -781,7 +781,7 @@ begin
   )
   returning operation_id into v_quality_operation_id;
 
-  insert into atp_test.processing_quality (
+  insert into shablon.processing_quality (
     call_id,
     version_no,
     raw_transcript_id,
@@ -811,7 +811,7 @@ begin
   )
   returning quality_id into v_quality_id;
 
-  insert into atp_test.operations (
+  insert into shablon.operations (
     call_id,
     operation_type,
     idempotency_key,
@@ -841,7 +841,7 @@ begin
   )
   returning operation_id into v_speech_operation_id;
 
-  insert into atp_test.speech_metrics (
+  insert into shablon.speech_metrics (
     call_id,
     version_no,
     raw_transcript_id,
@@ -880,7 +880,7 @@ begin
 
   select count(*)
   into v_count
-  from atp_test.privacy_package_segments
+  from shablon.privacy_package_segments
   where privacy_package_id = v_package_id;
 
   if v_count <> 2 then
@@ -891,7 +891,7 @@ begin
 
   if not exists (
     select 1
-    from atp_test.privacy_packages
+    from shablon.privacy_packages
     where privacy_package_id = v_package_id
       and privacy_status = 'passed'
       and llm_operation_id = v_llm_operation_id
@@ -902,7 +902,7 @@ begin
 
   if not exists (
     select 1
-    from atp_test.pseudonym_mappings
+    from shablon.pseudonym_mappings
     where pseudonym_mapping_id = v_mapping_id
       and pseudonym = 'PERSON_01'
       and protected_value = 'Иван'

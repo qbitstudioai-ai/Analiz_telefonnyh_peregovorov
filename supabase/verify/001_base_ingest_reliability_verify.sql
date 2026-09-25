@@ -1,5 +1,5 @@
 -- DB-01 verification
--- TEST/LOCAL ONLY.
+-- APPROVED WORKING CONTOUR. Verification is limited to schema shablon.
 -- Run only after supabase/migrations/001_base_ingest_reliability.sql.
 -- All synthetic data created below is rolled back.
 
@@ -23,15 +23,15 @@ begin
   if not exists (
     select 1
     from pg_namespace
-    where nspname = 'atp_test'
+    where nspname = 'shablon'
   ) then
-    raise exception 'DB-01 verification failed: schema atp_test does not exist';
+    raise exception 'DB-01 verification failed: schema shablon does not exist';
   end if;
 
   select count(*)
   into v_table_count
   from pg_tables
-  where schemaname = 'atp_test'
+  where schemaname = 'shablon'
     and tablename in (
       'managers',
       'calls',
@@ -52,7 +52,7 @@ begin
   select count(*)
   into v_bytea_count
   from information_schema.columns
-  where table_schema = 'atp_test'
+  where table_schema = 'shablon'
     and data_type = 'bytea';
 
   if v_bytea_count <> 0 then
@@ -61,7 +61,7 @@ begin
       v_bytea_count;
   end if;
 
-  insert into atp_test.managers (
+  insert into shablon.managers (
     source_code,
     external_scope_ref,
     external_manager_id,
@@ -77,7 +77,7 @@ begin
   )
   returning manager_id into v_manager_id;
 
-  insert into atp_test.calls (
+  insert into shablon.calls (
     source_adapter_code,
     connection_ref,
     call_identity_key,
@@ -109,7 +109,7 @@ begin
   )
   returning call_id into v_call_id;
 
-  insert into atp_test.call_events (
+  insert into shablon.call_events (
     adapter_code,
     connection_ref,
     event_identity_key,
@@ -143,7 +143,7 @@ begin
 
   -- A duplicate receipt is preserved as a separate receipt record but points
   -- to the canonical event and may not create another logical call.
-  insert into atp_test.call_events (
+  insert into shablon.call_events (
     adapter_code,
     connection_ref,
     event_identity_key,
@@ -178,7 +178,7 @@ begin
 
   select count(*)
   into v_count
-  from atp_test.calls
+  from shablon.calls
   where source_adapter_code = 'verify_source'
     and connection_ref = 'verify_connection'
     and call_identity_key = 'call-key-001';
@@ -190,7 +190,7 @@ begin
   end if;
 
   begin
-    insert into atp_test.call_events (
+    insert into shablon.call_events (
       adapter_code,
       connection_ref,
       event_identity_key,
@@ -214,7 +214,7 @@ begin
       null;
   end;
 
-  insert into atp_test.operations (
+  insert into shablon.operations (
     scope_ref,
     call_id,
     operation_type,
@@ -228,7 +228,7 @@ begin
     completed_at
   )
   values (
-    'atp_test',
+    'shablon',
     v_call_id,
     'filter_call',
     'filter-call-key-001',
@@ -242,7 +242,7 @@ begin
   )
   returning operation_id into v_filter_operation_id;
 
-  insert into atp_test.operation_attempts (
+  insert into shablon.operation_attempts (
     operation_id,
     attempt_no,
     attempt_state,
@@ -264,7 +264,7 @@ begin
   )
   returning attempt_id into v_filter_attempt_id;
 
-  insert into atp_test.filter_decisions (
+  insert into shablon.filter_decisions (
     call_id,
     outcome,
     reason_code,
@@ -282,13 +282,13 @@ begin
   )
   returning filter_decision_id into v_filter_decision_id;
 
-  update atp_test.calls
+  update shablon.calls
   set
     current_filter_decision_id = v_filter_decision_id,
     processing_state = 'waiting_audio'
   where call_id = v_call_id;
 
-  insert into atp_test.calls (
+  insert into shablon.calls (
     source_adapter_code,
     connection_ref,
     call_identity_key,
@@ -310,7 +310,7 @@ begin
 
   -- A filter operation from one call must not be attachable to another call.
   begin
-    insert into atp_test.filter_decisions (
+    insert into shablon.filter_decisions (
       call_id,
       outcome,
       filter_rules_version_ref,
@@ -334,7 +334,7 @@ begin
 
   -- A call must not point to another call's current filter decision.
   begin
-    update atp_test.calls
+    update shablon.calls
     set current_filter_decision_id = v_filter_decision_id
     where call_id = v_other_call_id;
 
@@ -346,7 +346,7 @@ begin
   end;
 
   begin
-    insert into atp_test.operations (
+    insert into shablon.operations (
       scope_ref,
       call_id,
       operation_type,
@@ -357,7 +357,7 @@ begin
       decision
     )
     values (
-      'atp_test',
+      'shablon',
       v_call_id,
       'filter_call',
       'filter-call-key-001',
@@ -374,7 +374,7 @@ begin
       null;
   end;
 
-  insert into atp_test.operations (
+  insert into shablon.operations (
     scope_ref,
     call_id,
     operation_type,
@@ -388,7 +388,7 @@ begin
     completed_at
   )
   values (
-    'atp_test',
+    'shablon',
     v_call_id,
     'get_audio',
     'audio-call-key-001',
@@ -402,7 +402,7 @@ begin
   )
   returning operation_id into v_audio_operation_id;
 
-  insert into atp_test.operation_attempts (
+  insert into shablon.operation_attempts (
     operation_id,
     attempt_no,
     attempt_state,
@@ -426,7 +426,7 @@ begin
   )
   returning attempt_id into v_audio_attempt_id;
 
-  insert into atp_test.temporary_audio_artifacts (
+  insert into shablon.temporary_audio_artifacts (
     call_id,
     acquisition_operation_id,
     artifact_identity_key,
@@ -455,7 +455,7 @@ begin
     'not_due'
   );
 
-  insert into atp_test.call_links (
+  insert into shablon.call_links (
     current_call_id,
     external_entity_type,
     external_entity_ref,
@@ -479,7 +479,7 @@ begin
   );
 
   begin
-    insert into atp_test.calls (
+    insert into shablon.calls (
       source_adapter_code,
       connection_ref,
       call_identity_key,
@@ -500,7 +500,7 @@ begin
   end;
 
   begin
-    insert into atp_test.call_events (
+    insert into shablon.call_events (
       adapter_code,
       connection_ref,
       event_identity_key,
@@ -524,7 +524,7 @@ begin
 
   select count(*)
   into v_count
-  from atp_test.call_events
+  from shablon.call_events
   where adapter_code = 'verify_source'
     and connection_ref = 'verify_connection'
     and event_identity_key = 'event-key-001';
@@ -537,7 +537,7 @@ begin
 
   if not exists (
     select 1
-    from atp_test.calls
+    from shablon.calls
     where call_id = v_call_id
       and current_filter_decision_id = v_filter_decision_id
       and processing_state = 'waiting_audio'
@@ -548,7 +548,7 @@ begin
 
   if not exists (
     select 1
-    from atp_test.temporary_audio_artifacts
+    from shablon.temporary_audio_artifacts
     where call_id = v_call_id
       and acquisition_operation_id = v_audio_operation_id
       and acquisition_state = 'ready'

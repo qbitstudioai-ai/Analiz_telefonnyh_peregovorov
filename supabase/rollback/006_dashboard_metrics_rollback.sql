@@ -1,7 +1,7 @@
 -- DB-06 rollback
--- TEST/LOCAL ONLY.
+-- APPROVED WORKING CONTOUR. Rollback is limited to schema shablon and requires an explicit safety check before execution.
 -- Removes only DB-06 views/functions and refuses to run if later/unknown
--- relational objects already exist in atp_test.
+-- relational objects already exist in shablon.
 
 begin;
 
@@ -11,9 +11,9 @@ declare
   v_extra_relations text;
 begin
   if not exists (
-    select 1 from pg_namespace where nspname = 'atp_test'
+    select 1 from pg_namespace where nspname = 'shablon'
   ) then
-    raise exception 'DB-06 rollback refused: schema atp_test does not exist';
+    raise exception 'DB-06 rollback refused: schema shablon does not exist';
   end if;
 
   select string_agg(required_relation, ', ' order by required_relation)
@@ -37,7 +37,7 @@ begin
     select 1
     from pg_class c
     join pg_namespace n on n.oid = c.relnamespace
-    where n.nspname = 'atp_test'
+    where n.nspname = 'shablon'
       and c.relname = required.required_relation
       and c.relkind = 'v'
   );
@@ -52,7 +52,7 @@ begin
   into v_extra_relations
   from pg_class c
   join pg_namespace n on n.oid = c.relnamespace
-  where n.nspname = 'atp_test'
+  where n.nspname = 'shablon'
     and c.relkind in ('r', 'p', 'v', 'm')
     and c.relname not in (
       -- DB-01
@@ -95,35 +95,35 @@ begin
 
   if v_extra_relations is not null then
     raise exception
-      'DB-06 rollback refused: later/unknown relations exist in atp_test: %',
+      'DB-06 rollback refused: later/unknown relations exist in shablon: %',
       v_extra_relations;
   end if;
 end
 $guard$;
 
-drop function atp_test.dashboard_result_metrics(timestamptz, timestamptz, jsonb);
-drop function atp_test.dashboard_observation_metrics(timestamptz, timestamptz, jsonb);
-drop function atp_test.dashboard_stage_metrics(timestamptz, timestamptz, jsonb);
-drop function atp_test.dashboard_criterion_metrics(timestamptz, timestamptz, jsonb);
-drop function atp_test.dashboard_manager_metrics(
+drop function shablon.dashboard_result_metrics(timestamptz, timestamptz, jsonb);
+drop function shablon.dashboard_observation_metrics(timestamptz, timestamptz, jsonb);
+drop function shablon.dashboard_stage_metrics(timestamptz, timestamptz, jsonb);
+drop function shablon.dashboard_criterion_metrics(timestamptz, timestamptz, jsonb);
+drop function shablon.dashboard_manager_metrics(
   timestamptz, timestamptz, jsonb, text[], text[]
 );
-drop function atp_test.dashboard_overview(
+drop function shablon.dashboard_overview(
   timestamptz, timestamptz, jsonb, timestamptz, interval, text[], text[]
 );
-drop function atp_test.dashboard_filter_call_ids(timestamptz, timestamptz, jsonb);
+drop function shablon.dashboard_filter_call_ids(timestamptz, timestamptz, jsonb);
 
-drop view atp_test.v_dashboard_kachestvo;
-drop view atp_test.v_dashboard_rezultaty;
-drop view atp_test.v_dashboard_oshibki;
-drop view atp_test.v_dashboard_etapy;
-drop view atp_test.v_dashboard_kriterii;
-drop view atp_test.v_dashboard_menedzhery;
-drop view atp_test.v_dashboard_obshchaya_kartina;
-drop view atp_test.v_dashboard_zvonki;
-drop view atp_test.v_dashboard_speech_metrics_current;
-drop view atp_test.v_dashboard_processing_quality_current;
-drop view atp_test.v_dashboard_delivery_current;
-drop view atp_test.v_dashboard_business_confirmations_current;
+drop view shablon.v_dashboard_kachestvo;
+drop view shablon.v_dashboard_rezultaty;
+drop view shablon.v_dashboard_oshibki;
+drop view shablon.v_dashboard_etapy;
+drop view shablon.v_dashboard_kriterii;
+drop view shablon.v_dashboard_menedzhery;
+drop view shablon.v_dashboard_obshchaya_kartina;
+drop view shablon.v_dashboard_zvonki;
+drop view shablon.v_dashboard_speech_metrics_current;
+drop view shablon.v_dashboard_processing_quality_current;
+drop view shablon.v_dashboard_delivery_current;
+drop view shablon.v_dashboard_business_confirmations_current;
 
 commit;

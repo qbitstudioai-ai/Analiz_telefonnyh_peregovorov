@@ -1,7 +1,7 @@
 -- DB-05 rollback
--- TEST/LOCAL ONLY.
+-- APPROVED WORKING CONTOUR. Rollback is limited to schema shablon and requires an explicit safety check before execution.
 -- Removes only DB-05 objects and refuses to run if later/unknown
--- relational objects already exist in atp_test.
+-- relational objects already exist in shablon.
 
 begin;
 
@@ -11,9 +11,9 @@ declare
   v_extra_relations text;
 begin
   if not exists (
-    select 1 from pg_namespace where nspname = 'atp_test'
+    select 1 from pg_namespace where nspname = 'shablon'
   ) then
-    raise exception 'DB-05 rollback refused: schema atp_test does not exist';
+    raise exception 'DB-05 rollback refused: schema shablon does not exist';
   end if;
 
   select string_agg(required_relation, ', ' order by required_relation)
@@ -32,7 +32,7 @@ begin
     select 1
     from pg_class c
     join pg_namespace n on n.oid = c.relnamespace
-    where n.nspname = 'atp_test'
+    where n.nspname = 'shablon'
       and c.relname = required.required_relation
       and c.relkind in ('r', 'p', 'v', 'm')
   );
@@ -47,7 +47,7 @@ begin
   into v_extra_relations
   from pg_class c
   join pg_namespace n on n.oid = c.relnamespace
-  where n.nspname = 'atp_test'
+  where n.nspname = 'shablon'
     and c.relkind in ('r', 'p', 'v', 'm')
     and c.relname not in (
       -- DB-01
@@ -110,51 +110,51 @@ begin
 
   if v_extra_relations is not null then
     raise exception
-      'DB-05 rollback refused: later/unknown relations exist in atp_test: %',
+      'DB-05 rollback refused: later/unknown relations exist in shablon: %',
       v_extra_relations;
   end if;
 end
 $guard$;
 
-drop table atp_test.audit_events;
-drop table atp_test.corrections;
-drop table atp_test.analysis_disputes;
-drop table atp_test.delivery_attempts;
-drop table atp_test.outgoing_actions;
-drop table atp_test.callback_links;
-drop table atp_test.business_confirmations;
+drop table shablon.audit_events;
+drop table shablon.corrections;
+drop table shablon.analysis_disputes;
+drop table shablon.delivery_attempts;
+drop table shablon.outgoing_actions;
+drop table shablon.callback_links;
+drop table shablon.business_confirmations;
 
-alter table atp_test.role_assignment_versions
+alter table shablon.role_assignment_versions
   drop constraint role_assignment_versions_role_call_unique;
 
-alter table atp_test.operation_attempts
+alter table shablon.operation_attempts
   drop constraint operation_attempts_attempt_operation_unique;
 
-drop function atp_test.guard_audit_event_append_only();
-drop function atp_test.guard_correction_update();
-drop function atp_test.guard_correction_initial_state();
-drop function atp_test.guard_analysis_dispute_update();
-drop function atp_test.guard_analysis_dispute_initial_state();
-drop function atp_test.guard_delivery_attempt_delete();
-drop function atp_test.guard_delivery_attempt_update();
-drop function atp_test.guard_delivery_attempt_insert();
-drop function atp_test.guard_outgoing_action_update();
-drop function atp_test.validate_outgoing_action_insert();
-drop function atp_test.guard_callback_link_update();
-drop function atp_test.validate_callback_link();
-drop function atp_test.guard_db05_history_delete();
-drop function atp_test.guard_business_confirmation_immutable();
-drop function atp_test.validate_business_confirmation_insert();
+drop function shablon.guard_audit_event_append_only();
+drop function shablon.guard_correction_update();
+drop function shablon.guard_correction_initial_state();
+drop function shablon.guard_analysis_dispute_update();
+drop function shablon.guard_analysis_dispute_initial_state();
+drop function shablon.guard_delivery_attempt_delete();
+drop function shablon.guard_delivery_attempt_update();
+drop function shablon.guard_delivery_attempt_insert();
+drop function shablon.guard_outgoing_action_update();
+drop function shablon.validate_outgoing_action_insert();
+drop function shablon.guard_callback_link_update();
+drop function shablon.validate_callback_link();
+drop function shablon.guard_db05_history_delete();
+drop function shablon.guard_business_confirmation_immutable();
+drop function shablon.validate_business_confirmation_insert();
 
-drop type atp_test.audit_result;
-drop type atp_test.correction_target_type;
-drop type atp_test.correction_state;
-drop type atp_test.dispute_state;
-drop type atp_test.delivery_reconciliation_state;
-drop type atp_test.delivery_provider_status;
-drop type atp_test.outgoing_action_state;
-drop type atp_test.callback_link_state;
-drop type atp_test.business_confirmation_event_kind;
-drop type atp_test.business_confirmation_source;
+drop type shablon.audit_result;
+drop type shablon.correction_target_type;
+drop type shablon.correction_state;
+drop type shablon.dispute_state;
+drop type shablon.delivery_reconciliation_state;
+drop type shablon.delivery_provider_status;
+drop type shablon.outgoing_action_state;
+drop type shablon.callback_link_state;
+drop type shablon.business_confirmation_event_kind;
+drop type shablon.business_confirmation_source;
 
 commit;

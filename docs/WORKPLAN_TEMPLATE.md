@@ -1,6 +1,6 @@
 # План подготовки шаблона
 
-Текущий режим — **разрешённая реализация только в test/локальном контуре по [WORKPLAN_IMPLEMENTATION](WORKPLAN_IMPLEMENTATION.md)**. GATE-01 открыт; SQL/workflow/code можно готовить и проверять по одной test-задаче. Production, production Credentials, рабочий трафик и destructive production actions остаются запрещены без отдельного разрешения Павла и RELEASE_CHECKLIST.
+Текущий режим — **разрешённая реализация в рабочем Supabase только внутри schema `shablon` по [WORKPLAN_IMPLEMENTATION](WORKPLAN_IMPLEMENTATION.md)**. GATE-01 открыл реализацию, а GATE-02 от 25 сентября 2026 года разрешил конкретный рабочий контур `shablon`. Посторонние схемы/данные, destructive actions и переключение реального трафика не входят в это разрешение автоматически.
 
 Документационный план ниже завершён и сохраняется как основание требований. Текущая одна задача и статусы реализации ведутся в [WORKPLAN_IMPLEMENTATION](WORKPLAN_IMPLEMENTATION.md).
 
@@ -39,7 +39,8 @@ DOC-01—DOC-19 завершены. [DOCUMENTATION_AUDIT](DOCUMENTATION_AUDIT.md
 
 | Статус / ID | Результат | Критерий готовности |
 |---|---|---|
-| [x] GATE-01 | Павел разрешил переход к реализации шаблона только в test/локальном контуре | Активирован [WORKPLAN_IMPLEMENTATION](WORKPLAN_IMPLEMENTATION.md); SQL/workflow/code разрешены по одной test-задаче, production остаётся запрещён без отдельного разрешения по [RELEASE_CHECKLIST](RELEASE_CHECKLIST.md) |
+| [x] GATE-01 | Павел разрешил переход к реализации шаблона | Активирован [WORKPLAN_IMPLEMENTATION](WORKPLAN_IMPLEMENTATION.md); реализация ведётся по одной задаче и каждый фактический внешний эффект фиксируется отдельно |
+| [x] GATE-02 | Павел разрешил использовать рабочий Supabase для schema `shablon` | Разрешено создавать и связывать объекты только внутри `shablon`; посторонние схемы/данные, destructive actions и переключение реального трафика требуют отдельного решения |
 
 25 сентября 2026 года Павел разрешил техническое проектирование требований в документации. Это разрешение не распространяется автоматически на реализацию.
 

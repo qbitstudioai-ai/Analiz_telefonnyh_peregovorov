@@ -1,5 +1,5 @@
 -- DB-07 rollback
--- TEST/LOCAL ONLY.
+-- APPROVED WORKING CONTOUR. Rollback is limited to schema shablon and requires an explicit safety check before execution.
 -- Removes DB-07 capability roles, views, policies and admin functions.
 -- Leaves DB-01..DB-06 objects intact.
 
@@ -17,15 +17,15 @@ begin
   into v_missing_roles
   from (
     values
-      ('atp_test_orchestrator'),
-      ('atp_test_core'),
-      ('atp_test_privacy'),
-      ('atp_test_raw_transcript_reader'),
-      ('atp_test_knowledge_reader'),
-      ('atp_test_knowledge_admin'),
-      ('atp_test_dashboard'),
-      ('atp_test_admin_api'),
-      ('atp_test_monitor')
+      ('shablon_orchestrator'),
+      ('shablon_core'),
+      ('shablon_privacy'),
+      ('shablon_raw_transcript_reader'),
+      ('shablon_knowledge_reader'),
+      ('shablon_knowledge_admin'),
+      ('shablon_dashboard'),
+      ('shablon_admin_api'),
+      ('shablon_monitor')
   ) as required(required_role)
   where not exists (
     select 1 from pg_roles r where r.rolname = required.required_role
@@ -60,7 +60,7 @@ begin
       ('v_monitor_audio_cleanup'),
       ('v_monitor_delivery')
   ) as required(required_view)
-  where to_regclass('atp_test.' || required.required_view) is null;
+  where to_regclass('shablon.' || required.required_view) is null;
 
   if v_missing_views is not null then
     raise exception
@@ -81,7 +81,7 @@ begin
   where not exists (
     select 1
     from pg_policies p
-    where p.schemaname = 'atp_test'
+    where p.schemaname = 'shablon'
       and p.policyname = required.required_policy
   );
 
@@ -100,15 +100,15 @@ begin
   join pg_roles parent on parent.oid = m.roleid
   join pg_roles member on member.oid = m.member
   where parent.rolname in (
-    'atp_test_orchestrator',
-    'atp_test_core',
-    'atp_test_privacy',
-    'atp_test_raw_transcript_reader',
-    'atp_test_knowledge_reader',
-    'atp_test_knowledge_admin',
-    'atp_test_dashboard',
-    'atp_test_admin_api',
-    'atp_test_monitor'
+    'shablon_orchestrator',
+    'shablon_core',
+    'shablon_privacy',
+    'shablon_raw_transcript_reader',
+    'shablon_knowledge_reader',
+    'shablon_knowledge_admin',
+    'shablon_dashboard',
+    'shablon_admin_api',
+    'shablon_monitor'
   );
 
   if v_memberships is not null then
@@ -121,7 +121,7 @@ begin
   into v_extra_relations
   from pg_class c_rel
   join pg_namespace n on n.oid = c_rel.relnamespace
-  where n.nspname = 'atp_test'
+  where n.nspname = 'shablon'
     and c_rel.relkind in ('r', 'p', 'v', 'm')
     and c_rel.relname not in (
       -- DB-01
@@ -183,15 +183,15 @@ begin
 
   if v_extra_relations is not null then
     raise exception
-      'DB-07 rollback refused: later/unknown relations exist in atp_test: %',
+      'DB-07 rollback refused: later/unknown relations exist in shablon: %',
       v_extra_relations;
   end if;
 
   if to_regprocedure(
-       'atp_test.admin_submit_analysis_dispute(uuid,uuid,uuid,uuid,text,text)'
+       'shablon.admin_submit_analysis_dispute(uuid,uuid,uuid,uuid,text,text)'
      ) is null
      or to_regprocedure(
-       'atp_test.admin_propose_correction(uuid,atp_test.correction_target_type,uuid,text,text,jsonb,jsonb,text,text,uuid)'
+       'shablon.admin_propose_correction(uuid,shablon.correction_target_type,uuid,text,text,jsonb,jsonb,text,text,uuid)'
      ) is null
   then
     raise exception
@@ -202,105 +202,105 @@ $guard$;
 
 -- Remove role references from RLS policies before dropping roles.
 drop policy raw_transcripts_privacy_all
-  on atp_test.raw_transcripts;
+  on shablon.raw_transcripts;
 drop policy raw_transcripts_reader_select
-  on atp_test.raw_transcripts;
+  on shablon.raw_transcripts;
 drop policy transcript_segments_privacy_all
-  on atp_test.transcript_segments;
+  on shablon.transcript_segments;
 drop policy transcript_segments_reader_select
-  on atp_test.transcript_segments;
+  on shablon.transcript_segments;
 drop policy pseudonym_mappings_privacy_all
-  on atp_test.pseudonym_mappings;
+  on shablon.pseudonym_mappings;
 
-alter table atp_test.raw_transcripts disable row level security;
-alter table atp_test.transcript_segments disable row level security;
-alter table atp_test.pseudonym_mappings disable row level security;
+alter table shablon.raw_transcripts disable row level security;
+alter table shablon.transcript_segments disable row level security;
+alter table shablon.pseudonym_mappings disable row level security;
 
-drop function atp_test.admin_propose_correction(
-  uuid, atp_test.correction_target_type, uuid, text, text, jsonb, jsonb, text, text, uuid
+drop function shablon.admin_propose_correction(
+  uuid, shablon.correction_target_type, uuid, text, text, jsonb, jsonb, text, text, uuid
 );
-drop function atp_test.admin_submit_analysis_dispute(
+drop function shablon.admin_submit_analysis_dispute(
   uuid, uuid, uuid, uuid, text, text
 );
 
-drop view atp_test.v_monitor_delivery;
-drop view atp_test.v_monitor_audio_cleanup;
-drop view atp_test.v_monitor_operations;
-drop view atp_test.v_admin_audit_safe;
-drop view atp_test.v_dashboard_feedback_safe;
-drop view atp_test.v_dashboard_disputes_safe;
-drop view atp_test.v_dashboard_corrections_safe;
-drop view atp_test.v_dashboard_knowledge_evidence;
-drop view atp_test.v_dashboard_evidence_absence;
-drop view atp_test.v_dashboard_evidence_conversation;
-drop view atp_test.v_dashboard_safe_transcript_segments;
-drop view atp_test.v_dashboard_analysis_provenance;
-drop view atp_test.v_runtime_knowledge_call_analysis;
-drop view atp_test.v_runtime_filter_rules_active;
-drop view atp_test.v_runtime_methodology_stages_active;
-drop view atp_test.v_runtime_methodology_criteria_active;
-drop view atp_test.v_runtime_methodology_active;
-drop view atp_test.v_runtime_prompt_active;
+drop view shablon.v_monitor_delivery;
+drop view shablon.v_monitor_audio_cleanup;
+drop view shablon.v_monitor_operations;
+drop view shablon.v_admin_audit_safe;
+drop view shablon.v_dashboard_feedback_safe;
+drop view shablon.v_dashboard_disputes_safe;
+drop view shablon.v_dashboard_corrections_safe;
+drop view shablon.v_dashboard_knowledge_evidence;
+drop view shablon.v_dashboard_evidence_absence;
+drop view shablon.v_dashboard_evidence_conversation;
+drop view shablon.v_dashboard_safe_transcript_segments;
+drop view shablon.v_dashboard_analysis_provenance;
+drop view shablon.v_runtime_knowledge_call_analysis;
+drop view shablon.v_runtime_filter_rules_active;
+drop view shablon.v_runtime_methodology_stages_active;
+drop view shablon.v_runtime_methodology_criteria_active;
+drop view shablon.v_runtime_methodology_active;
+drop view shablon.v_runtime_prompt_active;
 
 -- Remove all grants made to the capability roles.
-revoke all privileges on all tables in schema atp_test from
-  atp_test_orchestrator,
-  atp_test_core,
-  atp_test_privacy,
-  atp_test_raw_transcript_reader,
-  atp_test_knowledge_reader,
-  atp_test_knowledge_admin,
-  atp_test_dashboard,
-  atp_test_admin_api,
-  atp_test_monitor;
+revoke all privileges on all tables in schema shablon from
+  shablon_orchestrator,
+  shablon_core,
+  shablon_privacy,
+  shablon_raw_transcript_reader,
+  shablon_knowledge_reader,
+  shablon_knowledge_admin,
+  shablon_dashboard,
+  shablon_admin_api,
+  shablon_monitor;
 
-revoke all privileges on all sequences in schema atp_test from
-  atp_test_orchestrator,
-  atp_test_core,
-  atp_test_privacy,
-  atp_test_raw_transcript_reader,
-  atp_test_knowledge_reader,
-  atp_test_knowledge_admin,
-  atp_test_dashboard,
-  atp_test_admin_api,
-  atp_test_monitor;
+revoke all privileges on all sequences in schema shablon from
+  shablon_orchestrator,
+  shablon_core,
+  shablon_privacy,
+  shablon_raw_transcript_reader,
+  shablon_knowledge_reader,
+  shablon_knowledge_admin,
+  shablon_dashboard,
+  shablon_admin_api,
+  shablon_monitor;
 
-revoke all privileges on all functions in schema atp_test from
-  atp_test_orchestrator,
-  atp_test_core,
-  atp_test_privacy,
-  atp_test_raw_transcript_reader,
-  atp_test_knowledge_reader,
-  atp_test_knowledge_admin,
-  atp_test_dashboard,
-  atp_test_admin_api,
-  atp_test_monitor;
+revoke all privileges on all functions in schema shablon from
+  shablon_orchestrator,
+  shablon_core,
+  shablon_privacy,
+  shablon_raw_transcript_reader,
+  shablon_knowledge_reader,
+  shablon_knowledge_admin,
+  shablon_dashboard,
+  shablon_admin_api,
+  shablon_monitor;
 
-revoke all privileges on schema atp_test from
-  atp_test_orchestrator,
-  atp_test_core,
-  atp_test_privacy,
-  atp_test_raw_transcript_reader,
-  atp_test_knowledge_reader,
-  atp_test_knowledge_admin,
-  atp_test_dashboard,
-  atp_test_admin_api,
-  atp_test_monitor;
+revoke all privileges on schema shablon from
+  shablon_orchestrator,
+  shablon_core,
+  shablon_privacy,
+  shablon_raw_transcript_reader,
+  shablon_knowledge_reader,
+  shablon_knowledge_admin,
+  shablon_dashboard,
+  shablon_admin_api,
+  shablon_monitor;
 
 -- DB-01..DB-06 functions existed before DB-07 and PostgreSQL default grants
 -- EXECUTE to PUBLIC. Restore that pre-DB-07 state after dropping DB-07 funcs.
-grant execute on all functions in schema atp_test to public;
-alter default privileges in schema atp_test
+grant execute on all functions in schema shablon to public;
+alter default privileges in schema shablon
   grant execute on functions to public;
 
-drop role atp_test_monitor;
-drop role atp_test_admin_api;
-drop role atp_test_dashboard;
-drop role atp_test_knowledge_admin;
-drop role atp_test_knowledge_reader;
-drop role atp_test_raw_transcript_reader;
-drop role atp_test_privacy;
-drop role atp_test_core;
-drop role atp_test_orchestrator;
+drop role shablon_monitor;
+drop role shablon_admin_api;
+drop role shablon_dashboard;
+drop role shablon_knowledge_admin;
+drop role shablon_knowledge_reader;
+drop role shablon_raw_transcript_reader;
+drop role shablon_privacy;
+drop role shablon_core;
+drop role shablon_orchestrator;
 
 commit;

@@ -1,7 +1,7 @@
 -- DB-04 rollback
--- TEST/LOCAL ONLY.
+-- APPROVED WORKING CONTOUR. Rollback is limited to schema shablon and requires an explicit safety check before execution.
 -- Removes only DB-04 objects and refuses to run when later/unknown
--- relational objects already exist in atp_test.
+-- relational objects already exist in shablon.
 
 begin;
 
@@ -11,9 +11,9 @@ declare
   v_extra_relations text;
 begin
   if not exists (
-    select 1 from pg_namespace where nspname = 'atp_test'
+    select 1 from pg_namespace where nspname = 'shablon'
   ) then
-    raise exception 'DB-04 rollback refused: schema atp_test does not exist';
+    raise exception 'DB-04 rollback refused: schema shablon does not exist';
   end if;
 
   select string_agg(required_relation, ', ' order by required_relation)
@@ -36,7 +36,7 @@ begin
     select 1
     from pg_class c
     join pg_namespace n on n.oid = c.relnamespace
-    where n.nspname = 'atp_test'
+    where n.nspname = 'shablon'
       and c.relname = required.required_relation
       and c.relkind in ('r', 'p', 'v', 'm')
   );
@@ -51,7 +51,7 @@ begin
   into v_extra_relations
   from pg_class c
   join pg_namespace n on n.oid = c.relnamespace
-  where n.nspname = 'atp_test'
+  where n.nspname = 'shablon'
     and c.relkind in ('r', 'p', 'v', 'm')
     and c.relname not in (
       -- DB-01
@@ -106,52 +106,52 @@ begin
 
   if v_extra_relations is not null then
     raise exception
-      'DB-04 rollback refused: later/unknown relations exist in atp_test: %',
+      'DB-04 rollback refused: later/unknown relations exist in shablon: %',
       v_extra_relations;
   end if;
 end
 $guard$;
 
-drop table atp_test.evidence_conversation_refs;
-drop table atp_test.evidence_knowledge_refs;
-drop table atp_test.evidence_absence_checks;
-drop table atp_test.evidence_sets;
-drop table atp_test.criterion_scores;
-drop table atp_test.stage_results;
-drop table atp_test.analysis_observations;
-drop table atp_test.ai_inferred_outcomes;
-drop table atp_test.analysis_claims;
-drop table atp_test.analysis_knowledge_inputs;
-drop table atp_test.analysis_versions;
+drop table shablon.evidence_conversation_refs;
+drop table shablon.evidence_knowledge_refs;
+drop table shablon.evidence_absence_checks;
+drop table shablon.evidence_sets;
+drop table shablon.criterion_scores;
+drop table shablon.stage_results;
+drop table shablon.analysis_observations;
+drop table shablon.ai_inferred_outcomes;
+drop table shablon.analysis_claims;
+drop table shablon.analysis_knowledge_inputs;
+drop table shablon.analysis_versions;
 
-alter table atp_test.processing_quality
+alter table shablon.processing_quality
   drop constraint processing_quality_quality_inputs_call_unique;
 
-alter table atp_test.privacy_packages
+alter table shablon.privacy_packages
   drop constraint privacy_packages_package_role_call_unique;
 
-drop function atp_test.guard_analysis_version_update();
-drop function atp_test.validate_analysis_evidence_gate(uuid);
-drop function atp_test.calculate_analysis_overall_score(uuid);
-drop function atp_test.validate_evidence_absence_check();
-drop function atp_test.validate_evidence_knowledge_ref();
-drop function atp_test.validate_evidence_conversation_ref();
-drop function atp_test.guard_evidence_ref_mutation();
-drop function atp_test.guard_evidence_set_mutation();
-drop function atp_test.validate_evidence_target_rule();
-drop function atp_test.validate_stage_result();
-drop function atp_test.validate_criterion_score();
-drop function atp_test.guard_analysis_child_mutation();
-drop function atp_test.guard_analysis_initial_state();
+drop function shablon.guard_analysis_version_update();
+drop function shablon.validate_analysis_evidence_gate(uuid);
+drop function shablon.calculate_analysis_overall_score(uuid);
+drop function shablon.validate_evidence_absence_check();
+drop function shablon.validate_evidence_knowledge_ref();
+drop function shablon.validate_evidence_conversation_ref();
+drop function shablon.guard_evidence_ref_mutation();
+drop function shablon.guard_evidence_set_mutation();
+drop function shablon.validate_evidence_target_rule();
+drop function shablon.validate_stage_result();
+drop function shablon.validate_criterion_score();
+drop function shablon.guard_analysis_child_mutation();
+drop function shablon.guard_analysis_initial_state();
 
-drop type atp_test.absence_scope_kind;
-drop type atp_test.observation_type;
-drop type atp_test.evidence_rule_kind;
-drop type atp_test.evidence_coverage;
-drop type atp_test.evidence_integrity;
-drop type atp_test.evidence_type;
-drop type atp_test.evidence_requirement;
-drop type atp_test.analysis_claim_type;
-drop type atp_test.analysis_state;
+drop type shablon.absence_scope_kind;
+drop type shablon.observation_type;
+drop type shablon.evidence_rule_kind;
+drop type shablon.evidence_coverage;
+drop type shablon.evidence_integrity;
+drop type shablon.evidence_type;
+drop type shablon.evidence_requirement;
+drop type shablon.analysis_claim_type;
+drop type shablon.analysis_state;
 
 commit;

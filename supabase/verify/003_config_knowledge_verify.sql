@@ -1,5 +1,5 @@
 -- DB-03 verification
--- TEST/LOCAL ONLY.
+-- APPROVED WORKING CONTOUR. Verification is limited to schema shablon.
 -- Run after migrations 001, 002 and 003.
 -- All synthetic verification data is rolled back.
 
@@ -27,7 +27,7 @@ begin
   select count(*)
   into v_table_count
   from pg_tables
-  where schemaname = 'atp_test'
+  where schemaname = 'shablon'
     and tablename in (
       'prompt_versions',
       'methodology_versions',
@@ -53,7 +53,7 @@ begin
   if not exists (
     select 1
     from pg_views
-    where schemaname = 'atp_test'
+    where schemaname = 'shablon'
       and viewname = 'v_runtime_knowledge_fragments'
   ) then
     raise exception
@@ -62,7 +62,7 @@ begin
 
   -- Business config versions must start as draft.
   begin
-    insert into atp_test.prompt_versions (
+    insert into shablon.prompt_versions (
       family_ref,
       version_no,
       prompt_text,
@@ -92,7 +92,7 @@ begin
       end if;
   end;
 
-  insert into atp_test.prompt_versions (
+  insert into shablon.prompt_versions (
     family_ref,
     version_no,
     prompt_text,
@@ -108,7 +108,7 @@ begin
   )
   returning prompt_version_id into v_prompt_id;
 
-  update atp_test.prompt_versions
+  update shablon.prompt_versions
   set
     validation_status = 'passed',
     config_state = 'active',
@@ -116,7 +116,7 @@ begin
   where prompt_version_id = v_prompt_id;
 
   begin
-    update atp_test.prompt_versions
+    update shablon.prompt_versions
     set prompt_text = 'Попытка переписать active prompt'
     where prompt_version_id = v_prompt_id;
 
@@ -130,7 +130,7 @@ begin
   end;
 
   begin
-    update atp_test.prompt_versions
+    update shablon.prompt_versions
     set config_state = 'draft'
     where prompt_version_id = v_prompt_id;
 
@@ -144,7 +144,7 @@ begin
   end;
 
   -- Methodology children are editable in draft and frozen after leaving draft.
-  insert into atp_test.methodology_versions (
+  insert into shablon.methodology_versions (
     family_ref,
     version_no,
     title,
@@ -164,7 +164,7 @@ begin
   )
   returning methodology_version_id into v_methodology_id;
 
-  insert into atp_test.methodology_criteria (
+  insert into shablon.methodology_criteria (
     methodology_version_id,
     criterion_code,
     display_name,
@@ -187,7 +187,7 @@ begin
     true
   );
 
-  insert into atp_test.methodology_stages (
+  insert into shablon.methodology_stages (
     methodology_version_id,
     stage_code,
     display_name,
@@ -204,14 +204,14 @@ begin
     true
   );
 
-  update atp_test.methodology_versions
+  update shablon.methodology_versions
   set
     validation_status = 'passed',
     config_state = 'ready'
   where methodology_version_id = v_methodology_id;
 
   begin
-    update atp_test.methodology_criteria
+    update shablon.methodology_criteria
     set weight = 2
     where methodology_version_id = v_methodology_id
       and criterion_code = 'greeting';
@@ -225,14 +225,14 @@ begin
       end if;
   end;
 
-  update atp_test.methodology_versions
+  update shablon.methodology_versions
   set
     config_state = 'active',
     activated_at = now()
   where methodology_version_id = v_methodology_id;
 
   -- Filter rule version is now a real FK target for filter decisions.
-  insert into atp_test.filter_rule_versions (
+  insert into shablon.filter_rule_versions (
     family_ref,
     version_no,
     rules_json,
@@ -248,14 +248,14 @@ begin
   )
   returning filter_rule_version_ref into v_filter_ref;
 
-  update atp_test.filter_rule_versions
+  update shablon.filter_rule_versions
   set
     validation_status = 'passed',
     config_state = 'active',
     activated_at = now()
   where filter_rule_version_ref = v_filter_ref;
 
-  insert into atp_test.calls (
+  insert into shablon.calls (
     source_adapter_code,
     connection_ref,
     call_identity_key,
@@ -275,7 +275,7 @@ begin
   )
   returning call_id into v_call_id;
 
-  insert into atp_test.operations (
+  insert into shablon.operations (
     call_id,
     operation_type,
     idempotency_key,
@@ -301,7 +301,7 @@ begin
   )
   returning operation_id into v_filter_operation_id;
 
-  insert into atp_test.filter_decisions (
+  insert into shablon.filter_decisions (
     call_id,
     outcome,
     filter_rules_version_ref,
@@ -316,7 +316,7 @@ begin
     v_filter_operation_id
   );
 
-  insert into atp_test.operations (
+  insert into shablon.operations (
     call_id,
     operation_type,
     idempotency_key,
@@ -339,7 +339,7 @@ begin
   returning operation_id into v_invalid_filter_operation_id;
 
   begin
-    insert into atp_test.filter_decisions (
+    insert into shablon.filter_decisions (
       call_id,
       outcome,
       filter_rules_version_ref,
@@ -362,7 +362,7 @@ begin
   end;
 
   -- One canonical document, one exact document version and one fragment.
-  insert into atp_test.knowledge_documents (
+  insert into shablon.knowledge_documents (
     stable_code,
     title,
     source_type,
@@ -376,7 +376,7 @@ begin
   )
   returning document_id into v_document_id;
 
-  insert into atp_test.knowledge_document_versions (
+  insert into shablon.knowledge_document_versions (
     document_id,
     version_no,
     source_version_ref,
@@ -406,14 +406,14 @@ begin
   )
   returning document_version_id into v_document_version_id;
 
-  update atp_test.knowledge_document_versions
+  update shablon.knowledge_document_versions
   set
     validation_status = 'passed',
     editorial_state = 'ready',
     version_state = 'current'
   where document_version_id = v_document_version_id;
 
-  insert into atp_test.knowledge_fragments (
+  insert into shablon.knowledge_fragments (
     document_id,
     document_version_id,
     fragment_family_key,
@@ -443,7 +443,7 @@ begin
   )
   returning fragment_id into v_fragment_id;
 
-  insert into atp_test.knowledge_embeddings (
+  insert into shablon.knowledge_embeddings (
     fragment_id,
     version_no,
     provider,
@@ -482,7 +482,7 @@ begin
   returning embedding_id into v_embedding_id;
 
   -- Draft publication does not appear in runtime.
-  insert into atp_test.knowledge_publications (
+  insert into shablon.knowledge_publications (
     family_ref,
     version_no,
     publication_state,
@@ -504,7 +504,7 @@ begin
   )
   returning publication_id into v_publication_id;
 
-  insert into atp_test.knowledge_publication_documents (
+  insert into shablon.knowledge_publication_documents (
     publication_id,
     document_version_id,
     document_id,
@@ -517,7 +517,7 @@ begin
     0
   );
 
-  insert into atp_test.knowledge_publication_fragments (
+  insert into shablon.knowledge_publication_fragments (
     publication_id,
     fragment_id,
     document_version_id,
@@ -536,7 +536,7 @@ begin
     0
   );
 
-  insert into atp_test.knowledge_publication_fragment_products (
+  insert into shablon.knowledge_publication_fragment_products (
     publication_id,
     fragment_id,
     product_code
@@ -547,7 +547,7 @@ begin
 
   select count(*)
   into v_view_rows
-  from atp_test.v_runtime_knowledge_fragments
+  from shablon.v_runtime_knowledge_fragments
   where publication_id = v_publication_id;
 
   if v_view_rows <> 0 then
@@ -555,7 +555,7 @@ begin
       'DB-03 verification failed: draft publication leaked into runtime view';
   end if;
 
-  update atp_test.knowledge_publications
+  update shablon.knowledge_publications
   set
     validation_status = 'passed',
     publication_state = 'published',
@@ -565,7 +565,7 @@ begin
 
   select count(*)
   into v_view_rows
-  from atp_test.v_runtime_knowledge_fragments
+  from shablon.v_runtime_knowledge_fragments
   where publication_id = v_publication_id
     and fragment_id = v_fragment_id;
 
@@ -577,7 +577,7 @@ begin
 
   if not exists (
     select 1
-    from atp_test.v_runtime_knowledge_fragments
+    from shablon.v_runtime_knowledge_fragments
     where publication_id = v_publication_id
       and product_code = 'call_analysis'
       and document_version_id = v_document_version_id
@@ -590,7 +590,7 @@ begin
 
   -- Published membership is immutable.
   begin
-    insert into atp_test.knowledge_publication_fragment_products (
+    insert into shablon.knowledge_publication_fragment_products (
       publication_id,
       fragment_id,
       product_code
@@ -612,7 +612,7 @@ begin
 
   -- Published document semantics are immutable.
   begin
-    update atp_test.knowledge_document_versions
+    update shablon.knowledge_document_versions
     set content = 'Попытка изменить опубликованный документ'
     where document_version_id = v_document_version_id;
 
@@ -627,7 +627,7 @@ begin
 
   -- Publication itself cannot be reopened for editing.
   begin
-    update atp_test.knowledge_publications
+    update shablon.knowledge_publications
     set publication_state = 'ready'
     where publication_id = v_publication_id;
 
@@ -641,7 +641,7 @@ begin
   end;
 
   -- A fragment without product scope cannot be published.
-  insert into atp_test.knowledge_publications (
+  insert into shablon.knowledge_publications (
     family_ref,
     version_no,
     publication_state,
@@ -659,7 +659,7 @@ begin
   )
   returning publication_id into v_bad_publication_id;
 
-  insert into atp_test.knowledge_publication_documents (
+  insert into shablon.knowledge_publication_documents (
     publication_id,
     document_version_id,
     document_id,
@@ -672,7 +672,7 @@ begin
     0
   );
 
-  insert into atp_test.knowledge_publication_fragments (
+  insert into shablon.knowledge_publication_fragments (
     publication_id,
     fragment_id,
     document_version_id,
@@ -692,7 +692,7 @@ begin
   );
 
   begin
-    update atp_test.knowledge_publications
+    update shablon.knowledge_publications
     set
       validation_status = 'passed',
       publication_state = 'published',
@@ -711,7 +711,7 @@ begin
 
   -- External embedding cannot be published when the exact document version
   -- does not allow external embedding.
-  insert into atp_test.knowledge_embeddings (
+  insert into shablon.knowledge_embeddings (
     fragment_id,
     version_no,
     provider,
@@ -749,7 +749,7 @@ begin
   )
   returning embedding_id into v_bad_embedding_id;
 
-  insert into atp_test.knowledge_publications (
+  insert into shablon.knowledge_publications (
     family_ref,
     version_no,
     publication_state,
@@ -767,7 +767,7 @@ begin
   )
   returning publication_id into v_bad_publication_id;
 
-  insert into atp_test.knowledge_publication_documents (
+  insert into shablon.knowledge_publication_documents (
     publication_id,
     document_version_id,
     document_id,
@@ -780,7 +780,7 @@ begin
     0
   );
 
-  insert into atp_test.knowledge_publication_fragments (
+  insert into shablon.knowledge_publication_fragments (
     publication_id,
     fragment_id,
     document_version_id,
@@ -799,7 +799,7 @@ begin
     0
   );
 
-  insert into atp_test.knowledge_publication_fragment_products (
+  insert into shablon.knowledge_publication_fragment_products (
     publication_id,
     fragment_id,
     product_code
@@ -811,7 +811,7 @@ begin
   );
 
   begin
-    update atp_test.knowledge_publications
+    update shablon.knowledge_publications
     set
       validation_status = 'passed',
       publication_state = 'published',
@@ -829,7 +829,7 @@ begin
   end;
 
   -- Exact embedding input provenance must match exact fragment content hash.
-  insert into atp_test.knowledge_embeddings (
+  insert into shablon.knowledge_embeddings (
     fragment_id,
     version_no,
     provider,
@@ -867,7 +867,7 @@ begin
   )
   returning embedding_id into v_bad_embedding_id;
 
-  insert into atp_test.knowledge_publications (
+  insert into shablon.knowledge_publications (
     family_ref,
     version_no,
     publication_state,
@@ -885,7 +885,7 @@ begin
   )
   returning publication_id into v_bad_publication_id;
 
-  insert into atp_test.knowledge_publication_documents (
+  insert into shablon.knowledge_publication_documents (
     publication_id,
     document_version_id,
     document_id,
@@ -898,7 +898,7 @@ begin
     0
   );
 
-  insert into atp_test.knowledge_publication_fragments (
+  insert into shablon.knowledge_publication_fragments (
     publication_id,
     fragment_id,
     document_version_id,
@@ -917,7 +917,7 @@ begin
     0
   );
 
-  insert into atp_test.knowledge_publication_fragment_products (
+  insert into shablon.knowledge_publication_fragment_products (
     publication_id,
     fragment_id,
     product_code
@@ -929,7 +929,7 @@ begin
   );
 
   begin
-    update atp_test.knowledge_publications
+    update shablon.knowledge_publications
     set
       validation_status = 'passed',
       publication_state = 'published',
@@ -947,7 +947,7 @@ begin
   end;
 
   -- Published knowledge document policy is semantic and must not be mutable.
-  update atp_test.knowledge_document_versions
+  update shablon.knowledge_document_versions
   set external_embedding_allowed = true,
       embedding_policy_ref = 'verify-policy-ref'
   where document_version_id = v_document_version_id;

@@ -1,6 +1,6 @@
 -- DB-03
 -- Versioned configuration and shared knowledge model.
--- TEST/LOCAL ONLY. Depends on DB-01 and DB-02.
+-- APPROVED WORKING CONTOUR. Depends on DB-01 and DB-02; scope is limited to schema shablon.
 --
 -- Key invariants:
 --   draft != active/published;
@@ -16,9 +16,9 @@ declare
   v_missing text;
 begin
   if not exists (
-    select 1 from pg_namespace where nspname = 'atp_test'
+    select 1 from pg_namespace where nspname = 'shablon'
   ) then
-    raise exception 'DB-03 requires schema atp_test';
+    raise exception 'DB-03 requires schema shablon';
   end if;
 
   select string_agg(required_table, ', ' order by required_table)
@@ -33,7 +33,7 @@ begin
   where not exists (
     select 1
     from pg_tables
-    where schemaname = 'atp_test'
+    where schemaname = 'shablon'
       and tablename = required.required_table
   );
 
@@ -44,7 +44,7 @@ begin
   if exists (
     select 1
     from pg_tables
-    where schemaname = 'atp_test'
+    where schemaname = 'shablon'
       and tablename in (
         'prompt_versions',
         'methodology_versions',
@@ -67,7 +67,7 @@ begin
 end
 $guard$;
 
-create type atp_test.config_version_state as enum (
+create type shablon.config_version_state as enum (
   'draft',
   'ready',
   'active',
@@ -75,20 +75,20 @@ create type atp_test.config_version_state as enum (
   'invalidated'
 );
 
-create type atp_test.knowledge_editorial_state as enum (
+create type shablon.knowledge_editorial_state as enum (
   'draft',
   'ready',
   'archived'
 );
 
-create type atp_test.embedding_state as enum (
+create type shablon.embedding_state as enum (
   'pending',
   'ready',
   'failed',
   'invalidated'
 );
 
-create type atp_test.knowledge_publication_state as enum (
+create type shablon.knowledge_publication_state as enum (
   'draft',
   'ready',
   'published',
@@ -98,7 +98,7 @@ create type atp_test.knowledge_publication_state as enum (
 );
 
 -- New business configuration versions always start as draft.
-create function atp_test.guard_config_initial_state()
+create function shablon.guard_config_initial_state()
 returns trigger
 language plpgsql
 set search_path = pg_catalog
@@ -115,7 +115,7 @@ end
 $function$;
 
 -- Generic guard for prompt/methodology/filter rows after leaving draft.
-create function atp_test.guard_config_semantic_update()
+create function shablon.guard_config_semantic_update()
 returns trigger
 language plpgsql
 set search_path = pg_catalog
@@ -162,15 +162,15 @@ end
 $function$;
 
 -- Prompt versions.
-create table atp_test.prompt_versions (
+create table shablon.prompt_versions (
   prompt_version_id uuid primary key default gen_random_uuid(),
   family_ref text not null,
   version_no integer not null,
   predecessor_prompt_version_id uuid,
   prompt_text text not null,
   content_sha256 text not null,
-  config_state atp_test.config_version_state not null default 'draft',
-  validation_status atp_test.validation_status not null default 'pending',
+  config_state shablon.config_version_state not null default 'draft',
+  validation_status shablon.validation_status not null default 'pending',
   activated_at timestamptz,
   actor_ref text not null,
   change_reason text,
@@ -204,27 +204,27 @@ create table atp_test.prompt_versions (
     unique (prompt_version_id, family_ref),
   constraint prompt_versions_predecessor_same_family
     foreign key (predecessor_prompt_version_id, family_ref)
-    references atp_test.prompt_versions(prompt_version_id, family_ref)
+    references shablon.prompt_versions(prompt_version_id, family_ref)
     on delete restrict
 );
 
 create unique index uq_prompt_versions_family_version
-  on atp_test.prompt_versions (family_ref, version_no);
+  on shablon.prompt_versions (family_ref, version_no);
 
 create unique index uq_prompt_versions_one_active
-  on atp_test.prompt_versions (family_ref)
+  on shablon.prompt_versions (family_ref)
   where config_state = 'active';
 
 create trigger trg_prompt_versions_guard_initial_state
-before insert on atp_test.prompt_versions
-for each row execute function atp_test.guard_config_initial_state();
+before insert on shablon.prompt_versions
+for each row execute function shablon.guard_config_initial_state();
 
 create trigger trg_prompt_versions_guard_semantic_update
-before update on atp_test.prompt_versions
-for each row execute function atp_test.guard_config_semantic_update();
+before update on shablon.prompt_versions
+for each row execute function shablon.guard_config_semantic_update();
 
 -- Methodology versions.
-create table atp_test.methodology_versions (
+create table shablon.methodology_versions (
   methodology_version_id uuid primary key default gen_random_uuid(),
   family_ref text not null,
   version_no integer not null,
@@ -233,8 +233,8 @@ create table atp_test.methodology_versions (
   scoring_config jsonb not null default '{}'::jsonb,
   result_rules jsonb not null default '{}'::jsonb,
   content_sha256 text not null,
-  config_state atp_test.config_version_state not null default 'draft',
-  validation_status atp_test.validation_status not null default 'pending',
+  config_state shablon.config_version_state not null default 'draft',
+  validation_status shablon.validation_status not null default 'pending',
   activated_at timestamptz,
   actor_ref text not null,
   change_reason text,
@@ -272,27 +272,27 @@ create table atp_test.methodology_versions (
     unique (methodology_version_id, family_ref),
   constraint methodology_versions_predecessor_same_family
     foreign key (predecessor_methodology_version_id, family_ref)
-    references atp_test.methodology_versions(methodology_version_id, family_ref)
+    references shablon.methodology_versions(methodology_version_id, family_ref)
     on delete restrict
 );
 
 create unique index uq_methodology_versions_family_version
-  on atp_test.methodology_versions (family_ref, version_no);
+  on shablon.methodology_versions (family_ref, version_no);
 
 create unique index uq_methodology_versions_one_active
-  on atp_test.methodology_versions (family_ref)
+  on shablon.methodology_versions (family_ref)
   where config_state = 'active';
 
 create trigger trg_methodology_versions_guard_initial_state
-before insert on atp_test.methodology_versions
-for each row execute function atp_test.guard_config_initial_state();
+before insert on shablon.methodology_versions
+for each row execute function shablon.guard_config_initial_state();
 
 create trigger trg_methodology_versions_guard_semantic_update
-before update on atp_test.methodology_versions
-for each row execute function atp_test.guard_config_semantic_update();
+before update on shablon.methodology_versions
+for each row execute function shablon.guard_config_semantic_update();
 
-create table atp_test.methodology_criteria (
-  methodology_version_id uuid not null references atp_test.methodology_versions(methodology_version_id) on delete restrict,
+create table shablon.methodology_criteria (
+  methodology_version_id uuid not null references shablon.methodology_versions(methodology_version_id) on delete restrict,
   criterion_code text not null,
   display_name text not null,
   sort_order integer not null,
@@ -321,8 +321,8 @@ create table atp_test.methodology_criteria (
     unique (methodology_version_id, sort_order)
 );
 
-create table atp_test.methodology_stages (
-  methodology_version_id uuid not null references atp_test.methodology_versions(methodology_version_id) on delete restrict,
+create table shablon.methodology_stages (
+  methodology_version_id uuid not null references shablon.methodology_versions(methodology_version_id) on delete restrict,
   stage_code text not null,
   display_name text not null,
   sort_order integer not null,
@@ -344,14 +344,14 @@ create table atp_test.methodology_stages (
     unique (methodology_version_id, sort_order)
 );
 
-create function atp_test.guard_methodology_child_mutation()
+create function shablon.guard_methodology_child_mutation()
 returns trigger
 language plpgsql
-set search_path = pg_catalog, atp_test
+set search_path = pg_catalog, shablon
 as $function$
 declare
   v_methodology_id uuid;
-  v_state atp_test.config_version_state;
+  v_state shablon.config_version_state;
 begin
   if tg_op = 'DELETE' then
     v_methodology_id := old.methodology_version_id;
@@ -361,7 +361,7 @@ begin
 
   select config_state
   into v_state
-  from atp_test.methodology_versions
+  from shablon.methodology_versions
   where methodology_version_id = v_methodology_id;
 
   if v_state is distinct from 'draft' then
@@ -379,23 +379,23 @@ end
 $function$;
 
 create trigger trg_methodology_criteria_guard
-before insert or update or delete on atp_test.methodology_criteria
-for each row execute function atp_test.guard_methodology_child_mutation();
+before insert or update or delete on shablon.methodology_criteria
+for each row execute function shablon.guard_methodology_child_mutation();
 
 create trigger trg_methodology_stages_guard
-before insert or update or delete on atp_test.methodology_stages
-for each row execute function atp_test.guard_methodology_child_mutation();
+before insert or update or delete on shablon.methodology_stages
+for each row execute function shablon.guard_methodology_child_mutation();
 
 -- Filter rule versions.
-create table atp_test.filter_rule_versions (
+create table shablon.filter_rule_versions (
   filter_rule_version_ref text primary key default gen_random_uuid()::text,
   family_ref text not null,
   version_no integer not null,
   predecessor_filter_rule_version_ref text,
   rules_json jsonb not null,
   content_sha256 text not null,
-  config_state atp_test.config_version_state not null default 'draft',
-  validation_status atp_test.validation_status not null default 'pending',
+  config_state shablon.config_version_state not null default 'draft',
+  validation_status shablon.validation_status not null default 'pending',
   activated_at timestamptz,
   actor_ref text not null,
   change_reason text,
@@ -431,33 +431,33 @@ create table atp_test.filter_rule_versions (
     unique (filter_rule_version_ref, family_ref),
   constraint filter_rule_versions_predecessor_same_family
     foreign key (predecessor_filter_rule_version_ref, family_ref)
-    references atp_test.filter_rule_versions(filter_rule_version_ref, family_ref)
+    references shablon.filter_rule_versions(filter_rule_version_ref, family_ref)
     on delete restrict
 );
 
 create unique index uq_filter_rule_versions_family_version
-  on atp_test.filter_rule_versions (family_ref, version_no);
+  on shablon.filter_rule_versions (family_ref, version_no);
 
 create unique index uq_filter_rule_versions_one_active
-  on atp_test.filter_rule_versions (family_ref)
+  on shablon.filter_rule_versions (family_ref)
   where config_state = 'active';
 
 create trigger trg_filter_rule_versions_guard_initial_state
-before insert on atp_test.filter_rule_versions
-for each row execute function atp_test.guard_config_initial_state();
+before insert on shablon.filter_rule_versions
+for each row execute function shablon.guard_config_initial_state();
 
 create trigger trg_filter_rule_versions_guard_semantic_update
-before update on atp_test.filter_rule_versions
-for each row execute function atp_test.guard_config_semantic_update();
+before update on shablon.filter_rule_versions
+for each row execute function shablon.guard_config_semantic_update();
 
-alter table atp_test.filter_decisions
+alter table shablon.filter_decisions
   add constraint fk_filter_decisions_rules_version
   foreign key (filter_rules_version_ref)
-  references atp_test.filter_rule_versions(filter_rule_version_ref)
+  references shablon.filter_rule_versions(filter_rule_version_ref)
   on delete restrict;
 
 -- Canonical knowledge document.
-create table atp_test.knowledge_documents (
+create table shablon.knowledge_documents (
   document_id uuid primary key default gen_random_uuid(),
   stable_code text not null unique,
   title text not null,
@@ -474,9 +474,9 @@ create table atp_test.knowledge_documents (
 );
 
 -- Version of canonical knowledge document.
-create table atp_test.knowledge_document_versions (
+create table shablon.knowledge_document_versions (
   document_version_id uuid primary key default gen_random_uuid(),
-  document_id uuid not null references atp_test.knowledge_documents(document_id) on delete restrict,
+  document_id uuid not null references shablon.knowledge_documents(document_id) on delete restrict,
   version_no integer not null,
   predecessor_document_version_id uuid,
   source_version_ref text,
@@ -485,10 +485,10 @@ create table atp_test.knowledge_document_versions (
   metadata jsonb not null default '{}'::jsonb,
   external_embedding_allowed boolean not null default false,
   embedding_policy_ref text,
-  editorial_state atp_test.knowledge_editorial_state not null default 'draft',
-  validation_status atp_test.validation_status not null default 'pending',
+  editorial_state shablon.knowledge_editorial_state not null default 'draft',
+  validation_status shablon.validation_status not null default 'pending',
   validation_codes text[] not null default '{}'::text[],
-  version_state atp_test.artifact_version_state not null default 'candidate',
+  version_state shablon.artifact_version_state not null default 'candidate',
   actor_ref text not null,
   change_reason text,
   invalidation_reason text,
@@ -523,19 +523,19 @@ create table atp_test.knowledge_document_versions (
     unique (document_version_id, document_id),
   constraint knowledge_document_versions_predecessor_same_document
     foreign key (predecessor_document_version_id, document_id)
-    references atp_test.knowledge_document_versions(document_version_id, document_id)
+    references shablon.knowledge_document_versions(document_version_id, document_id)
     on delete restrict
 );
 
 create unique index uq_knowledge_document_versions_number
-  on atp_test.knowledge_document_versions (document_id, version_no);
+  on shablon.knowledge_document_versions (document_id, version_no);
 
 create unique index uq_knowledge_document_versions_one_current
-  on atp_test.knowledge_document_versions (document_id)
+  on shablon.knowledge_document_versions (document_id)
   where version_state = 'current';
 
 -- Chunk/fragment version.
-create table atp_test.knowledge_fragments (
+create table shablon.knowledge_fragments (
   fragment_id uuid primary key default gen_random_uuid(),
   document_id uuid not null,
   document_version_id uuid not null,
@@ -548,8 +548,8 @@ create table atp_test.knowledge_fragments (
   fragment_text text not null,
   content_sha256 text not null,
   source_locator jsonb not null default '{}'::jsonb,
-  validation_status atp_test.validation_status not null default 'pending',
-  version_state atp_test.artifact_version_state not null default 'candidate',
+  validation_status shablon.validation_status not null default 'pending',
+  version_state shablon.artifact_version_state not null default 'candidate',
   invalidation_reason text,
   created_at timestamptz not null default now(),
 
@@ -580,31 +580,31 @@ create table atp_test.knowledge_fragments (
     unique (fragment_id, document_id, fragment_family_key),
   constraint knowledge_fragments_document_version_exact
     foreign key (document_version_id, document_id)
-    references atp_test.knowledge_document_versions(document_version_id, document_id)
+    references shablon.knowledge_document_versions(document_version_id, document_id)
     on delete restrict,
   constraint knowledge_fragments_predecessor_same_family
     foreign key (predecessor_fragment_id, document_id, fragment_family_key)
-    references atp_test.knowledge_fragments(fragment_id, document_id, fragment_family_key)
+    references shablon.knowledge_fragments(fragment_id, document_id, fragment_family_key)
     on delete restrict
 );
 
 create unique index uq_knowledge_fragments_version
-  on atp_test.knowledge_fragments (
+  on shablon.knowledge_fragments (
     document_version_id,
     fragment_family_key,
     fragment_version_no
   );
 
 create unique index uq_knowledge_fragments_one_current
-  on atp_test.knowledge_fragments (document_id, fragment_family_key)
+  on shablon.knowledge_fragments (document_id, fragment_family_key)
   where version_state = 'current';
 
 -- Embedding version. real[] deliberately avoids fixing a pgvector dimension
 -- before AI-03 selects the embedding model/config. A later migration may add
 -- pgvector indexes without changing fragment/version provenance.
-create table atp_test.knowledge_embeddings (
+create table shablon.knowledge_embeddings (
   embedding_id uuid primary key default gen_random_uuid(),
-  fragment_id uuid not null references atp_test.knowledge_fragments(fragment_id) on delete restrict,
+  fragment_id uuid not null references shablon.knowledge_fragments(fragment_id) on delete restrict,
   version_no integer not null,
   predecessor_embedding_id uuid,
   provider text not null,
@@ -615,9 +615,9 @@ create table atp_test.knowledge_embeddings (
   dimensions integer not null,
   vector_data real[],
   input_sha256 text not null,
-  embedding_state atp_test.embedding_state not null default 'pending',
-  validation_status atp_test.validation_status not null default 'pending',
-  version_state atp_test.artifact_version_state not null default 'candidate',
+  embedding_state shablon.embedding_state not null default 'pending',
+  validation_status shablon.validation_status not null default 'pending',
+  version_state shablon.artifact_version_state not null default 'candidate',
   external_api boolean not null default false,
   actor_ref text not null,
   source_operation_ref text,
@@ -678,7 +678,7 @@ create table atp_test.knowledge_embeddings (
       model_name,
       config_version
     )
-    references atp_test.knowledge_embeddings(
+    references shablon.knowledge_embeddings(
       embedding_id,
       fragment_id,
       provider,
@@ -689,7 +689,7 @@ create table atp_test.knowledge_embeddings (
 );
 
 create unique index uq_knowledge_embeddings_version
-  on atp_test.knowledge_embeddings (
+  on shablon.knowledge_embeddings (
     fragment_id,
     provider,
     model_name,
@@ -698,7 +698,7 @@ create unique index uq_knowledge_embeddings_version
   );
 
 create unique index uq_knowledge_embeddings_one_current
-  on atp_test.knowledge_embeddings (
+  on shablon.knowledge_embeddings (
     fragment_id,
     provider,
     model_name,
@@ -707,13 +707,13 @@ create unique index uq_knowledge_embeddings_one_current
   where version_state = 'current';
 
 -- Publication manifest.
-create table atp_test.knowledge_publications (
+create table shablon.knowledge_publications (
   publication_id uuid primary key default gen_random_uuid(),
   family_ref text not null,
   version_no integer not null,
   predecessor_publication_id uuid,
-  publication_state atp_test.knowledge_publication_state not null default 'draft',
-  validation_status atp_test.validation_status not null default 'pending',
+  publication_state shablon.knowledge_publication_state not null default 'draft',
+  validation_status shablon.validation_status not null default 'pending',
   manifest_sha256 text not null,
   actor_ref text not null,
   source_operation_ref text,
@@ -758,19 +758,19 @@ create table atp_test.knowledge_publications (
     unique (publication_id, family_ref),
   constraint knowledge_publications_predecessor_same_family
     foreign key (predecessor_publication_id, family_ref)
-    references atp_test.knowledge_publications(publication_id, family_ref)
+    references shablon.knowledge_publications(publication_id, family_ref)
     on delete restrict
 );
 
 create unique index uq_knowledge_publications_family_version
-  on atp_test.knowledge_publications (family_ref, version_no);
+  on shablon.knowledge_publications (family_ref, version_no);
 
 create unique index uq_knowledge_publications_one_current
-  on atp_test.knowledge_publications (family_ref)
+  on shablon.knowledge_publications (family_ref)
   where is_current;
 
-create table atp_test.knowledge_publication_documents (
-  publication_id uuid not null references atp_test.knowledge_publications(publication_id) on delete restrict,
+create table shablon.knowledge_publication_documents (
+  publication_id uuid not null references shablon.knowledge_publications(publication_id) on delete restrict,
   document_version_id uuid not null,
   document_id uuid not null,
   document_order integer not null,
@@ -784,11 +784,11 @@ create table atp_test.knowledge_publication_documents (
     unique (publication_id, document_order),
   constraint knowledge_publication_documents_exact_version
     foreign key (document_version_id, document_id)
-    references atp_test.knowledge_document_versions(document_version_id, document_id)
+    references shablon.knowledge_document_versions(document_version_id, document_id)
     on delete restrict
 );
 
-create table atp_test.knowledge_publication_fragments (
+create table shablon.knowledge_publication_fragments (
   publication_id uuid not null,
   fragment_id uuid not null,
   document_version_id uuid not null,
@@ -808,19 +808,19 @@ create table atp_test.knowledge_publication_fragments (
     check (not requires_embedding or embedding_id is not null),
   constraint knowledge_publication_fragments_document_membership
     foreign key (publication_id, document_version_id)
-    references atp_test.knowledge_publication_documents(publication_id, document_version_id)
+    references shablon.knowledge_publication_documents(publication_id, document_version_id)
     on delete restrict,
   constraint knowledge_publication_fragments_exact_fragment
     foreign key (fragment_id, document_version_id, document_id)
-    references atp_test.knowledge_fragments(fragment_id, document_version_id, document_id)
+    references shablon.knowledge_fragments(fragment_id, document_version_id, document_id)
     on delete restrict,
   constraint knowledge_publication_fragments_exact_embedding
     foreign key (embedding_id, fragment_id)
-    references atp_test.knowledge_embeddings(embedding_id, fragment_id)
+    references shablon.knowledge_embeddings(embedding_id, fragment_id)
     on delete restrict
 );
 
-create table atp_test.knowledge_publication_fragment_products (
+create table shablon.knowledge_publication_fragment_products (
   publication_id uuid not null,
   fragment_id uuid not null,
   product_code text not null,
@@ -832,19 +832,19 @@ create table atp_test.knowledge_publication_fragment_products (
     check (btrim(product_code) <> ''),
   constraint knowledge_publication_fragment_products_membership
     foreign key (publication_id, fragment_id)
-    references atp_test.knowledge_publication_fragments(publication_id, fragment_id)
+    references shablon.knowledge_publication_fragments(publication_id, fragment_id)
     on delete restrict
 );
 
 -- Membership is editable only before publication.
-create function atp_test.guard_knowledge_publication_membership()
+create function shablon.guard_knowledge_publication_membership()
 returns trigger
 language plpgsql
-set search_path = pg_catalog, atp_test
+set search_path = pg_catalog, shablon
 as $function$
 declare
   v_publication_id uuid;
-  v_state atp_test.knowledge_publication_state;
+  v_state shablon.knowledge_publication_state;
 begin
   if tg_op = 'DELETE' then
     v_publication_id := old.publication_id;
@@ -854,7 +854,7 @@ begin
 
   select publication_state
   into v_state
-  from atp_test.knowledge_publications
+  from shablon.knowledge_publications
   where publication_id = v_publication_id;
 
   if v_state not in ('draft', 'ready') then
@@ -872,19 +872,19 @@ end
 $function$;
 
 create trigger trg_knowledge_publication_documents_guard
-before insert or update or delete on atp_test.knowledge_publication_documents
-for each row execute function atp_test.guard_knowledge_publication_membership();
+before insert or update or delete on shablon.knowledge_publication_documents
+for each row execute function shablon.guard_knowledge_publication_membership();
 
 create trigger trg_knowledge_publication_fragments_guard
-before insert or update or delete on atp_test.knowledge_publication_fragments
-for each row execute function atp_test.guard_knowledge_publication_membership();
+before insert or update or delete on shablon.knowledge_publication_fragments
+for each row execute function shablon.guard_knowledge_publication_membership();
 
 create trigger trg_knowledge_publication_products_guard
-before insert or update or delete on atp_test.knowledge_publication_fragment_products
-for each row execute function atp_test.guard_knowledge_publication_membership();
+before insert or update or delete on shablon.knowledge_publication_fragment_products
+for each row execute function shablon.guard_knowledge_publication_membership();
 
 -- Publication row becomes immutable by meaning after publication.
-create function atp_test.guard_knowledge_publication_update()
+create function shablon.guard_knowledge_publication_update()
 returns trigger
 language plpgsql
 set search_path = pg_catalog
@@ -926,14 +926,14 @@ end
 $function$;
 
 create trigger trg_knowledge_publication_guard_update
-before update on atp_test.knowledge_publications
-for each row execute function atp_test.guard_knowledge_publication_update();
+before update on shablon.knowledge_publications
+for each row execute function shablon.guard_knowledge_publication_update();
 
 -- Validate exact manifest at activation.
-create function atp_test.validate_knowledge_publication_activation()
+create function shablon.validate_knowledge_publication_activation()
 returns trigger
 language plpgsql
-set search_path = pg_catalog, atp_test
+set search_path = pg_catalog, shablon
 as $function$
 begin
   if tg_op = 'INSERT' and new.publication_state = 'published' then
@@ -957,7 +957,7 @@ begin
 
     if not exists (
       select 1
-      from atp_test.knowledge_publication_documents
+      from shablon.knowledge_publication_documents
       where publication_id = new.publication_id
     ) then
       raise exception 'Publication has no document versions';
@@ -965,7 +965,7 @@ begin
 
     if not exists (
       select 1
-      from atp_test.knowledge_publication_fragments
+      from shablon.knowledge_publication_fragments
       where publication_id = new.publication_id
     ) then
       raise exception 'Publication has no fragment versions';
@@ -973,8 +973,8 @@ begin
 
     if exists (
       select 1
-      from atp_test.knowledge_publication_documents pd
-      join atp_test.knowledge_document_versions dv
+      from shablon.knowledge_publication_documents pd
+      join shablon.knowledge_document_versions dv
         on dv.document_version_id = pd.document_version_id
       where pd.publication_id = new.publication_id
         and (
@@ -988,11 +988,11 @@ begin
 
     if exists (
       select 1
-      from atp_test.knowledge_publication_documents pd
+      from shablon.knowledge_publication_documents pd
       where pd.publication_id = new.publication_id
         and not exists (
           select 1
-          from atp_test.knowledge_publication_fragments pf
+          from shablon.knowledge_publication_fragments pf
           where pf.publication_id = pd.publication_id
             and pf.document_version_id = pd.document_version_id
         )
@@ -1002,8 +1002,8 @@ begin
 
     if exists (
       select 1
-      from atp_test.knowledge_publication_fragments pf
-      join atp_test.knowledge_fragments f
+      from shablon.knowledge_publication_fragments pf
+      join shablon.knowledge_fragments f
         on f.fragment_id = pf.fragment_id
       where pf.publication_id = new.publication_id
         and (
@@ -1016,8 +1016,8 @@ begin
 
     if exists (
       select 1
-      from atp_test.knowledge_publication_fragments pf
-      left join atp_test.knowledge_embeddings e
+      from shablon.knowledge_publication_fragments pf
+      left join shablon.knowledge_embeddings e
         on e.embedding_id = pf.embedding_id
       where pf.publication_id = new.publication_id
         and pf.requires_embedding
@@ -1033,12 +1033,12 @@ begin
 
     if exists (
       select 1
-      from atp_test.knowledge_publication_fragments pf
-      join atp_test.knowledge_fragments f
+      from shablon.knowledge_publication_fragments pf
+      join shablon.knowledge_fragments f
         on f.fragment_id = pf.fragment_id
-      join atp_test.knowledge_document_versions dv
+      join shablon.knowledge_document_versions dv
         on dv.document_version_id = pf.document_version_id
-      join atp_test.knowledge_embeddings e
+      join shablon.knowledge_embeddings e
         on e.embedding_id = pf.embedding_id
       where pf.publication_id = new.publication_id
         and (
@@ -1055,11 +1055,11 @@ begin
 
     if exists (
       select 1
-      from atp_test.knowledge_publication_fragments pf
+      from shablon.knowledge_publication_fragments pf
       where pf.publication_id = new.publication_id
         and not exists (
           select 1
-          from atp_test.knowledge_publication_fragment_products pp
+          from shablon.knowledge_publication_fragment_products pp
           where pp.publication_id = pf.publication_id
             and pp.fragment_id = pf.fragment_id
         )
@@ -1073,14 +1073,14 @@ end
 $function$;
 
 create trigger trg_knowledge_publication_validate_activation
-before insert or update on atp_test.knowledge_publications
-for each row execute function atp_test.validate_knowledge_publication_activation();
+before insert or update on shablon.knowledge_publications
+for each row execute function shablon.validate_knowledge_publication_activation();
 
 -- Document/fragment/embedding semantic immutability once ready/published.
-create function atp_test.guard_knowledge_document_update()
+create function shablon.guard_knowledge_document_update()
 returns trigger
 language plpgsql
-set search_path = pg_catalog, atp_test
+set search_path = pg_catalog, shablon
 as $function$
 declare
   v_published boolean;
@@ -1104,8 +1104,8 @@ begin
 
   select exists (
     select 1
-    from atp_test.knowledge_publication_documents pd
-    join atp_test.knowledge_publications p
+    from shablon.knowledge_publication_documents pd
+    join shablon.knowledge_publications p
       on p.publication_id = pd.publication_id
     where pd.document_version_id = old.document_version_id
       and p.publication_state in ('published', 'superseded', 'archived')
@@ -1133,13 +1133,13 @@ end
 $function$;
 
 create trigger trg_knowledge_document_versions_guard
-before update on atp_test.knowledge_document_versions
-for each row execute function atp_test.guard_knowledge_document_update();
+before update on shablon.knowledge_document_versions
+for each row execute function shablon.guard_knowledge_document_update();
 
-create function atp_test.guard_knowledge_fragment_update()
+create function shablon.guard_knowledge_fragment_update()
 returns trigger
 language plpgsql
-set search_path = pg_catalog, atp_test
+set search_path = pg_catalog, shablon
 as $function$
 declare
   v_published boolean;
@@ -1158,8 +1158,8 @@ begin
 
   select exists (
     select 1
-    from atp_test.knowledge_publication_fragments pf
-    join atp_test.knowledge_publications p
+    from shablon.knowledge_publication_fragments pf
+    join shablon.knowledge_publications p
       on p.publication_id = pf.publication_id
     where pf.fragment_id = old.fragment_id
       and p.publication_state in ('published', 'superseded', 'archived')
@@ -1189,13 +1189,13 @@ end
 $function$;
 
 create trigger trg_knowledge_fragments_guard
-before update on atp_test.knowledge_fragments
-for each row execute function atp_test.guard_knowledge_fragment_update();
+before update on shablon.knowledge_fragments
+for each row execute function shablon.guard_knowledge_fragment_update();
 
-create function atp_test.guard_knowledge_embedding_update()
+create function shablon.guard_knowledge_embedding_update()
 returns trigger
 language plpgsql
-set search_path = pg_catalog, atp_test
+set search_path = pg_catalog, shablon
 as $function$
 declare
   v_published boolean;
@@ -1221,8 +1221,8 @@ begin
 
   select exists (
     select 1
-    from atp_test.knowledge_publication_fragments pf
-    join atp_test.knowledge_publications p
+    from shablon.knowledge_publication_fragments pf
+    join shablon.knowledge_publications p
       on p.publication_id = pf.publication_id
     where pf.embedding_id = old.embedding_id
       and p.publication_state in ('published', 'superseded', 'archived')
@@ -1253,13 +1253,13 @@ end
 $function$;
 
 create trigger trg_knowledge_embeddings_guard
-before update on atp_test.knowledge_embeddings
-for each row execute function atp_test.guard_knowledge_embedding_update();
+before update on shablon.knowledge_embeddings
+for each row execute function shablon.guard_knowledge_embedding_update();
 
 -- Internal published-only runtime source surface.
 -- DB-07 must expose it through product-scoped restricted access.
 -- Do NOT grant product readers unrestricted SELECT on this raw view.
-create view atp_test.v_runtime_knowledge_fragments as
+create view shablon.v_runtime_knowledge_fragments as
 select
   p.publication_id,
   p.family_ref as publication_family_ref,
@@ -1282,19 +1282,19 @@ select
   e.config_version as embedding_config_version,
   e.dimensions as embedding_dimensions,
   e.vector_data
-from atp_test.knowledge_publications p
-join atp_test.knowledge_publication_fragments pf
+from shablon.knowledge_publications p
+join shablon.knowledge_publication_fragments pf
   on pf.publication_id = p.publication_id
-join atp_test.knowledge_publication_fragment_products pp
+join shablon.knowledge_publication_fragment_products pp
   on pp.publication_id = pf.publication_id
  and pp.fragment_id = pf.fragment_id
-join atp_test.knowledge_fragments f
+join shablon.knowledge_fragments f
   on f.fragment_id = pf.fragment_id
-join atp_test.knowledge_document_versions dv
+join shablon.knowledge_document_versions dv
   on dv.document_version_id = pf.document_version_id
-join atp_test.knowledge_documents d
+join shablon.knowledge_documents d
   on d.document_id = dv.document_id
-left join atp_test.knowledge_embeddings e
+left join shablon.knowledge_embeddings e
   on e.embedding_id = pf.embedding_id
 where p.publication_state = 'published'
   and p.is_current
@@ -1314,7 +1314,7 @@ where p.publication_state = 'published'
     )
   );
 
-comment on view atp_test.v_runtime_knowledge_fragments is
+comment on view shablon.v_runtime_knowledge_fragments is
   'Internal published-only knowledge source. DB-07 must enforce product-scoped access and must not grant unrestricted SELECT to product runtime readers.';
 
 commit;

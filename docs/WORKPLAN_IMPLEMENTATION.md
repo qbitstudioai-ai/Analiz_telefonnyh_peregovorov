@@ -4,11 +4,11 @@
 
 ## Режим
 
-Разрешена реализация **только в test/локальном контуре**.
+Разрешена реализация **в рабочем Supabase только внутри schema `shablon`**.
 
-Это разрешает создавать и проверять SQL, workflow, программный код и тестовые артефакты в репозитории и test-среде по отдельным задачам.
+Это разрешает создавать, применять и проверять SQL внутри `shablon`, а также по мере последующих задач подключать реальные сервисные Credentials к этому контуру.
 
-Это **не разрешение production**. Production-миграции, production Credentials, переключение рабочего трафика, удаление рабочих данных и реальные production side effects требуют отдельного явного разрешения Павла и [RELEASE_CHECKLIST](RELEASE_CHECKLIST.md).
+Это **не blanket-разрешение на весь production**. Нельзя без отдельного решения менять/удалять посторонние схемы и данные, выполнять destructive rollback на единственном рабочем экземпляре или переключать реальный клиентский трафик.
 
 Статусы: `[ ]` не начато, `[~]` в работе, `[x]` проверено, `[!]` пауза.
 
@@ -34,8 +34,9 @@
 | [x] DB-04 | ChatGPT | Migration analysis/evidence | Созданы migration/verify/guarded rollback для 11 tables; exact input manifest, typed claims/evidence, exact safe segment/knowledge refs, absence coverage и current evidence gate статически проверены; direct final-state INSERT bypass закрыт; к Supabase не применено |
 | [x] DB-05 | ChatGPT | Migration CRM/outgoing/corrections/audit | Созданы migration/verify/guarded rollback для 7 tables; CRM/human facts отделены от AI outcome, callback использует trusted refs, outgoing action предшествует send, delivered/unknown retry gates, corrections/disputes и append-only audit статически проверены; к Supabase не применено |
 | [x] DB-06 | ChatGPT | Dashboard views/metric SQL | Созданы migration/verify/guarded rollback для 12 views + 7 metric/filter functions; logical-call decomposition, current/reliable/no-dispute averages, N/A criteria, stages, AI/CRM split, callback window, speech provenance и drill-down IDs статически проверены; к Supabase не применено |
-| [x] DB-07 | ChatGPT | Изоляция и права test | Один канонический migration/verify/guarded rollback: 9 NOLOGIN capability roles, 18 security-barrier runtime/safe views, 5 defense-in-depth RLS policies на raw/mapping, 2 audited SECURITY DEFINER proposal functions, PUBLIC/default privilege hardening и positive/negative matrix; к Supabase не применено |
-| [ ] DB-08 | Павел + ChatGPT | Применение migrations в test Supabase | Павел запускает подготовленный SQL в test; ChatGPT по фактическому результату проверяет schema, constraints, права и rollback/recovery; production не затрагивается |
+| [x] DB-07 | ChatGPT | Изоляция и права шаблонного контура | Канонический migration/verify/guarded rollback: 9 NOLOGIN capability roles, 18 security-barrier runtime/safe views, 5 defense-in-depth RLS policies на raw/mapping, 2 audited SECURITY DEFINER proposal functions, PUBLIC/default privilege hardening и positive/negative matrix; физический контур обновлён DB-08A до `shablon`; к Supabase ещё не применено |
+| [x] DB-08A | ChatGPT | Адаптация DB-01—DB-07 к рабочей schema `shablon` | Все migration/verify/rollback используют `shablon`, test-only hardcode удалён из рабочего контура, DB-05 audit маркирует `working`, DB-07 roles переименованы в `shablon_*`; к Supabase ещё не применено |
+| [ ] DB-08B | Павел + ChatGPT | Применение migrations в рабочем Supabase | После preflight Павел запускает подготовленный SQL только для `shablon`; ChatGPT по фактическому результату проверяет schema, constraints, связи, права и безопасный recovery |
 
 ## Этап B — обработка и контракты
 
@@ -92,32 +93,34 @@
 
 ## Текущая следующая задача
 
-**DB-08 — применение DB-01—DB-07 в test Supabase.**
+**DB-08B — применение DB-01—DB-07 в рабочем Supabase schema `shablon`.**
 
 Исполнители: **Павел + ChatGPT**.
 
-Цель: впервые фактически применить подготовленную цепочку SQL в отдельном test Supabase, выполнить verify-скрипты и подтвердить schema/constraints/metric/access boundaries без изменения production.
+Цель: впервые фактически применить подготовленную цепочку SQL в согласованном рабочем Supabase, не затрагивая посторонние схемы/данные, затем выполнить verify и подтвердить физические связи и access boundaries.
 
-Порядок DB-08:
+Порядок DB-08B:
 
-1. до запуска подтвердить, что открыт именно test Supabase;
-2. применить migrations 001 → 007 строго по порядку;
-3. после каждой migration зафиксировать фактический результат;
-4. выполнить verify 001 → 007;
-5. отдельно проверить DB-07 role/privilege matrix до подключения реальных login Credentials;
-6. проверить rollback/recovery на отдельной test/quarantine копии или по согласованному безопасному сценарию;
-7. только после PASS создать/привязать отдельные test Credentials вне GitHub;
-8. production не трогать.
+1. до запуска подтвердить, что открыт нужный рабочий Supabase-проект;
+2. выполнить безопасный preflight: проверить наличие schema `shablon`, конфликтующих объектов и старой schema `atp_test`;
+3. если конфликтов нет, применить migrations 001 → 007 строго по порядку;
+4. после каждой migration зафиксировать фактический результат;
+5. выполнить verify 001 → 007;
+6. отдельно проверить DB-07 role/privilege/RLS matrix;
+7. реальные LOGIN/Credentials создавать или привязывать только после PASS DB-07;
+8. rollback/recovery не выполнять destructively на единственном рабочем экземпляре; использовать транзакционный/quarantine сценарий;
+9. посторонние schemas/data и реальный клиентский трафик не трогать.
 
 Критерий готовности:
 
-- Павел фактически выполнил подготовленный SQL именно в test Supabase;
-- все migrations 001—007 завершились без необъяснённых ошибок;
-- все verify 001—007 дали PASS;
-- schema/constraints/views/functions/roles сверены с GitHub;
+- SQL фактически выполнен именно в согласованном рабочем Supabase;
+- schema `shablon` создана и содержит ожидаемые tables/FK/views/functions/roles/policies;
+- migrations 001—007 завершились без необъяснённых ошибок;
+- verify 001—007 дали PASS;
 - DB-07 negative privilege checks подтвердили запреты;
-- реальных секретов нет в GitHub и business schema;
-- rollback/recovery сценарий фактически проверен в безопасном test/quarantine контуре;
-- явно записано, что production не изменялся.
+- межтабличные связи являются реальными FK/constraints, а не заглушками;
+- секретов нет в GitHub;
+- recovery-подход фактически проверен безопасным способом без разрушения рабочего контура;
+- явно зафиксировано, какие внешние сервисные Credentials уже подключены, а какие ещё нет.
 
-Профильные документы DB-08: [RELEASE_CHECKLIST](RELEASE_CHECKLIST.md), [ACCESS_AND_ISOLATION](specs/ACCESS_AND_ISOLATION.md), [PROJECT_STATE](PROJECT_STATE.md), [implementation/DB-01](implementation/DB-01.md), [implementation/DB-02](implementation/DB-02.md), [implementation/DB-03](implementation/DB-03.md), [implementation/DB-04](implementation/DB-04.md), [implementation/DB-05](implementation/DB-05.md), [implementation/DB-06](implementation/DB-06.md), [implementation/DB-07](implementation/DB-07.md).
+Профильные документы DB-08B: [RELEASE_CHECKLIST](RELEASE_CHECKLIST.md), [ACCESS_AND_ISOLATION](specs/ACCESS_AND_ISOLATION.md), [PROJECT_STATE](PROJECT_STATE.md), [implementation/DB-01](implementation/DB-01.md), [implementation/DB-02](implementation/DB-02.md), [implementation/DB-03](implementation/DB-03.md), [implementation/DB-04](implementation/DB-04.md), [implementation/DB-05](implementation/DB-05.md), [implementation/DB-06](implementation/DB-06.md), [implementation/DB-07](implementation/DB-07.md).
