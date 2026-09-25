@@ -119,7 +119,7 @@ Workflow/экземпляр настройки получает контур и�
 
 Production-анализ использует только production-публикацию своей компании. Test имеет отдельный набор/снимок данных и не читает production напрямую.
 
-Точный процесс публикации относится к DOC-17, а версионирование — к DOC-13.
+Логический процесс draft → validation → publication → runtime read → depublication/invalidation определён в [ANALYSIS_AND_KNOWLEDGE](ANALYSIS_AND_KNOWLEDGE.md), а версионирование — в [VERSIONING](VERSIONING.md).
 
 ## Разделение test и production
 
