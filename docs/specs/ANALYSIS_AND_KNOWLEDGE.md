@@ -215,7 +215,7 @@ Test и production имеют отдельные publication families и runtime
 - production publication фиксирует собственный actor, scope, versions и validation evidence;
 - test embeddings/индексы не становятся production-источником только потому, что содержат тот же текст.
 
-До фактического production-действия по-прежнему требуется разрешение по правилам проекта и DOC-18.
+До фактического production-действия по-прежнему требуется отдельное разрешение по правилам проекта и [RELEASE_CHECKLIST](../RELEASE_CHECKLIST.md).
 
 ## Изменение и исправление знания
 
@@ -377,7 +377,7 @@ Audit не содержит plaintext секретов и не является 
 - реальные документы и их содержимое;
 - production Credentials;
 - физический backup/restore;
-- release/rollback procedure DOC-18.
+- конкретные release/rollback values; общие процедуры определены в [RELEASE_CHECKLIST](../RELEASE_CHECKLIST.md).
 
 Эти решения не могут ослабить lifecycle, version pinning, product scope и изоляцию.
 
