@@ -80,8 +80,8 @@ Read-only preflight завершён PASS: запросы на `shablon_analiz_t
 - `016_povtornoe_sozdanie_analiza_i_dokazatelstv_db04.sql` — фактически запущен, **FAIL 42830**: unique `(analysis_id, privacy_package_id)` создавался позже зависимых FK;
 - `017_proverka_analiza_i_dokazatelstv_db04.sql` — не запускался;
 - `018_proverka_sostoyaniya_posle_vtoroi_oshibki_db04.sql` — фактически выполнен, **PASS / 0 rows**; частичных DB-04 объектов после второй ошибки не найдено;
-- `019_povtornoe_sozdanie_analiza_i_dokazatelstv_db04.sql` — **следующий разрешённый SQL**, исправленная migration с правильным порядком DDL;
-- `020_proverka_analiza_i_dokazatelstv_db04.sql` — актуальный verify после успешного шага 019.
+- `019_povtornoe_sozdanie_analiza_i_dokazatelstv_db04.sql` — фактически выполнен, **Success**;
+- `020_proverka_analiza_i_dokazatelstv_db04.sql` — **следующий разрешённый SQL**, verify DB-04.
 
 ## Фактический статус применения
 
@@ -92,8 +92,8 @@ Read-only preflight завершён PASS: запросы на `shablon_analiz_t
 - DB-02 verify — **PASS**;
 - DB-03 migration — **применена**;
 - DB-03 verify — **PASS**;
-- DB-04 migration — первая попытка **FAIL 42830**; шаг 015 подтвердил 0 частичных объектов; вторая попытка 016 также **FAIL 42830** из-за неправильного порядка создания `analysis_versions_analysis_package_unique`; шаг 018 подтвердил **0 частичных DB-04 объектов** после второй ошибки;
+- DB-04 migration — после двух исправленных FAIL 42830 третья попытка `019` **применена успешно** (`Success. No rows returned`); DB-04 verify ещё не выполнен;
 - DB-05—DB-07 migrations — ещё не применялись;
 - реальные Credentials, n8n workflow, серверные сервисы и dashboard к schema `shablon_analiz_telefonnyh_peregovorov` ещё не подключены и не проверены.
 
-Следующий шаг: исправленная DB-04 migration `019_povtornoe_sozdanie_analiza_i_dokazatelstv_db04.sql`.
+Следующий шаг: DB-04 verify `020_proverka_analiza_i_dokazatelstv_db04.sql`.
