@@ -450,6 +450,7 @@ select
   z.classification,
   z.current_analysis_id as analysis_id,
   z.analysis_reliability,
+  z.has_open_dispute,
   cs.criterion_score_id,
   cs.criterion_code,
   cs.applicable,
@@ -477,6 +478,7 @@ with stage_rows as (
     z.classification,
     z.current_analysis_id as analysis_id,
     z.analysis_reliability,
+    z.has_open_dispute,
     sr.stage_result_id,
     sr.stage_code,
     sr.applicable,
@@ -516,6 +518,7 @@ select
   z.classification,
   z.current_analysis_id as analysis_id,
   z.analysis_reliability,
+  z.has_open_dispute,
   ao.observation_id,
   ao.observation_code,
   ao.observation_type,
@@ -548,7 +551,8 @@ select
   aio.confidence,
   aio.expected_next_contact_at as result_time,
   es.evidence_id,
-  null::text as trusted_source_system
+  null::text as trusted_source_system,
+  (not z.has_open_dispute) as aggregate_eligible
 from atp_test.v_dashboard_zvonki z
 join atp_test.ai_inferred_outcomes aio
   on aio.analysis_id = z.current_analysis_id
@@ -571,7 +575,8 @@ select
   null::numeric as confidence,
   bc.fact_occurred_at as result_time,
   null::uuid as evidence_id,
-  bc.source_system_code as trusted_source_system
+  bc.source_system_code as trusted_source_system,
+  true as aggregate_eligible
 from atp_test.v_dashboard_zvonki z
 join atp_test.v_dashboard_business_confirmations_current bc
   on bc.call_id = z.call_id;
@@ -916,6 +921,7 @@ as $function$
   join atp_test.dashboard_filter_call_ids(p_start, p_end, p_filters) f
     on f.call_id = k.call_id
   where k.analysis_reliability = 'reliable'
+    and not k.has_open_dispute
     and k.applicable
   group by k.criterion_code
 $function$;
@@ -960,6 +966,7 @@ as $function$
   join atp_test.dashboard_filter_call_ids(p_start, p_end, p_filters) f
     on f.call_id = e.call_id
   where e.analysis_reliability = 'reliable'
+    and not e.has_open_dispute
   group by e.stage_code
 $function$;
 
@@ -995,6 +1002,7 @@ as $function$
     from atp_test.v_dashboard_zvonki z
     join filtered_calls f on f.call_id = z.call_id
     where z.analysis_reliability = 'reliable'
+      and not z.has_open_dispute
       and z.current_analysis_id is not null
   ),
   contexts as (
@@ -1006,6 +1014,7 @@ as $function$
     from atp_test.v_dashboard_oshibki o
     join filtered_calls f on f.call_id = o.call_id
     where o.analysis_reliability = 'reliable'
+      and not o.has_open_dispute
       and o.applicable
   ),
   observed as (
@@ -1020,6 +1029,7 @@ as $function$
     from atp_test.v_dashboard_oshibki o
     join filtered_calls f on f.call_id = o.call_id
     where o.analysis_reliability = 'reliable'
+      and not o.has_open_dispute
       and o.applicable
     group by
       o.observation_code,
@@ -1121,6 +1131,7 @@ as $function$
   from atp_test.v_dashboard_rezultaty r
   join atp_test.dashboard_filter_call_ids(p_start, p_end, p_filters) f
     on f.call_id = r.call_id
+  where r.aggregate_eligible
   group by r.result_source, r.result_code
 $function$;
 
