@@ -480,7 +480,7 @@ Supabase хранит только метаданные временного л�
 
 Обычный анализ читает только published.
 
-Точный workflow публикации завершит DOC-17.
+Логический lifecycle публикации определён в [ANALYSIS_AND_KNOWLEDGE](specs/ANALYSIS_AND_KNOWLEDGE.md); физический workflow и SQL выбираются при реализации.
 
 ## 18. Документы знаний — dokumenty_znanij
 
@@ -851,7 +851,7 @@ LLM не может сослаться на segment/chunk, отсутствую�
 - произвольные исходные транскрипции;
 - данные другой компании/среды.
 
-Конкретное право на исходный текст завершит DOC-16.
+Права на исходный текст и административные capabilities определены в [DASHBOARD_ADMIN](specs/DASHBOARD_ADMIN.md) вместе с границами [ACCESS_AND_ISOLATION](specs/ACCESS_AND_ISOLATION.md).
 
 ## Данные для представлений дашборда
 
