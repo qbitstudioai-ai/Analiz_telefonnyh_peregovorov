@@ -220,6 +220,27 @@ begin
       v_bad;
   end if;
 
+  -- Business schema must not become a credential store.
+  select string_agg(
+    table_name || '.' || column_name,
+    ', ' order by table_name, column_name
+  )
+  into v_bad
+  from information_schema.columns
+  where table_schema = 'atp_test'
+    and (
+      column_name ilike '%password%'
+      or column_name ilike '%token%'
+      or column_name ilike '%secret%'
+      or column_name ilike '%credential%'
+    );
+
+  if v_bad is not null then
+    raise exception
+      'DB-07 verification failed: secret-like business column(s) found: %',
+      v_bad;
+  end if;
+
   -- Orchestrator positive controls.
   if not has_table_privilege(
     'atp_test_orchestrator', 'atp_test.calls', 'INSERT'
