@@ -51,6 +51,7 @@ https://github.com/qbitstudioai-ai/Analiz_telefonnyh_peregovorov
 | Как поддерживать документацию | [Правила документации](docs/DOCUMENTATION_RULES.md) |
 | Завершённый план документационного этапа | [План шаблона](docs/WORKPLAN_TEMPLATE.md) |
 | Текущая последовательность реализации | [План реализации](docs/WORKPLAN_IMPLEMENTATION.md) |
+| SQL для фактического запуска | [Операционные SQL](SQL/README.md) |
 | Как внедрять готовый шаблон в компанию | [План внедрения](docs/WORKPLAN_CLIENT_DEPLOYMENT.md) |
 | Текущая точка и одна следующая задача | [PROJECT_STATE](docs/PROJECT_STATE.md) |
 | Передача между сессиями | [SESSION_HANDOFF](docs/SESSION_HANDOFF.md) |

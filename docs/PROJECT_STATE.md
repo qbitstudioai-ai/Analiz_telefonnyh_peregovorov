@@ -47,7 +47,7 @@ SQL по-прежнему **не применён** к Supabase.
 
 Павел уже выполнил первую read-only часть preflight: соединение показывает database `postgres`, user `postgres`, current schema `public`, PostgreSQL 17.6. Это подтверждает только параметры текущего соединения, но ещё не подтверждает отсутствие целевой schema.
 
-Следующий read-only preflight должен проверить, существует ли schema `shablon_analiz_telefonnyh_peregovorov`, старая `shablon` или ещё более старая `atp_test`, а также одноимённые capability roles. Посторонние схемы и данные не изменяются.
+Read-only preflight завершён PASS: запросы на `shablon_analiz_telefonnyh_peregovorov`, старые `shablon`/`atp_test`, объекты, функции и capability roles вернули 0 строк. Конфликтов перед DB-01 не обнаружено.
 
 Критерий готовности:
 
@@ -58,6 +58,17 @@ SQL по-прежнему **не применён** к Supabase.
 - рабочие Credentials для текущего DB-контура подключаются только после PASS DB-07;
 - rollback/recovery проверяется без destructive воздействия на единственный рабочий экземпляр;
 - существующие посторонние схемы/данные не затронуты.
+
+## Текущий следующий SQL
+
+Операционные SQL теперь фиксируются в отдельной папке `SQL/`.
+
+Для DB-08B создан пакет `SQL/DB-08B/`:
+
+- `001_preflight_readonly.sql` — фактически выполнен, PASS;
+- `010_db01_apply.sql` — **следующий разрешённый SQL**;
+- `011_db01_verify.sql` — запускать только после успешной migration DB-01;
+- `019_db01_rollback_DO_NOT_RUN.sql` — не запускать без отдельного решения.
 
 ## Что ещё не применялось
 

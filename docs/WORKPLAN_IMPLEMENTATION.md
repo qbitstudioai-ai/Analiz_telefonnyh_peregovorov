@@ -37,7 +37,7 @@
 | [x] DB-07 | ChatGPT | Изоляция и права шаблонного контура | Канонический migration/verify/guarded rollback: 9 NOLOGIN capability roles, 18 security-barrier runtime/safe views, 5 defense-in-depth RLS policies на raw/mapping, 2 audited SECURITY DEFINER proposal functions, PUBLIC/default privilege hardening и positive/negative matrix; физический контур обновлён DB-08A до `shablon_analiz_telefonnyh_peregovorov`; к Supabase ещё не применено |
 | [x] DB-08A | ChatGPT | Адаптация DB-01—DB-07 к рабочей schema `shablon` | Migration/verify/rollback были переведены с `atp_test` на рабочий контур `shablon`; SQL к Supabase не применялся |
 | [x] DB-08A.1 | ChatGPT | Окончательное имя рабочего контура | До применения SQL schema переименована в `shablon_analiz_telefonnyh_peregovorov` во всех migration/verify/rollback и документации; DB-07 roles используют `shablon_analiz_telefonnyh_peregovorov_*`; DB-05 audit использует `scope_ref='shablon_analiz_telefonnyh_peregovorov'`; к Supabase ещё не применено |
-| [~] DB-08B | Павел + ChatGPT | Применение migrations в рабочем Supabase | Первая read-only проверка соединения выполнена; дальше preflight наличия schema/roles, затем migrations 001→007 и verify при отсутствии конфликтов |
+| [~] DB-08B | Павел + ChatGPT | Применение migrations в рабочем Supabase | Read-only preflight schema/roles PASS: конфликтов нет; создан операционный пакет `SQL/DB-08B/`; следующий шаг — `010_db01_apply.sql`, затем `011_db01_verify.sql` при успехе |
 
 ## Этап B — обработка и контракты
 
@@ -103,8 +103,8 @@
 Порядок DB-08B:
 
 1. до запуска подтвердить, что открыт нужный рабочий Supabase-проект;
-2. выполнить безопасный preflight: проверить наличие schema `shablon_analiz_telefonnyh_peregovorov`, промежуточной schema `shablon`, старой schema `atp_test`, конфликтующих объектов и capability roles;
-3. если конфликтов нет, применить migrations 001 → 007 строго по порядку;
+2. безопасный preflight выполнен PASS: целевой/старые schemas, объекты, функции и capability roles не найдены;
+3. рабочие SQL для фактического запуска хранить в `SQL/DB-08B/`; применить migrations 001 → 007 строго по порядку;
 4. после каждой migration зафиксировать фактический результат;
 5. выполнить verify 001 → 007;
 6. отдельно проверить DB-07 role/privilege/RLS matrix;
