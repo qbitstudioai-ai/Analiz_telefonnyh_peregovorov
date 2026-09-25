@@ -246,6 +246,14 @@ with ai as (
   from atp_test.ai_inferred_outcomes a
   group by a.analysis_id
 ),
+disputes as (
+  select
+    d.analysis_id,
+    true as has_open_dispute
+  from atp_test.analysis_disputes d
+  where d.dispute_state in ('open', 'under_review')
+  group by d.analysis_id
+),
 crm as (
   select
     bc.call_id,
@@ -308,6 +316,7 @@ select
   av.analysis_id as current_analysis_id,
   av.overall_score,
   av.reliability as analysis_reliability,
+  coalesce(disputes.has_open_dispute, false) as has_open_dispute,
   av.methodology_version_id,
   av.prompt_version_id,
   av.knowledge_publication_id,
@@ -335,6 +344,7 @@ select
       then 'missed_client'
     when c.classification = 'client'
       and av.analysis_id is not null
+      and not coalesce(disputes.has_open_dispute, false)
       then 'evaluated_client'
     else 'pending_or_technical'
   end as terminal_metric_category,
@@ -342,6 +352,7 @@ select
     when c.classification = 'client'
      and av.analysis_id is not null
      and av.reliability = 'reliable'
+     and not coalesce(disputes.has_open_dispute, false)
     then av.overall_score
     else null
   end as official_score
@@ -355,6 +366,8 @@ left join atp_test.analysis_versions av
  and av.analysis_state = 'current'
 left join ai
   on ai.analysis_id = av.analysis_id
+left join disputes
+  on disputes.analysis_id = av.analysis_id
 left join crm
   on crm.call_id = c.call_id
 left join callbacks
@@ -411,6 +424,7 @@ select
   o.classification,
   o.terminal_metric_category,
   o.analysis_reliability,
+  o.has_open_dispute,
   o.official_score,
   o.ai_outcome_types,
   o.crm_fact_types,
