@@ -24,8 +24,8 @@
 - `003_proverka_bazovoi_shemy_db01.sql` — исторический FAIL verify;
 - `004_otkat_bazovoi_shemy_db01_NE_ZAPUSKAT.sql` — recovery, не запускать;
 - `005_povtornaya_proverka_bazovoi_shemy_db01.sql` — PASS;
-- `006_sozdanie_sloya_transkripcii_i_privacy_db02.sql` — следующий SQL;
-- `007_proverka_sloya_transkripcii_i_privacy_db02.sql` — verify DB-02 после успешного шага 006;
+- `006_sozdanie_sloya_transkripcii_i_privacy_db02.sql` — Success;
+- `007_proverka_sloya_transkripcii_i_privacy_db02.sql` — следующий SQL, verify DB-02;
 - `008_otkat_sloya_transkripcii_i_privacy_db02_NE_ZAPUSKAT.sql` — recovery, самостоятельно не запускать.
 
 После DB-02 нумерация продолжится с `009_...`.

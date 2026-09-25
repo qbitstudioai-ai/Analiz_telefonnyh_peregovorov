@@ -67,8 +67,8 @@ Read-only preflight завершён PASS: запросы на `shablon_analiz_t
 - `003_proverka_bazovoi_shemy_db01.sql` — исторический FAIL проверочного SQL;
 - `004_otkat_bazovoi_shemy_db01_NE_ZAPUSKAT.sql` — recovery, не запускать;
 - `005_povtornaya_proverka_bazovoi_shemy_db01.sql` — PASS;
-- `006_sozdanie_sloya_transkripcii_i_privacy_db02.sql` — **следующий разрешённый SQL**;
-- `007_proverka_sloya_transkripcii_i_privacy_db02.sql` — запускать только после успешного шага 006;
+- `006_sozdanie_sloya_transkripcii_i_privacy_db02.sql` — фактически выполнен, **Success**;
+- `007_proverka_sloya_transkripcii_i_privacy_db02.sql` — **следующий разрешённый SQL**;
 - `008_otkat_sloya_transkripcii_i_privacy_db02_NE_ZAPUSKAT.sql` — recovery, не запускать без отдельного решения.
 
 ## Фактический статус применения
@@ -76,7 +76,9 @@ Read-only preflight завершён PASS: запросы на `shablon_analiz_t
 - DB-08B preflight — PASS;
 - DB-01 migration — **применена**;
 - DB-01 verify — **PASS**;
-- DB-02—DB-07 migrations — ещё не применялись;
+- DB-02 migration — **применена**, Supabase вернул `Success. No rows returned`;
+- DB-02 verify — ещё не запускался;
+- DB-03—DB-07 migrations — ещё не применялись;
 - реальные Credentials, n8n workflow, серверные сервисы и dashboard к schema `shablon_analiz_telefonnyh_peregovorov` ещё не подключены и не проверены.
 
-Следующий шаг: DB-02 migration из `006_sozdanie_sloya_transkripcii_i_privacy_db02.sql`.
+Следующий шаг: DB-02 verify из `007_proverka_sloya_transkripcii_i_privacy_db02.sql`.
