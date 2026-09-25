@@ -21,7 +21,8 @@
 
 - `001_proverka_kontura.sql` — выполнен, PASS;
 - `002_sozdanie_bazovoi_shemy_db01.sql` — выполнен, Success;
-- `003_proverka_bazovoi_shemy_db01.sql` — первый запуск выявил дефект verify; файл исправлен и является следующим SQL для повторного запуска;
-- `004_otkat_bazovoi_shemy_db01_NE_ZAPUSKAT.sql` — recovery-файл, самостоятельно не запускать.
+- `003_proverka_bazovoi_shemy_db01.sql` — первый запуск выявил дефект verify; второй запуск в Studio повторил старый текст из открытой вкладки;
+- `004_otkat_bazovoi_shemy_db01_NE_ZAPUSKAT.sql` — recovery-файл, самостоятельно не запускать;
+- `005_povtornaya_proverka_bazovoi_shemy_db01.sql` — исправленный verify для запуска через новую вкладку `New Query` в Supabase Studio.
 
-Следующие SQL этой задачи будут продолжать нумерацию с `005_...`.
+После PASS шага `005` следующие рабочие SQL продолжат нумерацию с `006_...`.

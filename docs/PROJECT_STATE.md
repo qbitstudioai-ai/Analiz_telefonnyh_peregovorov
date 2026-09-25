@@ -67,8 +67,9 @@ Read-only preflight завершён PASS: запросы на `shablon_analiz_t
 
 - `001_proverka_kontura.sql` — фактически выполнен, PASS;
 - `002_sozdanie_bazovoi_shemy_db01.sql` — фактически выполнен, **Success**;
-- `003_proverka_bazovoi_shemy_db01.sql` — исправлен после первого FAIL и снова является **следующим разрешённым SQL**;
-- `004_otkat_bazovoi_shemy_db01_NE_ZAPUSKAT.sql` — recovery-файл, не запускать без отдельного решения.
+- `003_proverka_bazovoi_shemy_db01.sql` — первый запуск выявил дефект verify; повторный запуск в Studio выполнил старый текст из открытой вкладки;
+- `004_otkat_bazovoi_shemy_db01_NE_ZAPUSKAT.sql` — recovery-файл, не запускать без отдельного решения;
+- `005_povtornaya_proverka_bazovoi_shemy_db01.sql` — **следующий разрешённый SQL**, открыть через `New Query` в Supabase Studio.
 
 ## Фактический статус применения
 
@@ -78,4 +79,4 @@ Read-only preflight завершён PASS: запросы на `shablon_analiz_t
 - DB-02—DB-07 migrations — ещё не применялись;
 - реальные Credentials, n8n workflow, серверные сервисы и dashboard к schema `shablon_analiz_telefonnyh_peregovorov` ещё не подключены и не проверены.
 
-Исправление verify: добавлена отдельная неиспользованная filter operation для cross-call negative test, чтобы проверка доходила до составного FK, а не упиралась в уникальность `operation_id`. До PASS исправленного файла `003_proverka_bazovoi_shemy_db01.sql` нельзя утверждать, что DB-01 фактически проверена.
+Исправление verify: добавлена отдельная неиспользованная filter operation для cross-call negative test, чтобы проверка доходила до составного FK, а не упиралась в уникальность `operation_id`. Второй полученный лог всё ещё содержит старый `v_filter_operation_id`, тогда как GitHub уже содержит `v_cross_call_filter_operation_id`; следовательно, в Studio был повторно выполнен старый текст из открытой вкладки. Для исключения путаницы создан новый шаг `005_povtornaya_proverka_bazovoi_shemy_db01.sql`. До его PASS нельзя утверждать, что DB-01 фактически проверена.
