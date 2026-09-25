@@ -33,7 +33,7 @@
 | [x] DB-03 | ChatGPT | Migration конфигураций и знаний | Созданы migration/verify/rollback для 13 tables + internal published-only view; draft-first config lifecycle, immutable publication membership, exact doc/fragment/embedding provenance, product scope и external-embedding policy статически проверены; к Supabase не применено |
 | [x] DB-04 | ChatGPT | Migration analysis/evidence | Созданы migration/verify/guarded rollback для 11 tables; exact input manifest, typed claims/evidence, exact safe segment/knowledge refs, absence coverage и current evidence gate статически проверены; direct final-state INSERT bypass закрыт; к Supabase не применено |
 | [x] DB-05 | ChatGPT | Migration CRM/outgoing/corrections/audit | Созданы migration/verify/guarded rollback для 7 tables; CRM/human facts отделены от AI outcome, callback использует trusted refs, outgoing action предшествует send, delivered/unknown retry gates, corrections/disputes и append-only audit статически проверены; к Supabase не применено |
-| [ ] DB-06 | ChatGPT | Dashboard views/metric SQL | Представления и функции реализуют METRICS/DASHBOARD_DATA_MAP без альтернативных формул |
+| [x] DB-06 | ChatGPT | Dashboard views/metric SQL | Созданы migration/verify/guarded rollback для 12 views + 7 metric/filter functions; logical-call decomposition, current/reliable/no-dispute averages, N/A criteria, stages, AI/CRM split, callback window, speech provenance и drill-down IDs статически проверены; к Supabase не применено |
 | [ ] DB-07 | ChatGPT | Изоляция и права test | Созданы ограниченные test roles/grants/RLS/functions; negative tests DOC-10 подтверждают изоляцию на test |
 | [ ] DB-08 | Павел + ChatGPT | Применение migrations в test Supabase | Павел запускает подготовленный SQL в test; ChatGPT по фактическому результату проверяет schema, constraints, права и rollback/recovery; production не затрагивается |
 
@@ -92,33 +92,33 @@
 
 ## Текущая следующая задача
 
-**DB-06 — dashboard views/metric SQL.**
+**DB-07 — изоляция и права test.**
 
-Цель: реализовать согласованные server-side views/functions дашборда поверх DB-01—DB-05 строго по [METRICS](specs/METRICS.md) и [DASHBOARD_DATA_MAP](DASHBOARD_DATA_MAP.md), без подключения UI и без применения к Supabase.
+Цель: создать ограниченные PostgreSQL test roles/grants/RLS/functions для DB-01—DB-06 и executable negative tests по [ACCESS_AND_ISOLATION](specs/ACCESS_AND_ISOLATION.md), без создания production roles и без применения к Supabase.
 
-Объём DB-06:
+Объём DB-07:
 
-- общая картина звонков;
-- менеджеры;
-- критерии;
-- этапы;
-- ошибки/сильные стороны;
-- список звонков;
-- AI outcome и CRM confirmations раздельно;
-- качество обработки;
-- единая логика current/reliable/period;
-- drill-down до call IDs/evidence.
+- runtime role для n8n/CORE одного test contour;
+- privacy-role с отдельным доступом к mapping/raw data;
+- knowledge reader без publish/edit;
+- dashboard reader/server role;
+- admin/correction capabilities через ограниченные операции;
+- отсутствие direct browser/service_role access;
+- grants/revokes/RLS/security-definer boundary только где обосновано;
+- negative isolation/privilege tests;
+- rollback test roles/policies/functions.
 
 Критерий готовности:
 
 - migration/verify/rollback записаны в GitHub;
-- формулы не дублируют и не меняют METRICS;
-- preliminary analysis не попадает в официальный average;
-- not applicable не превращается в zero;
-- AI outcome не выдаётся за CRM fact;
-- duplicate event не увеличивает logical-call metrics;
-- агрегаты раскрываются до образующих call IDs;
+- ordinary role не имеет postgres/service_role-like broad privileges;
+- dashboard role не читает pseudonym mapping/raw transcript без отдельного права;
+- knowledge reader читает only published product-scoped knowledge и не publish/edit;
+- test roles не имеют production objects/credentials;
+- direct table writes ограничены по обязанности;
+- privileged write operations имеют explicit functions/audit path;
+- negative tests проверяют denied reads/writes/DDL/secret-like access;
 - SQL проходит статическую проверку;
 - к Supabase не применён.
 
-Профильные документы DB-06: [METRICS](specs/METRICS.md), [DASHBOARD_DATA_MAP](DASHBOARD_DATA_MAP.md), [FEEDBACK_AND_DASHBOARD](specs/FEEDBACK_AND_DASHBOARD.md), [DATA_DICTIONARY](DATA_DICTIONARY.md), [VERSIONING](specs/VERSIONING.md).
+Профильные документы DB-07: [ACCESS_AND_ISOLATION](specs/ACCESS_AND_ISOLATION.md), [DASHBOARD_ADMIN](specs/DASHBOARD_ADMIN.md), [TRANSCRIPTION_AND_PRIVACY](specs/TRANSCRIPTION_AND_PRIVACY.md), [ANALYSIS_AND_KNOWLEDGE](specs/ANALYSIS_AND_KNOWLEDGE.md), [RELEASE_CHECKLIST](RELEASE_CHECKLIST.md).
