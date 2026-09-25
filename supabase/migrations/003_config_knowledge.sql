@@ -97,6 +97,23 @@ create type atp_test.knowledge_publication_state as enum (
   'invalidated'
 );
 
+-- New business configuration versions always start as draft.
+create function atp_test.guard_config_initial_state()
+returns trigger
+language plpgsql
+set search_path = pg_catalog
+as $function$
+begin
+  if new.config_state <> 'draft' then
+    raise exception
+      '% must be inserted as draft; activation is a separate operation',
+      tg_table_name;
+  end if;
+
+  return new;
+end
+$function$;
+
 -- Generic guard for prompt/methodology/filter rows after leaving draft.
 create function atp_test.guard_config_semantic_update()
 returns trigger
@@ -198,6 +215,10 @@ create unique index uq_prompt_versions_one_active
   on atp_test.prompt_versions (family_ref)
   where config_state = 'active';
 
+create trigger trg_prompt_versions_guard_initial_state
+before insert on atp_test.prompt_versions
+for each row execute function atp_test.guard_config_initial_state();
+
 create trigger trg_prompt_versions_guard_semantic_update
 before update on atp_test.prompt_versions
 for each row execute function atp_test.guard_config_semantic_update();
@@ -261,6 +282,10 @@ create unique index uq_methodology_versions_family_version
 create unique index uq_methodology_versions_one_active
   on atp_test.methodology_versions (family_ref)
   where config_state = 'active';
+
+create trigger trg_methodology_versions_guard_initial_state
+before insert on atp_test.methodology_versions
+for each row execute function atp_test.guard_config_initial_state();
 
 create trigger trg_methodology_versions_guard_semantic_update
 before update on atp_test.methodology_versions
@@ -416,6 +441,10 @@ create unique index uq_filter_rule_versions_family_version
 create unique index uq_filter_rule_versions_one_active
   on atp_test.filter_rule_versions (family_ref)
   where config_state = 'active';
+
+create trigger trg_filter_rule_versions_guard_initial_state
+before insert on atp_test.filter_rule_versions
+for each row execute function atp_test.guard_config_initial_state();
 
 create trigger trg_filter_rule_versions_guard_semantic_update
 before update on atp_test.filter_rule_versions
