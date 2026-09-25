@@ -10,37 +10,39 @@ SQL, JSON workflow, программный код, n8n, Supabase, сервер �
 
 ## Последняя завершённая задача
 
-**DOC-16 — описаны административная панель и границы пользовательского управления.**
+**DOC-17 — доведена спецификация общей базы знаний нескольких продуктов.**
 
-Создан и проверен [DASHBOARD_ADMIN](specs/DASHBOARD_ADMIN.md).
+Обновлён [ANALYSIS_AND_KNOWLEDGE](specs/ANALYSIS_AND_KNOWLEDGE.md).
 
 Зафиксировано:
 
-- пользовательские роли отделены от технических PostgreSQL/service roles;
-- вместо одного super-admin используются отдельные логические capabilities;
-- руководитель, администратор внедрения, редактор/публикатор знаний, корректор и технический оператор различаются по смыслу;
-- browser не получает service_role, PostgreSQL password или runtime Credentials;
-- company + environment определяются серверной авторизацией и не расширяются URL/query/body;
-- draft, activation/publication, correction, operational action и high-risk production action являются разными операциями;
-- использованные версии не редактируются in place; изменения следуют DOC-13;
-- evidence corrections не обходят DOC-14;
-- ручные исправления сохраняют автора, причину, старое/новое состояние и audit trail;
-- reanalysis не означает автоматическую повторную отправку feedback;
-- секреты не показываются обратно пользователю;
-- test и production не смешиваются;
-- migration/restore/arbitrary SQL не являются функциями обычной админ-панели;
+- у компании один канонический источник knowledge documents, а продукты не создают независимые копии без необходимости;
+- document, fragment, embedding и publication version являются разными сущностями;
+- lifecycle: draft → validation → publication → runtime read → superseded/archive/depublication; invalidated выделен отдельно;
+- publication является отдельной явной операцией и фиксирует exact разрешённый набор;
+- runtime reader фиксирует publication version до retrieval и сохраняет exact fragment refs;
+- бот и анализ звонков используют отдельные runtime identities и не вызывают workflow друг друга;
+- reader, editor и publisher разделены;
+- product scope позволяет разным продуктам получать разные разрешённые subsets одного канонического источника;
+- test и production имеют отдельные publication families и не активируют друг друга автоматически;
+- новая публикация действует только на новые операции и не переписывает старые analyses;
+- historical reanalysis является отдельной операцией;
+- embeddings привязаны к exact fragment + model/config и не расширяют права;
+- vector search ограничен company + environment + publication + product scope;
+- пустой retrieval не заменяется знаниями другой компании, draft или общими знаниями LLM;
+- fact-dependent анализ не подтверждается без обязательного knowledge input;
 - определены 36 обязательных сценариев будущей проверки.
 
-UI, Supabase Auth/RLS, SQL, реальные роли пользователей и production approval chain ещё не реализованы.
+SQL/RLS, физическая RAG-схема, chunk size, vector index, конкретная embedding model, реальные документы и production публикации не создавались и не тестировались.
 
 ## Следующая одна задача
 
-**DOC-17 — довести спецификацию общей базы знаний нескольких продуктов.**
+**DOC-18 — описать мониторинг, резервирование, тестирование и безопасный выпуск.**
 
-Цель: завершить [ANALYSIS_AND_KNOWLEDGE](specs/ANALYSIS_AND_KNOWLEDGE.md): определить lifecycle knowledge draft → validation → publication → archive/depublication, единый published source компании для независимых продуктов, права reader/editor/publisher, поведение embeddings/vector search, связь publication version с анализом и обязательные отрицательные проверки — без SQL, физической схемы и реального импорта документов.
+Цель: создать `docs/RELEASE_CHECKLIST.md` и закрепить эксплуатационные требования: health/alerts, backup/restore, retention-aware backup, test strategy, release gates, rollback/reconciliation, секреты, ресурсы и блокирующие проверки перед production — без фактического деплоя или изменения сервера.
 
-Критерий готовности: понятно, как бот первичного обращения и анализ звонков используют один источник знаний компании независимо друг от друга, почему они получают только разрешённую опубликованную версию своей компании, как новая публикация влияет на новые/старые analyses и какие проверки обязательны до реализации.
+Критерий готовности: существует единый проверяемый checklist, по которому нельзя назвать систему готовой к production без подтверждённых тестов из DOC-04—DOC-17, восстановления backup, изоляции компаний, privacy, delivery/idempotency, мониторинга и подготовленного rollback.
 
 ## Что не применялось
 
-SQL, workflow, код, миграции, настройки n8n/Supabase, сервер, UI, реальные Credentials, реальные документы компаний и production не изменялись и не тестировались.
+SQL, workflow, код, миграции, настройки n8n/Supabase, сервер, реальные Credentials, реальные документы компаний и production не изменялись и не тестировались.
