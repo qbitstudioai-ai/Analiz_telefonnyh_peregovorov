@@ -107,6 +107,20 @@ declare
   v_old jsonb;
   v_new jsonb;
 begin
+  if old.config_state <> 'draft' and new.config_state = 'draft' then
+    raise exception
+      '% cannot return to draft after leaving draft; create a new version',
+      tg_table_name;
+  end if;
+
+  if old.config_state = 'active'
+     and new.config_state not in ('active', 'superseded', 'invalidated')
+  then
+    raise exception
+      '% active version can only remain active or become superseded/invalidated',
+      tg_table_name;
+  end if;
+
   if old.config_state <> 'draft' then
     v_old := to_jsonb(old)
       - 'config_state'
@@ -327,7 +341,11 @@ begin
       v_state;
   end if;
 
-  return coalesce(new, old);
+  if tg_op = 'DELETE' then
+    return old;
+  end if;
+
+  return new;
 end
 $function$;
 
@@ -482,44 +500,6 @@ create unique index uq_knowledge_document_versions_number
 create unique index uq_knowledge_document_versions_one_current
   on atp_test.knowledge_document_versions (document_id)
   where version_state = 'current';
-
-create function atp_test.guard_knowledge_document_semantic_update()
-returns trigger
-language plpgsql
-set search_path = pg_catalog, atp_test
-as $function$
-declare
-  v_is_published boolean;
-begin
-  select exists (
-    select 1
-    from atp_test.knowledge_publication_documents pd
-    join atp_test.knowledge_publications p
-      on p.publication_id = pd.publication_id
-    where pd.document_version_id = old.document_version_id
-      and p.publication_state in ('published', 'superseded', 'archived')
-  )
-  into v_is_published;
-
-  if old.editorial_state <> 'draft' or v_is_published then
-    if old.content is distinct from new.content
-      or old.content_sha256 is distinct from new.content_sha256
-      or old.metadata is distinct from new.metadata
-      or old.source_version_ref is distinct from new.source_version_ref
-      or old.external_embedding_allowed is distinct from new.external_embedding_allowed
-      or old.embedding_policy_ref is distinct from new.embedding_policy_ref
-      or old.document_id is distinct from new.document_id
-      or old.version_no is distinct from new.version_no
-      or old.predecessor_document_version_id is distinct from new.predecessor_document_version_id
-    then
-      raise exception
-        'Knowledge document version is immutable after leaving draft/publication; create a new version';
-    end if;
-  end if;
-
-  return new;
-end
-$function$;
 
 -- Chunk/fragment version.
 create table atp_test.knowledge_fragments (
@@ -846,7 +826,11 @@ begin
       v_state;
   end if;
 
-  return coalesce(new, old);
+  if tg_op = 'DELETE' then
+    return old;
+  end if;
+
+  return new;
 end
 $function$;
 
@@ -861,6 +845,52 @@ for each row execute function atp_test.guard_knowledge_publication_membership();
 create trigger trg_knowledge_publication_products_guard
 before insert or update or delete on atp_test.knowledge_publication_fragment_products
 for each row execute function atp_test.guard_knowledge_publication_membership();
+
+-- Publication row becomes immutable by meaning after publication.
+create function atp_test.guard_knowledge_publication_update()
+returns trigger
+language plpgsql
+set search_path = pg_catalog
+as $function$
+begin
+  if old.publication_state not in ('draft', 'ready')
+     and new.publication_state in ('draft', 'ready')
+  then
+    raise exception
+      'Published/historical knowledge publication cannot return to draft/ready';
+  end if;
+
+  if old.publication_state = 'published'
+     and new.publication_state not in ('published', 'superseded', 'archived', 'invalidated')
+  then
+    raise exception
+      'Published knowledge publication has an invalid state transition';
+  end if;
+
+  if old.publication_state not in ('draft', 'ready') then
+    if old.family_ref is distinct from new.family_ref
+       or old.version_no is distinct from new.version_no
+       or old.predecessor_publication_id is distinct from new.predecessor_publication_id
+       or old.manifest_sha256 is distinct from new.manifest_sha256
+       or old.actor_ref is distinct from new.actor_ref
+       or old.source_operation_ref is distinct from new.source_operation_ref
+       or old.validation_ref is distinct from new.validation_ref
+       or old.change_reason is distinct from new.change_reason
+       or old.published_at is distinct from new.published_at
+       or old.validation_status is distinct from new.validation_status
+    then
+      raise exception
+        'Knowledge publication manifest/provenance is immutable after publication';
+    end if;
+  end if;
+
+  return new;
+end
+$function$;
+
+create trigger trg_knowledge_publication_guard_update
+before update on atp_test.knowledge_publications
+for each row execute function atp_test.guard_knowledge_publication_update();
 
 -- Validate exact manifest at activation.
 create function atp_test.validate_knowledge_publication_activation()
@@ -996,6 +1026,23 @@ as $function$
 declare
   v_published boolean;
 begin
+  if old.editorial_state <> 'draft' and new.editorial_state = 'draft' then
+    raise exception
+      'Knowledge document version cannot return to draft; create a new version';
+  end if;
+
+  if old.validation_status = 'passed' and new.validation_status <> 'passed' then
+    raise exception
+      'Validated knowledge document cannot regress validation; invalidate or create a new version';
+  end if;
+
+  if old.version_state in ('current', 'superseded', 'invalidated')
+     and new.version_state = 'candidate'
+  then
+    raise exception
+      'Knowledge document version cannot return to candidate state';
+  end if;
+
   select exists (
     select 1
     from atp_test.knowledge_publication_documents pd
@@ -1038,6 +1085,18 @@ as $function$
 declare
   v_published boolean;
 begin
+  if old.validation_status = 'passed' and new.validation_status <> 'passed' then
+    raise exception
+      'Validated knowledge fragment cannot regress validation; invalidate or create a new version';
+  end if;
+
+  if old.version_state in ('current', 'superseded', 'invalidated')
+     and new.version_state = 'candidate'
+  then
+    raise exception
+      'Knowledge fragment cannot return to candidate state';
+  end if;
+
   select exists (
     select 1
     from atp_test.knowledge_publication_fragments pf
@@ -1082,6 +1141,25 @@ as $function$
 declare
   v_published boolean;
 begin
+  if old.embedding_state = 'ready'
+     and new.embedding_state not in ('ready', 'invalidated')
+  then
+    raise exception
+      'Ready knowledge embedding can only remain ready or become invalidated';
+  end if;
+
+  if old.validation_status = 'passed' and new.validation_status <> 'passed' then
+    raise exception
+      'Validated knowledge embedding cannot regress validation; invalidate or create a new version';
+  end if;
+
+  if old.version_state in ('current', 'superseded', 'invalidated')
+     and new.version_state = 'candidate'
+  then
+    raise exception
+      'Knowledge embedding cannot return to candidate state';
+  end if;
+
   select exists (
     select 1
     from atp_test.knowledge_publication_fragments pf
@@ -1119,8 +1197,9 @@ create trigger trg_knowledge_embeddings_guard
 before update on atp_test.knowledge_embeddings
 for each row execute function atp_test.guard_knowledge_embedding_update();
 
--- Runtime surface. DB-07 will grant runtime readers access to this surface,
--- not to draft/editor tables.
+-- Internal published-only runtime source surface.
+-- DB-07 must expose it through product-scoped restricted access.
+-- Do NOT grant product readers unrestricted SELECT on this raw view.
 create view atp_test.v_runtime_knowledge_fragments as
 select
   p.publication_id,
@@ -1177,6 +1256,6 @@ where p.publication_state = 'published'
   );
 
 comment on view atp_test.v_runtime_knowledge_fragments is
-  'Published-only knowledge runtime surface filtered by explicit product_code. Runtime grants are added in DB-07.';
+  'Internal published-only knowledge source. DB-07 must enforce product-scoped access and must not grant unrestricted SELECT to product runtime readers.';
 
 commit;
