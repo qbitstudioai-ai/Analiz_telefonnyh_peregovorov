@@ -947,7 +947,7 @@ LLM не может сослаться на segment/chunk, отсутствую�
 - полный workflow публикации знаний;
 - физическая SQL-модель доказательств; логический смысл закреплён в [EVIDENCE_MODEL](specs/EVIDENCE_MODEL.md).
 
-Версионирование определено в [VERSIONING](specs/VERSIONING.md), доказательства — в [EVIDENCE_MODEL](specs/EVIDENCE_MODEL.md); DOC-17 завершит публикацию общей базы знаний, DOC-18 — backup/release/эксплуатацию.
+Версионирование определено в [VERSIONING](specs/VERSIONING.md), доказательства — в [EVIDENCE_MODEL](specs/EVIDENCE_MODEL.md), lifecycle публикации общей базы знаний — в [ANALYSIS_AND_KNOWLEDGE](specs/ANALYSIS_AND_KNOWLEDGE.md); DOC-18 завершит backup/release/эксплуатацию.
 
 ## Критерий DOC-12
 
