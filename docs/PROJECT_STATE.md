@@ -22,22 +22,19 @@
 - переключение реального клиентского трафика;
 - публикация секретов в GitHub.
 
-## Последняя завершённая задача
+## Последний завершённый подэтап
 
-**DB-08A.1 — рабочий контур переименован в schema `shablon_analiz_telefonnyh_peregovorov`.**
+**DB-08B / DB-01 — базовая schema фактически применена и проверена PASS.**
 
-До фактического применения SQL Павел уточнил окончательное имя schema. В GitHub синхронно обновлены:
+Фактически подтверждено Павлом в рабочем Supabase:
 
-- migrations 001—007;
-- verify 001—007;
-- rollback 001—007;
-- DB-07 capability roles → `shablon_analiz_telefonnyh_peregovorov_*`;
-- DB-05 audit metadata → `scope_ref='shablon_analiz_telefonnyh_peregovorov'`, `environment_ref='working'`;
-- профильная документация и планы.
+- `001_proverka_kontura.sql` — PASS;
+- `002_sozdanie_bazovoi_shemy_db01.sql` — `Success. No rows returned`;
+- первый verify выявил дефект теста, затем старый текст был повторно запущен из вкладки Studio;
+- `005_povtornaya_proverka_bazovoi_shemy_db01.sql` — `Success. No rows returned`;
+- исправленный verify завершился без необработанной ошибки и выполнил финальный `ROLLBACK`, поэтому DB-01 считается фактически проверенной.
 
-Исторически DB-08A сначала адаптировал SQL к рабочей schema `shablon`; DB-08A.1 переименовал этот ещё не применённый контур в окончательное имя `shablon_analiz_telefonnyh_peregovorov`.
-
-SQL по-прежнему **не применён** к Supabase.
+DB-01: **применена + verify PASS**.
 
 ## Следующая одна задача
 
@@ -65,18 +62,21 @@ Read-only preflight завершён PASS: запросы на `shablon_analiz_t
 
 Для DB-08B используется последовательная нумерация с понятными названиями:
 
-- `001_proverka_kontura.sql` — фактически выполнен, PASS;
-- `002_sozdanie_bazovoi_shemy_db01.sql` — фактически выполнен, **Success**;
-- `003_proverka_bazovoi_shemy_db01.sql` — первый запуск выявил дефект verify; повторный запуск в Studio выполнил старый текст из открытой вкладки;
-- `004_otkat_bazovoi_shemy_db01_NE_ZAPUSKAT.sql` — recovery-файл, не запускать без отдельного решения;
-- `005_povtornaya_proverka_bazovoi_shemy_db01.sql` — **следующий разрешённый SQL**, открыть через `New Query` в Supabase Studio.
+- `001_proverka_kontura.sql` — PASS;
+- `002_sozdanie_bazovoi_shemy_db01.sql` — Success;
+- `003_proverka_bazovoi_shemy_db01.sql` — исторический FAIL проверочного SQL;
+- `004_otkat_bazovoi_shemy_db01_NE_ZAPUSKAT.sql` — recovery, не запускать;
+- `005_povtornaya_proverka_bazovoi_shemy_db01.sql` — PASS;
+- `006_sozdanie_sloya_transkripcii_i_privacy_db02.sql` — **следующий разрешённый SQL**;
+- `007_proverka_sloya_transkripcii_i_privacy_db02.sql` — запускать только после успешного шага 006;
+- `008_otkat_sloya_transkripcii_i_privacy_db02_NE_ZAPUSKAT.sql` — recovery, не запускать без отдельного решения.
 
 ## Фактический статус применения
 
 - DB-08B preflight — PASS;
-- DB-01 migration — **применена**, Supabase вернул `Success. No rows returned`;
-- DB-01 verify — **запускался и дал FAIL из-за дефекта самого verify SQL**: ожидался `foreign_key_violation`, но раньше сработал `uq_filter_decisions_operation`; migration/данные DB-01 этим результатом не признаны ошибочными;
+- DB-01 migration — **применена**;
+- DB-01 verify — **PASS**;
 - DB-02—DB-07 migrations — ещё не применялись;
 - реальные Credentials, n8n workflow, серверные сервисы и dashboard к schema `shablon_analiz_telefonnyh_peregovorov` ещё не подключены и не проверены.
 
-Исправление verify: добавлена отдельная неиспользованная filter operation для cross-call negative test, чтобы проверка доходила до составного FK, а не упиралась в уникальность `operation_id`. Второй полученный лог всё ещё содержит старый `v_filter_operation_id`, тогда как GitHub уже содержит `v_cross_call_filter_operation_id`; следовательно, в Studio был повторно выполнен старый текст из открытой вкладки. Для исключения путаницы создан новый шаг `005_povtornaya_proverka_bazovoi_shemy_db01.sql`. До его PASS нельзя утверждать, что DB-01 фактически проверена.
+Следующий шаг: DB-02 migration из `006_sozdanie_sloya_transkripcii_i_privacy_db02.sql`.

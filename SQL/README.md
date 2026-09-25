@@ -17,12 +17,15 @@
 
 `SQL/DB-08B/` — фактическое применение DB-01—DB-07 в рабочем Supabase, schema `shablon_analiz_telefonnyh_peregovorov`.
 
-Сейчас зафиксированы:
+Текущая последовательность:
 
-- `001_proverka_kontura.sql` — выполнен, PASS;
-- `002_sozdanie_bazovoi_shemy_db01.sql` — выполнен, Success;
-- `003_proverka_bazovoi_shemy_db01.sql` — первый запуск выявил дефект verify; второй запуск в Studio повторил старый текст из открытой вкладки;
-- `004_otkat_bazovoi_shemy_db01_NE_ZAPUSKAT.sql` — recovery-файл, самостоятельно не запускать;
-- `005_povtornaya_proverka_bazovoi_shemy_db01.sql` — исправленный verify для запуска через новую вкладку `New Query` в Supabase Studio.
+- `001_proverka_kontura.sql` — PASS;
+- `002_sozdanie_bazovoi_shemy_db01.sql` — Success;
+- `003_proverka_bazovoi_shemy_db01.sql` — исторический FAIL verify;
+- `004_otkat_bazovoi_shemy_db01_NE_ZAPUSKAT.sql` — recovery, не запускать;
+- `005_povtornaya_proverka_bazovoi_shemy_db01.sql` — PASS;
+- `006_sozdanie_sloya_transkripcii_i_privacy_db02.sql` — следующий SQL;
+- `007_proverka_sloya_transkripcii_i_privacy_db02.sql` — verify DB-02 после успешного шага 006;
+- `008_otkat_sloya_transkripcii_i_privacy_db02_NE_ZAPUSKAT.sql` — recovery, самостоятельно не запускать.
 
-После PASS шага `005` следующие рабочие SQL продолжат нумерацию с `006_...`.
+После DB-02 нумерация продолжится с `009_...`.
