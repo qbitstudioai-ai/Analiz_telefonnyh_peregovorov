@@ -17,6 +17,7 @@
 | Защита от дублей и повторной обработки | [RELIABILITY_AND_IDEMPOTENCY](specs/RELIABILITY_AND_IDEMPOTENCY.md) |
 | Временное хранение и удаление аудио | [AUDIO_RETENTION](specs/AUDIO_RETENTION.md) |
 | Транскрибация, дикторы, приватность | [TRANSCRIPTION_AND_PRIVACY](specs/TRANSCRIPTION_AND_PRIVACY.md) |
+| Изоляция компаний, сред и сервисных доступов | [ACCESS_AND_ISOLATION](specs/ACCESS_AND_ISOLATION.md) |
 | Анализ и знания | [ANALYSIS_AND_KNOWLEDGE](specs/ANALYSIS_AND_KNOWLEDGE.md) |
 | Обратная связь и дашборд | [FEEDBACK_AND_DASHBOARD](specs/FEEDBACK_AND_DASHBOARD.md) |
 | Происхождение, хранение и расчёт данных дашборда | [DASHBOARD_DATA_MAP](DASHBOARD_DATA_MAP.md) |
