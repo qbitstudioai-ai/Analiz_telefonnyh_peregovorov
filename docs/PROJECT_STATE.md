@@ -10,38 +10,41 @@ Production не разрешён. Созданные SQL/workflow/code не сч
 
 ## Последняя завершённая задача
 
-**DB-04 — создан SQL-слой analysis/evidence.**
+**DB-05 — создан SQL-слой CRM/outgoing/corrections/audit.**
 
-Созданы migration/verify/rollback и [описание DB-04](implementation/DB-04.md).
+Созданы migration/verify/rollback и [описание DB-05](implementation/DB-05.md).
 
 Статически подтверждено:
 
-- 11 DB-04 tables, 13 functions, 9 enum types и 18 triggers;
-- analysis version фиксирует exact call/operation/transcript/roles/privacy/quality/prompt/methodology/knowledge publication/model/config manifest;
-- direct INSERT сразу как validated/current заблокирован отдельным initial-state guard;
-- candidate нельзя создать с заранее passed evidence gate;
-- criteria/stages/observations/AI outcome являются typed claims exact analysis version;
-- knowledge evidence может ссылаться только на exact `analysis_knowledge_inputs`;
-- conversation evidence может ссылаться только на exact safe segment pinned privacy package;
-- absence evidence использует scope + processing quality, а не выдуманную цитату;
-- evidence reference integrity и coverage физически различимы;
-- current analysis требует validated state, CORE validation и structural evidence gate;
-- migration/rollback совпадают по 11 tables, 13 functions и 9 types;
+- 7 DB-05 tables, 10 enum types, 15 functions и 18 triggers;
+- CRM/human confirmation физически отделён от AI inferred outcome;
+- correction/cancel CRM-факта создают новую immutable source event chain;
+- callback связывает missed → outbound call только по trusted basis и финальное решение immutable;
+- outgoing action создаётся до delivery attempt и pin exact validated/current analysis;
+- succeeded delivery требует provider-confirmed delivered;
+- safe retry разрешён только для failed_retryable;
+- confirmed delivery блокирует следующую попытку;
+- outcome_unknown блокирует retry до reconciliation;
+- reconciliation различает confirmed_delivered / confirmed_not_delivered / unresolved;
+- dispute не является прямым изменением score;
+- correction начинается proposed и applied требует succeeded operation;
+- audit trail append-only;
+- migration/rollback совпадают по 7 tables, 10 types и 15 functions;
 - SQL lexical structure сбалансирована;
-- executable `service_role`, `bytea/blob` и признаки типовых реальных секретов отсутствуют.
+- CASCADE, executable service_role, bytea/blob, production DDL и признаки типовых секретов отсутствуют.
 
-Не проверено: фактическое выполнение PostgreSQL/Supabase. DB-01—DB-04 созданы в GitHub, но не применены.
+Не проверено: фактическое выполнение PostgreSQL/Supabase. DB-01—DB-05 созданы в GitHub, но не применены.
 
 ## Следующая одна задача
 
-**DB-05 — подготовить migration CRM/outgoing/corrections/audit.**
+**DB-06 — подготовить dashboard views/metric SQL.**
 
 Исполнитель: **ChatGPT**.
 
-Цель: физически реализовать подтверждённые CRM/человеком факты, callback-связи, outgoing actions/delivery attempts, corrections/disputes и audit trail без смешения с AI outcome и без небезопасного повторения внешних side effects.
+Цель: реализовать server-side views/functions дашборда поверх DB-01—DB-05 строго по METRICS/DASHBOARD_DATA_MAP, без альтернативных формул.
 
-Критерий готовности: migration/verify/rollback в GitHub; CRM fact отделён от AI outcome, outgoing action создаётся до send, confirmed delivery блокирует повтор, outcome_unknown остаётся наблюдаемым/reconciliation-required, correction/audit сохраняют происхождение и историю, SQL статически проверен и не считается применённым.
+Критерий готовности: migration/verify/rollback в GitHub; official averages используют только current reliable analysis, N/A не превращается в zero, AI outcome и CRM confirmation остаются раздельными, агрегаты раскрываются до call IDs, SQL статически проверен и не считается применённым.
 
 ## Что ещё не применялось
 
-DB-01—DB-05 SQL, workflow, код, изменения n8n/Supabase/сервера, реальные Credentials, реальные данные/документы компаний, backup и production фактически не применялись и не тестировались.
+DB-01—DB-06 SQL, workflow, код, изменения n8n/Supabase/сервера, реальные Credentials, реальные данные/документы компаний, backup и production фактически не применялись и не тестировались.
