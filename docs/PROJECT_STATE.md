@@ -84,8 +84,8 @@ Read-only preflight завершён PASS: запросы на `shablon_analiz_t
 - `018_proverka_sostoyaniya_posle_vtoroi_oshibki_db04.sql` — фактически выполнен, **PASS / 0 rows**; частичных DB-04 объектов после второй ошибки не найдено;
 - `019_povtornoe_sozdanie_analiza_i_dokazatelstv_db04.sql` — Success;
 - `020_proverka_analiza_i_dokazatelstv_db04.sql` — PASS;
-- `021_sozdanie_crm_otpravok_ispravlenii_i_audita_db05.sql` — **следующий разрешённый SQL**;
-- `022_proverka_crm_otpravok_ispravlenii_i_audita_db05.sql` — запускать только после успешного шага 021;
+- `021_sozdanie_crm_otpravok_ispravlenii_i_audita_db05.sql` — фактически выполнен, **Success**;
+- `022_proverka_crm_otpravok_ispravlenii_i_audita_db05.sql` — **следующий разрешённый SQL**, verify DB-05;
 - `023_otkat_crm_otpravok_ispravlenii_i_audita_db05_NE_ZAPUSKAT.sql` — recovery, не запускать без отдельного решения.
 
 ## Фактический статус применения
@@ -99,7 +99,9 @@ Read-only preflight завершён PASS: запросы на `shablon_analiz_t
 - DB-03 verify — **PASS**;
 - DB-04 migration — **применена**;
 - DB-04 verify — **PASS**;
-- DB-05—DB-07 migrations — ещё не применялись;
+- DB-05 migration — **применена**, Supabase вернул `Success. No rows returned`;
+- DB-05 verify — ещё не запускался;
+- DB-06—DB-07 migrations — ещё не применялись;
 - реальные Credentials, n8n workflow, серверные сервисы и dashboard к schema `shablon_analiz_telefonnyh_peregovorov` ещё не подключены и не проверены.
 
-Следующий шаг: DB-05 migration `021_sozdanie_crm_otpravok_ispravlenii_i_audita_db05.sql`.
+Следующий шаг: DB-05 verify `022_proverka_crm_otpravok_ispravlenii_i_audita_db05.sql`.
