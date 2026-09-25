@@ -314,6 +314,10 @@ select
   fd.outcome as filter_outcome,
   fd.reason_code as filter_reason_code,
   av.analysis_id as current_analysis_id,
+  av.raw_transcript_id as analysis_raw_transcript_id,
+  av.role_assignment_version_id as analysis_role_assignment_version_id,
+  av.pseudonymized_transcript_id as analysis_pseudonymized_transcript_id,
+  av.privacy_package_id as analysis_privacy_package_id,
   av.overall_score,
   av.reliability as analysis_reliability,
   coalesce(disputes.has_open_dispute, false) as has_open_dispute,
@@ -632,7 +636,14 @@ left join atp_test.processing_quality q_exact
 left join atp_test.v_dashboard_processing_quality_current qc
   on qc.call_id = z.call_id
 left join atp_test.v_dashboard_speech_metrics_current sm
-  on sm.call_id = z.call_id;
+  on sm.call_id = z.call_id
+ and (
+   z.current_analysis_id is null
+   or (
+     sm.raw_transcript_id = z.analysis_raw_transcript_id
+     and sm.role_assignment_version_id = z.analysis_role_assignment_version_id
+   )
+ );
 
 -- Shared global filter contract. p_start is inclusive, p_end is exclusive.
 -- The dashboard server is responsible for converting a company's local period
