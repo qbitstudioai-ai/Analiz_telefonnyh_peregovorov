@@ -158,6 +158,68 @@ begin
       v_public_exec_count;
   end if;
 
+  -- No capability role receives destructive DELETE/TRUNCATE on business tables.
+  select string_agg(
+    grantee || ':' || table_name || ':' || privilege_type,
+    ', ' order by grantee, table_name, privilege_type
+  )
+  into v_bad
+  from information_schema.role_table_grants
+  where table_schema = 'atp_test'
+    and grantee = any(v_roles)
+    and privilege_type in ('DELETE', 'TRUNCATE');
+
+  if v_bad is not null then
+    raise exception
+      'DB-07 verification failed: destructive table privilege(s) found: %',
+      v_bad;
+  end if;
+
+  -- Future functions created by the same migration owner must not silently
+  -- regain PostgreSQL's default PUBLIC EXECUTE inside atp_test.
+  select count(*)
+  into v_count
+  from pg_default_acl d
+  join pg_namespace n on n.oid = d.defaclnamespace
+  cross join lateral aclexplode(d.defaclacl) acl
+  where n.nspname = 'atp_test'
+    and d.defaclrole = (
+      select oid from pg_roles where rolname = current_user
+    )
+    and d.defaclobjtype = 'f'
+    and acl.grantee = 0
+    and acl.privilege_type = 'EXECUTE';
+
+  if v_count <> 0 then
+    raise exception
+      'DB-07 verification failed: default PUBLIC EXECUTE remains for future atp_test functions';
+  end if;
+
+  -- Every DB-07 safe view must retain security_barrier=true.
+  select string_agg(c.relname, ', ' order by c.relname)
+  into v_bad
+  from pg_class c
+  join pg_namespace n on n.oid = c.relnamespace
+  where n.nspname = 'atp_test'
+    and c.relname in (
+      'v_knowledge_call_analysis_runtime',
+      'v_dashboard_safe_transcript_segments',
+      'v_dashboard_evidence_conversation',
+      'v_dashboard_evidence_knowledge',
+      'v_monitoring_calls',
+      'v_monitoring_operations'
+    )
+    and not (
+      coalesce(c.reloptions, '{}'::text[])
+      @> array['security_barrier=true']::text[]
+    );
+
+  if v_bad is not null then
+    raise exception
+      'DB-07 verification failed: safe view(s) lost security_barrier: %',
+      v_bad;
+  end if;
+
   -- Orchestrator positive controls.
   if not has_table_privilege(
     'atp_test_orchestrator', 'atp_test.calls', 'INSERT'
