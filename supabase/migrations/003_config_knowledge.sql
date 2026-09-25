@@ -328,7 +328,11 @@ declare
   v_methodology_id uuid;
   v_state atp_test.config_version_state;
 begin
-  v_methodology_id := coalesce(new.methodology_version_id, old.methodology_version_id);
+  if tg_op = 'DELETE' then
+    v_methodology_id := old.methodology_version_id;
+  else
+    v_methodology_id := new.methodology_version_id;
+  end if;
 
   select config_state
   into v_state
@@ -813,7 +817,11 @@ declare
   v_publication_id uuid;
   v_state atp_test.knowledge_publication_state;
 begin
-  v_publication_id := coalesce(new.publication_id, old.publication_id);
+  if tg_op = 'DELETE' then
+    v_publication_id := old.publication_id;
+  else
+    v_publication_id := new.publication_id;
+  end if;
 
   select publication_state
   into v_state
@@ -992,6 +1000,28 @@ begin
         )
     ) then
       raise exception 'Publication requires an embedding that is not ready/valid';
+    end if;
+
+    if exists (
+      select 1
+      from atp_test.knowledge_publication_fragments pf
+      join atp_test.knowledge_fragments f
+        on f.fragment_id = pf.fragment_id
+      join atp_test.knowledge_document_versions dv
+        on dv.document_version_id = pf.document_version_id
+      join atp_test.knowledge_embeddings e
+        on e.embedding_id = pf.embedding_id
+      where pf.publication_id = new.publication_id
+        and (
+          e.input_sha256 <> f.content_sha256
+          or (
+            e.external_api
+            and not dv.external_embedding_allowed
+          )
+        )
+    ) then
+      raise exception
+        'Publication embedding provenance/policy does not match exact fragment/document';
     end if;
 
     if exists (
