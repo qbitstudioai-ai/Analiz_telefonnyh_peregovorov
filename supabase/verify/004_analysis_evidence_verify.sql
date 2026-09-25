@@ -213,7 +213,8 @@ begin
   select pg_get_constraintdef(con.oid)
   into v_definition
   from pg_constraint con
-  where con.conname = 'analysis_knowledge_inputs_product_scope';
+  where con.conname = 'analysis_knowledge_inputs_product_scope'
+    and con.conrelid = 'atp_test.analysis_knowledge_inputs'::regclass;
 
   if v_definition is null
      or regexp_replace(lower(v_definition), '\s+', ' ', 'g')
@@ -226,7 +227,8 @@ begin
   select pg_get_constraintdef(con.oid)
   into v_definition
   from pg_constraint con
-  where con.conname = 'evidence_conversation_refs_package_segment_fk';
+  where con.conname = 'evidence_conversation_refs_package_segment_fk'
+    and con.conrelid = 'atp_test.evidence_conversation_refs'::regclass;
 
   if v_definition is null
      or regexp_replace(lower(v_definition), '\s+', ' ', 'g')
@@ -239,7 +241,8 @@ begin
   select pg_get_constraintdef(con.oid)
   into v_definition
   from pg_constraint con
-  where con.conname = 'evidence_knowledge_refs_analysis_input_fk';
+  where con.conname = 'evidence_knowledge_refs_analysis_input_fk'
+    and con.conrelid = 'atp_test.evidence_knowledge_refs'::regclass;
 
   if v_definition is null
      or regexp_replace(lower(v_definition), '\s+', ' ', 'g')
@@ -252,7 +255,8 @@ begin
   select pg_get_constraintdef(con.oid)
   into v_definition
   from pg_constraint con
-  where con.conname = 'evidence_absence_checks_analysis_package_fk';
+  where con.conname = 'evidence_absence_checks_analysis_package_fk'
+    and con.conrelid = 'atp_test.evidence_absence_checks'::regclass;
 
   if v_definition is null
      or regexp_replace(lower(v_definition), '\s+', ' ', 'g')
