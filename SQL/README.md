@@ -26,8 +26,8 @@
 - `015_proverka_sostoyaniya_posle_oshibki_db04.sql` — PASS / 0 rows, частичных объектов нет;
 - `016_povtornoe_sozdanie_analiza_i_dokazatelstv_db04.sql` — фактический FAIL 42830 из-за позднего UNIQUE в `analysis_versions`;
 - `017_proverka_analiza_i_dokazatelstv_db04.sql` — не запускался;
-- `018_proverka_sostoyaniya_posle_vtoroi_oshibki_db04.sql` — следующий SQL, read-only;
-- `019_povtornoe_sozdanie_analiza_i_dokazatelstv_db04.sql` — исправленная migration с корректным порядком DDL, только после PASS 018;
+- `018_proverka_sostoyaniya_posle_vtoroi_oshibki_db04.sql` — PASS / 0 rows, частичных объектов нет;
+- `019_povtornoe_sozdanie_analiza_i_dokazatelstv_db04.sql` — следующий SQL, исправленная migration с корректным порядком DDL;
 - `020_proverka_analiza_i_dokazatelstv_db04.sql` — актуальный verify после успешного 019.
 
 Исправление DB-04: добавлен точный UNIQUE target `analysis_claims (claim_id, analysis_id)` для FK из `evidence_sets`.

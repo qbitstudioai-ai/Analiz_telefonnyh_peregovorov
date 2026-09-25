@@ -37,7 +37,7 @@
 | [x] DB-07 | ChatGPT | Изоляция и права шаблонного контура | Канонический migration/verify/guarded rollback: 9 NOLOGIN capability roles, 18 security-barrier runtime/safe views, 5 defense-in-depth RLS policies на raw/mapping, 2 audited SECURITY DEFINER proposal functions, PUBLIC/default privilege hardening и positive/negative matrix; физический контур обновлён DB-08A до `shablon_analiz_telefonnyh_peregovorov`; к Supabase ещё не применено |
 | [x] DB-08A | ChatGPT | Адаптация DB-01—DB-07 к рабочей schema `shablon` | Migration/verify/rollback были переведены с `atp_test` на рабочий контур `shablon`; SQL к Supabase не применялся |
 | [x] DB-08A.1 | ChatGPT | Окончательное имя рабочего контура | До применения SQL schema переименована в `shablon_analiz_telefonnyh_peregovorov` во всех migration/verify/rollback и документации; DB-07 roles используют `shablon_analiz_telefonnyh_peregovorov_*`; DB-05 audit использует `scope_ref='shablon_analiz_telefonnyh_peregovorov'`; к Supabase ещё не применено |
-| [~] DB-08B | Павел + ChatGPT | Применение migrations в рабочем Supabase | DB-01—DB-03 migration + verify PASS; DB-04 попытки 012 и 016 дали FAIL 42830; найдены два дефекта DDL (missing UNIQUE и поздний UNIQUE), исправлены; следующий шаг — read-only `018_proverka_sostoyaniya_posle_vtoroi_oshibki_db04.sql` |
+| [~] DB-08B | Павел + ChatGPT | Применение migrations в рабочем Supabase | DB-01—DB-03 migration + verify PASS; DB-04 попытки 012 и 016 дали FAIL 42830; оба дефекта DDL исправлены; read-only 018 подтвердил 0 частичных объектов; следующий шаг — `019_povtornoe_sozdanie_analiza_i_dokazatelstv_db04.sql` |
 
 ## Этап B — обработка и контракты
 
