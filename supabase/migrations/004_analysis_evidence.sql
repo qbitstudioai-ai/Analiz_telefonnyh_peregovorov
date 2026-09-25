@@ -330,6 +330,36 @@ create unique index uq_analysis_versions_one_current
 create index ix_analysis_versions_call_created
   on atp_test.analysis_versions (call_id, created_at desc);
 
+-- Every analysis must enter the lifecycle as a candidate. Without this
+-- insert guard a caller could bypass the candidate -> validated/current
+-- update gate by inserting a final state directly.
+create function atp_test.guard_analysis_initial_state()
+returns trigger
+language plpgsql
+set search_path = pg_catalog
+as $function$
+begin
+  if new.analysis_state <> 'candidate' then
+    raise exception
+      'Analysis must be inserted as candidate; validation/current is a separate gated transition';
+  end if;
+
+  if new.evidence_gate_status <> 'pending'
+     or new.validated_at is not null
+     or new.current_at is not null
+  then
+    raise exception
+      'New candidate analysis cannot pre-declare evidence gate/validated/current state';
+  end if;
+
+  return new;
+end
+$function$;
+
+create trigger trg_analysis_versions_guard_initial_state
+before insert on atp_test.analysis_versions
+for each row execute function atp_test.guard_analysis_initial_state();
+
 -- Exact RAG fragments actually available to this analysis, not the whole publication.
 create table atp_test.analysis_knowledge_inputs (
   analysis_id uuid not null,
