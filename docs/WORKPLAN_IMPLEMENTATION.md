@@ -30,7 +30,7 @@
 |---|---|---|---|
 | [x] DB-01 | ChatGPT | Базовая migration приёма и надёжности | Созданы migration/verify/guarded rollback для 8 базовых таблиц test-контура; статически проверены баланс SQL, состав таблиц, отсутствие executable bytea/blob/service_role/production DDL и составные FK call-operation; к Supabase не применено |
 | [x] DB-02 | ChatGPT | Migration транскрипции/privacy | Созданы migration/verify/rollback для 11 DB-02 tables; raw/pseudonym/mapping физически разделены, privacy package имеет exact safe segment set и не имеет direct raw/mapping FK; retention/version ownership статически проверены; к Supabase не применено |
-| [ ] DB-03 | ChatGPT | Migration конфигураций и знаний | Реализованы versioned prompt/methodology/filter/knowledge document-fragment-embedding-publication структуры и immutable provenance |
+| [x] DB-03 | ChatGPT | Migration конфигураций и знаний | Созданы migration/verify/rollback для 13 tables + internal published-only view; draft-first config lifecycle, immutable publication membership, exact doc/fragment/embedding provenance, product scope и external-embedding policy статически проверены; к Supabase не применено |
 | [ ] DB-04 | ChatGPT | Migration analysis/evidence | Реализованы analyses, criteria, stages, observations, evidence, current/history и input manifest без fake refs |
 | [ ] DB-05 | ChatGPT | Migration CRM/outgoing/corrections/audit | Реализованы CRM confirmations, outgoing actions/delivery attempts, callbacks, corrections и audit trail |
 | [ ] DB-06 | ChatGPT | Dashboard views/metric SQL | Представления и функции реализуют METRICS/DASHBOARD_DATA_MAP без альтернативных формул |
@@ -92,30 +92,33 @@
 
 ## Текущая следующая задача
 
-**DB-03 — migration конфигураций и знаний.**
+**DB-04 — migration analysis и evidence.**
 
-Цель: подготовить versioned физический слой конфигураций и общей базы знаний поверх DB-01/DB-02, без применения к Supabase.
+Цель: подготовить versioned физический слой результатов анализа и доказательств поверх DB-01—DB-03, без применения к Supabase.
 
-Объём DB-03:
+Объём DB-04:
 
-- prompt versions;
-- methodology versions + criteria/stage definitions;
-- filter-rule versions;
-- knowledge document versions;
-- knowledge fragment versions;
-- embedding metadata/version provenance;
-- publication versions и exact published membership/product scope;
-- current/superseded/invalidated semantics.
+- analysis versions + immutable input manifest;
+- criterion scores;
+- call stages;
+- observations/errors/strengths;
+- AI inferred outcomes;
+- evidence targets;
+- conversation evidence;
+- absence evidence;
+- knowledge evidence;
+- composite evidence links;
+- evidence validation/coverage/current-analysis gate.
 
 Критерий готовности:
 
 - migration/verify/rollback записаны в GitHub;
-- published set фиксирует exact document/fragment versions;
-- draft не попадает в runtime publication;
-- reader/product scope представлен физически без копирования исходного документа;
-- embedding привязан к exact fragment + model/config;
-- одна current version в каждом version family;
+- analysis pins exact transcript/roles/privacy/prompt/methodology/knowledge publication/model/config/operation;
+- score/stage/observation относятся только к exact analysis version;
+- evidence refs физически ограничены exact analysis inputs;
+- fake segment/knowledge refs не проходят FK/gate;
+- current analysis нельзя назначить до evidence gate;
 - SQL проходит статическую проверку;
 - к Supabase не применён.
 
-Профильные документы DB-03: [DATA_DICTIONARY](DATA_DICTIONARY.md), [ANALYSIS_AND_KNOWLEDGE](specs/ANALYSIS_AND_KNOWLEDGE.md), [VERSIONING](specs/VERSIONING.md), [ACCESS_AND_ISOLATION](specs/ACCESS_AND_ISOLATION.md), [DASHBOARD_ADMIN](specs/DASHBOARD_ADMIN.md), [RELEASE_CHECKLIST](RELEASE_CHECKLIST.md).
+Профильные документы DB-04: [DATA_DICTIONARY](DATA_DICTIONARY.md), [VERSIONING](specs/VERSIONING.md), [EVIDENCE_MODEL](specs/EVIDENCE_MODEL.md), [INTEGRATION_CONTRACTS](specs/INTEGRATION_CONTRACTS.md), [METRICS](specs/METRICS.md), [ANALYSIS_AND_KNOWLEDGE](specs/ANALYSIS_AND_KNOWLEDGE.md).
