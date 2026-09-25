@@ -13,6 +13,7 @@ declare
   v_filter_ref text;
   v_call_id uuid;
   v_filter_operation_id uuid;
+  v_invalid_filter_operation_id uuid;
   v_document_id uuid;
   v_document_version_id uuid;
   v_fragment_id uuid;
@@ -315,6 +316,28 @@ begin
     v_filter_operation_id
   );
 
+  insert into atp_test.operations (
+    call_id,
+    operation_type,
+    idempotency_key,
+    contract_version,
+    correlation_id,
+    input_refs,
+    decision,
+    operation_state
+  )
+  values (
+    v_call_id,
+    'filter_call',
+    'verify-db03-filter-op-invalid-ref',
+    'contract-v1',
+    'verify-db03-filter-correlation-invalid-ref',
+    '{}'::jsonb,
+    'accepted',
+    'not_started'
+  )
+  returning operation_id into v_invalid_filter_operation_id;
+
   begin
     insert into atp_test.filter_decisions (
       call_id,
@@ -328,7 +351,7 @@ begin
       'accepted',
       'missing-filter-version',
       '{}'::jsonb,
-      v_filter_operation_id
+      v_invalid_filter_operation_id
     );
 
     raise exception
