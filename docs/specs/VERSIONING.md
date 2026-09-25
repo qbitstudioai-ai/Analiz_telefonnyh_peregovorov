@@ -447,7 +447,7 @@ Manual reanalysis:
 - создать новую analysis version с основанием correction;
 - сохранить отдельное override/correction event, которое явно участвует в effective view.
 
-Какой UX и права доступны Павлу/руководителю, определит DOC-16. История исходного AI result сохраняется в обоих вариантах.
+UX-границы и права Павла/руководителя определены в [DASHBOARD_ADMIN](DASHBOARD_ADMIN.md). История исходного AI result сохраняется в обоих вариантах.
 
 ## Версионирование и delivery
 
