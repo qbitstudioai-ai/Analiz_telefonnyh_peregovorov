@@ -37,7 +37,7 @@
 | [x] DB-07 | ChatGPT | Изоляция и права шаблонного контура | Канонический migration/verify/guarded rollback: 9 NOLOGIN capability roles, 18 security-barrier runtime/safe views, 5 defense-in-depth RLS policies на raw/mapping, 2 audited SECURITY DEFINER proposal functions, PUBLIC/default privilege hardening и positive/negative matrix; физический контур обновлён DB-08A до `shablon_analiz_telefonnyh_peregovorov`; к Supabase ещё не применено |
 | [x] DB-08A | ChatGPT | Адаптация DB-01—DB-07 к рабочей schema `shablon` | Migration/verify/rollback были переведены с `atp_test` на рабочий контур `shablon`; SQL к Supabase не применялся |
 | [x] DB-08A.1 | ChatGPT | Окончательное имя рабочего контура | До применения SQL schema переименована в `shablon_analiz_telefonnyh_peregovorov` во всех migration/verify/rollback и документации; DB-07 roles используют `shablon_analiz_telefonnyh_peregovorov_*`; DB-05 audit использует `scope_ref='shablon_analiz_telefonnyh_peregovorov'`; к Supabase ещё не применено |
-| [~] DB-08B | Павел + ChatGPT | Применение migrations в рабочем Supabase | DB-01—DB-03 migration + verify PASS; DB-04 первая попытка FAIL 42830, исправлена; read-only шаг 015 подтвердил 0 частичных объектов; следующий шаг — `016_povtornoe_sozdanie_analiza_i_dokazatelstv_db04.sql` |
+| [~] DB-08B | Павел + ChatGPT | Применение migrations в рабочем Supabase | DB-01—DB-03 migration + verify PASS; DB-04 попытки 012 и 016 дали FAIL 42830; найдены два дефекта DDL (missing UNIQUE и поздний UNIQUE), исправлены; следующий шаг — read-only `018_proverka_sostoyaniya_posle_vtoroi_oshibki_db04.sql` |
 
 ## Этап B — обработка и контракты
 
@@ -85,6 +85,16 @@
 | [ ] OPS-02 | VSCode | Monitoring/alerts | Проверены service/down, backlog, cleanup, disk, backup и alert delivery |
 | [ ] OPS-03 | VSCode + Павел | Backup/restore test | Создан test backup и фактически восстановлен в quarantine; side effects отключены |
 | [ ] OPS-04 | ChatGPT | Full test release checklist | Все обязательные applicable gates имеют PASS/evidence либо перечислены blockers |
+
+## Финальный этап — тиражируемый SQL-шаблон новой компании
+
+Этот этап выполняется **после полной настройки и фактической проверки Supabase и n8n**, когда структура рабочего контура стабилизирована.
+
+| Статус / ID | Исполнитель | Результат | Критерий готовности |
+|---|---|---|---|
+| [ ] TPL-01 | ChatGPT + VSCode | Параметризованный SQL-шаблон развёртывания новой компании | Из одного проверенного эталона генерируется чистая company-schema по параметрам компании/schema/role-prefix; есть preflight, полный DDL, FK/functions/views/RLS/roles/grants, verify и безопасный отказ при конфликте; шаблон не содержит данных, секретов и исторических отладочных SQL; тестовое развёртывание в новой пустой schema даёт PASS |
+
+Правило: операционная история `SQL/DB-08B/` не используется как установщик новой компании. Источником шаблона служит только финальная проверенная каноническая структура после завершения Supabase+n8n.
 
 ## Gate production
 
