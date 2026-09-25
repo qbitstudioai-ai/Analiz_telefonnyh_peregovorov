@@ -10,41 +10,41 @@ Production не разрешён. Созданные SQL/workflow/code не сч
 
 ## Последняя завершённая задача
 
-**DB-05 — создан SQL-слой CRM/outgoing/corrections/audit.**
+**DB-06 — создан server-side SQL-слой dashboard metrics.**
 
-Созданы migration/verify/rollback и [описание DB-05](implementation/DB-05.md).
+Созданы migration/verify/rollback и [описание DB-06](implementation/DB-06.md).
 
 Статически подтверждено:
 
-- 7 DB-05 tables, 10 enum types, 15 functions и 18 triggers;
-- CRM/human confirmation физически отделён от AI inferred outcome;
-- correction/cancel CRM-факта создают новую immutable source event chain;
-- callback связывает missed → outbound call только по trusted basis и финальное решение immutable;
-- outgoing action создаётся до delivery attempt и pin exact validated/current analysis;
-- succeeded delivery требует provider-confirmed delivered;
-- safe retry разрешён только для failed_retryable;
-- confirmed delivery блокирует следующую попытку;
-- outcome_unknown блокирует retry до reconciliation;
-- reconciliation различает confirmed_delivered / confirmed_not_delivered / unresolved;
-- dispute не является прямым изменением score;
-- correction начинается proposed и applied требует succeeded operation;
-- audit trail append-only;
-- migration/rollback совпадают по 7 tables, 10 types и 15 functions;
+- 12 DB-06 views и 7 shared metric/filter functions;
+- dashboard считается по logical calls, а не webhook events;
+- четыре terminal categories взаимно исключаются;
+- official score использует current reliable analysis без open dispute;
+- preliminary/technically incomplete считаются отдельно;
+- N/A criterion не превращается в zero;
+- stage denominator использует applicable calls;
+- observation denominator выводится из applicable criterion/stage context;
+- AI outcome и CRM/human fact остаются раздельными result sources;
+- callback without-call считается только после переданного окна компании;
+- speech metrics при current analysis совпадают с exact transcript/role inputs;
+- все агрегаты используют один shared period/filter contract;
+- metric functions возвращают drill-down call IDs;
+- migration/rollback совпадают по 12 views и 7 functions;
 - SQL lexical structure сбалансирована;
 - CASCADE, executable service_role, bytea/blob, production DDL и признаки типовых секретов отсутствуют.
 
-Не проверено: фактическое выполнение PostgreSQL/Supabase. DB-01—DB-05 созданы в GitHub, но не применены.
+Не проверено: фактическое выполнение PostgreSQL/Supabase и численные fixture results. DB-01—DB-06 созданы в GitHub, но не применены.
 
 ## Следующая одна задача
 
-**DB-06 — подготовить dashboard views/metric SQL.**
+**DB-07 — подготовить изоляцию и права test.**
 
 Исполнитель: **ChatGPT**.
 
-Цель: реализовать server-side views/functions дашборда поверх DB-01—DB-05 строго по METRICS/DASHBOARD_DATA_MAP, без альтернативных формул.
+Цель: физически ограничить test runtime roles по обязанностям и подготовить negative permission tests без production roles/credentials.
 
-Критерий готовности: migration/verify/rollback в GitHub; official averages используют только current reliable analysis, N/A не превращается в zero, AI outcome и CRM confirmation остаются раздельными, агрегаты раскрываются до call IDs, SQL статически проверен и не считается применённым.
+Критерий готовности: migration/verify/rollback в GitHub; ordinary roles не имеют broad admin access, raw/mapping/knowledge/dashboard boundaries разделены, writes разрешены только обязанностям, negative tests проверяют denied operations, SQL статически проверен и не считается применённым.
 
 ## Что ещё не применялось
 
-DB-01—DB-06 SQL, workflow, код, изменения n8n/Supabase/сервера, реальные Credentials, реальные данные/документы компаний, backup и production фактически не применялись и не тестировались.
+DB-01—DB-07 SQL, workflow, код, изменения n8n/Supabase/сервера, реальные Credentials, реальные данные/документы компаний, backup и production фактически не применялись и не тестировались.
