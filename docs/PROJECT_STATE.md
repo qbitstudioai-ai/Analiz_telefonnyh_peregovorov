@@ -10,39 +10,41 @@ SQL, JSON workflow, программный код, n8n, Supabase, сервер �
 
 ## Последняя завершённая задача
 
-**DOC-17 — доведена спецификация общей базы знаний нескольких продуктов.**
+**DOC-18 — описаны мониторинг, резервирование, тестирование и безопасный выпуск.**
 
-Обновлён [ANALYSIS_AND_KNOWLEDGE](specs/ANALYSIS_AND_KNOWLEDGE.md).
+Создан [RELEASE_CHECKLIST](RELEASE_CHECKLIST.md).
 
 Зафиксировано:
 
-- у компании один канонический источник knowledge documents, а продукты не создают независимые копии без необходимости;
-- document, fragment, embedding и publication version являются разными сущностями;
-- lifecycle: draft → validation → publication → runtime read → superseded/archive/depublication; invalidated выделен отдельно;
-- publication является отдельной явной операцией и фиксирует exact разрешённый набор;
-- runtime reader фиксирует publication version до retrieval и сохраняет exact fragment refs;
-- бот и анализ звонков используют отдельные runtime identities и не вызывают workflow друг друга;
-- reader, editor и publisher разделены;
-- product scope позволяет разным продуктам получать разные разрешённые subsets одного канонического источника;
-- test и production имеют отдельные publication families и не активируют друг друга автоматически;
-- новая публикация действует только на новые операции и не переписывает старые analyses;
-- historical reanalysis является отдельной операцией;
-- embeddings привязаны к exact fragment + model/config и не расширяют права;
-- vector search ограничен company + environment + publication + product scope;
-- пустой retrieval не заменяется знаниями другой компании, draft или общими знаниями LLM;
-- fact-dependent анализ не подтверждается без обязательного knowledge input;
-- определены 36 обязательных сценариев будущей проверки.
+- production-ready означает подтверждённые проверки конкретной компании/среды, а не наличие импортированного workflow или одного успешного звонка;
+- для выпуска нужен passport точных версий, scope, approval, test evidence, backup/restore evidence и rollback/reconciliation plan;
+- обязательные gates покрывают DOC-04—DOC-17;
+- cross-company exposure и privacy leak являются безусловными blockers;
+- backup не считается проверенным без реального restore test;
+- restore сначала поднимается в quarantine без внешних side effects;
+- retention применяется также к backup/snapshot и post-restore cleanup;
+- monitoring покрывает инфраструктуру, backlog/operations, AI, retention, integrations, dashboard и backup;
+- alert delivery должен быть реально проверен;
+- численные thresholds, RPO/RTO и concurrency задаются внедрением, а не шаблоном;
+- load test проверяет целевое/репрезентативное железо и backlog recovery;
+- test strategy включает unit/component/E2E/negative/failure-recovery;
+- test/production и credentials компаний не смешиваются;
+- rollback готовится до release и отделён от reconciliation уже случившихся внешних side effects;
+- миграция без реального обратного пути не называется обратимой;
+- production требует отдельного разрешения Павла;
+- определены 17 безусловных No-Go blockers;
+- документ прямо не утверждает, что хотя бы одна production-проверка уже пройдена.
 
-SQL/RLS, физическая RAG-схема, chunk size, vector index, конкретная embedding model, реальные документы и production публикации не создавались и не тестировались.
+Фактические monitoring stack, backup product, CI/CD, secret manager, RPO/RTO, thresholds, release window и production тесты ещё не выбирались и не выполнялись.
 
 ## Следующая одна задача
 
-**DOC-18 — описать мониторинг, резервирование, тестирование и безопасный выпуск.**
+**DOC-19 — выполнить итоговый аудит документации перед переходом к реализации.**
 
-Цель: создать `docs/RELEASE_CHECKLIST.md` и закрепить эксплуатационные требования: health/alerts, backup/restore, retention-aware backup, test strategy, release gates, rollback/reconciliation, секреты, ресурсы и блокирующие проверки перед production — без фактического деплоя или изменения сервера.
+Цель: обновить [DOCUMENTATION_AUDIT](DOCUMENTATION_AUDIT.md) и проверить связность требований DOC-01—DOC-18, статусы/ссылки, отсутствие противоречий, незакрытые бизнес-решения и точную границу между готовой документацией и ещё не выполненной реализацией.
 
-Критерий готовности: существует единый проверяемый checklist, по которому нельзя назвать систему готовой к production без подтверждённых тестов из DOC-04—DOC-17, восстановления backup, изоляции компаний, privacy, delivery/idempotency, мониторинга и подготовленного rollback.
+Критерий готовности: аудит подтверждает либо перечисляет конкретные проблемы; все относительные Markdown-ссылки проверены, статусы плана согласованы, будущие технические/бизнес-решения явно перечислены, а PROJECT_STATE содержит одну следующую задачу после документационного этапа без ложного утверждения production-ready.
 
 ## Что не применялось
 
-SQL, workflow, код, миграции, настройки n8n/Supabase, сервер, реальные Credentials, реальные документы компаний и production не изменялись и не тестировались.
+SQL, workflow, код, миграции, настройки n8n/Supabase, сервер, реальные Credentials, реальные данные/документы компаний, backup и production не изменялись и не тестировались.
