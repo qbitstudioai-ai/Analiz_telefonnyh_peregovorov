@@ -1,6 +1,6 @@
 -- DB-01
 -- Base ingest and reliability schema for the Analiz_telefonnyh_peregovorov template.
--- APPROVED WORKING CONTOUR. Run only in the approved Supabase project and only for schema shablon.
+-- APPROVED WORKING CONTOUR. Run only in the approved Supabase project and only for schema shablon_analiz_telefonnyh_peregovorov.
 -- Source requirements:
 --   docs/DATA_DICTIONARY.md
 --   docs/specs/INTEGRATION_CONTRACTS.md
@@ -11,7 +11,7 @@
 --
 -- Physical implementation decision for the working template contour:
 -- one PostgreSQL schema = one company+environment contour.
--- DB-01 uses the neutral template schema "shablon".
+-- DB-01 uses the neutral template schema "shablon_analiz_telefonnyh_peregovorov".
 -- DB-07 will implement/verify runtime roles and cross-contour isolation.
 --
 -- This migration stores only metadata for temporary audio. It never stores
@@ -26,26 +26,26 @@ begin
   if exists (
     select 1
     from pg_namespace
-    where nspname = 'shablon'
+    where nspname = 'shablon_analiz_telefonnyh_peregovorov'
   ) then
     raise exception
-      'DB-01 refuses to run because schema shablon already exists. Inspect schema shablon instead of rerunning blindly.';
+      'DB-01 refuses to run because schema shablon_analiz_telefonnyh_peregovorov already exists. Inspect schema shablon_analiz_telefonnyh_peregovorov instead of rerunning blindly.';
   end if;
 end
 $guard$;
 
-create schema shablon;
+create schema shablon_analiz_telefonnyh_peregovorov;
 
-comment on schema shablon is
-  'Working template contour for Analiz_telefonnyh_peregovorov. Schema shablon is isolated from unrelated schemas in the same Supabase project.';
+comment on schema shablon_analiz_telefonnyh_peregovorov is
+  'Working template contour for Analiz_telefonnyh_peregovorov. Schema shablon_analiz_telefonnyh_peregovorov is isolated from unrelated schemas in the same Supabase project.';
 
-create type shablon.contract_decision as enum (
+create type shablon_analiz_telefonnyh_peregovorov.contract_decision as enum (
   'accepted',
   'duplicate',
   'rejected'
 );
 
-create type shablon.operation_state as enum (
+create type shablon_analiz_telefonnyh_peregovorov.operation_state as enum (
   'not_started',
   'in_progress_unconfirmed',
   'succeeded',
@@ -54,7 +54,7 @@ create type shablon.operation_state as enum (
   'outcome_unknown'
 );
 
-create type shablon.call_processing_state as enum (
+create type shablon_analiz_telefonnyh_peregovorov.call_processing_state as enum (
   'registered',
   'excluded',
   'missed',
@@ -68,45 +68,45 @@ create type shablon.call_processing_state as enum (
   'technically_finished'
 );
 
-create type shablon.call_classification as enum (
+create type shablon_analiz_telefonnyh_peregovorov.call_classification as enum (
   'pending',
   'client',
   'excluded',
   'missed'
 );
 
-create type shablon.call_occurrence_kind as enum (
+create type shablon_analiz_telefonnyh_peregovorov.call_occurrence_kind as enum (
   'unknown',
   'first',
   'repeat'
 );
 
-create type shablon.call_direction as enum (
+create type shablon_analiz_telefonnyh_peregovorov.call_direction as enum (
   'unknown',
   'inbound',
   'outbound'
 );
 
-create type shablon.answer_status as enum (
+create type shablon_analiz_telefonnyh_peregovorov.answer_status as enum (
   'unknown',
   'answered',
   'missed'
 );
 
-create type shablon.filter_outcome as enum (
+create type shablon_analiz_telefonnyh_peregovorov.filter_outcome as enum (
   'accepted',
   'excluded',
   'missed'
 );
 
-create type shablon.transport_result as enum (
+create type shablon_analiz_telefonnyh_peregovorov.transport_result as enum (
   'not_sent',
   'transport_succeeded',
   'transport_failed',
   'transport_unknown'
 );
 
-create type shablon.audio_acquisition_state as enum (
+create type shablon_analiz_telefonnyh_peregovorov.audio_acquisition_state as enum (
   'requested',
   'downloading',
   'ready',
@@ -115,7 +115,7 @@ create type shablon.audio_acquisition_state as enum (
   'failed'
 );
 
-create type shablon.audio_cleanup_state as enum (
+create type shablon_analiz_telefonnyh_peregovorov.audio_cleanup_state as enum (
   'not_due',
   'due',
   'deleting',
@@ -123,7 +123,7 @@ create type shablon.audio_cleanup_state as enum (
   'delete_failed'
 );
 
-create function shablon.set_updated_at()
+create function shablon_analiz_telefonnyh_peregovorov.set_updated_at()
 returns trigger
 language plpgsql
 set search_path = pg_catalog
@@ -135,7 +135,7 @@ end
 $function$;
 
 -- Logical entity: menedzhery.
-create table shablon.managers (
+create table shablon_analiz_telefonnyh_peregovorov.managers (
   manager_id uuid primary key default gen_random_uuid(),
   source_code text not null,
   external_scope_ref text not null,
@@ -160,36 +160,36 @@ create table shablon.managers (
     check (is_active or active_to is not null)
 );
 
-comment on table shablon.managers is
-  'Trusted manager entity for the shablon contour. Local protected data only; LLM never assigns manager_id.';
+comment on table shablon_analiz_telefonnyh_peregovorov.managers is
+  'Trusted manager entity for the shablon_analiz_telefonnyh_peregovorov contour. Local protected data only; LLM never assigns manager_id.';
 
 create unique index uq_managers_active_external_binding
-  on shablon.managers (source_code, external_scope_ref, external_manager_id)
+  on shablon_analiz_telefonnyh_peregovorov.managers (source_code, external_scope_ref, external_manager_id)
   where active_to is null;
 
 create trigger trg_managers_set_updated_at
-before update on shablon.managers
-for each row execute function shablon.set_updated_at();
+before update on shablon_analiz_telefonnyh_peregovorov.managers
+for each row execute function shablon_analiz_telefonnyh_peregovorov.set_updated_at();
 
 -- Logical entity: zvonki.
-create table shablon.calls (
+create table shablon_analiz_telefonnyh_peregovorov.calls (
   call_id uuid primary key default gen_random_uuid(),
   source_adapter_code text not null,
   connection_ref text not null,
   call_identity_key text not null,
   external_call_id text,
-  manager_id uuid references shablon.managers(manager_id) on delete restrict,
+  manager_id uuid references shablon_analiz_telefonnyh_peregovorov.managers(manager_id) on delete restrict,
   contact_ref text,
   lead_ref text,
   deal_ref text,
   started_at timestamptz,
   ended_at timestamptz,
   duration_seconds integer,
-  direction shablon.call_direction not null default 'unknown',
-  answer_status shablon.answer_status not null default 'unknown',
-  occurrence_kind shablon.call_occurrence_kind not null default 'unknown',
-  classification shablon.call_classification not null default 'pending',
-  processing_state shablon.call_processing_state not null default 'registered',
+  direction shablon_analiz_telefonnyh_peregovorov.call_direction not null default 'unknown',
+  answer_status shablon_analiz_telefonnyh_peregovorov.answer_status not null default 'unknown',
+  occurrence_kind shablon_analiz_telefonnyh_peregovorov.call_occurrence_kind not null default 'unknown',
+  classification shablon_analiz_telefonnyh_peregovorov.call_classification not null default 'pending',
+  processing_state shablon_analiz_telefonnyh_peregovorov.call_processing_state not null default 'registered',
   current_filter_decision_id uuid,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -206,27 +206,27 @@ create table shablon.calls (
     check (ended_at is null or started_at is null or ended_at >= started_at)
 );
 
-comment on table shablon.calls is
+comment on table shablon_analiz_telefonnyh_peregovorov.calls is
   'One logical call/attempt of communication, not one webhook. call_identity_key is a server-derived stable identity inside source_adapter_code + connection_ref.';
 
 create unique index uq_calls_source_identity
-  on shablon.calls (source_adapter_code, connection_ref, call_identity_key);
+  on shablon_analiz_telefonnyh_peregovorov.calls (source_adapter_code, connection_ref, call_identity_key);
 
 create index ix_calls_manager_started_at
-  on shablon.calls (manager_id, started_at desc);
+  on shablon_analiz_telefonnyh_peregovorov.calls (manager_id, started_at desc);
 
 create index ix_calls_processing_state
-  on shablon.calls (processing_state, created_at);
+  on shablon_analiz_telefonnyh_peregovorov.calls (processing_state, created_at);
 
 create trigger trg_calls_set_updated_at
-before update on shablon.calls
-for each row execute function shablon.set_updated_at();
+before update on shablon_analiz_telefonnyh_peregovorov.calls
+for each row execute function shablon_analiz_telefonnyh_peregovorov.set_updated_at();
 
 -- Logical entity: sobytia_zvonkov.
 -- Duplicate receipts are allowed only with decision=duplicate and must point
 -- to the canonical earlier event. A non-duplicate external event identity is
 -- unique inside adapter + connection.
-create table shablon.call_events (
+create table shablon_analiz_telefonnyh_peregovorov.call_events (
   event_id uuid primary key default gen_random_uuid(),
   adapter_code text not null,
   connection_ref text not null,
@@ -236,17 +236,17 @@ create table shablon.call_events (
   event_type text not null,
   source_event_at timestamptz,
   received_at timestamptz not null default now(),
-  direction shablon.call_direction not null default 'unknown',
-  answer_status shablon.answer_status not null default 'unknown',
+  direction shablon_analiz_telefonnyh_peregovorov.call_direction not null default 'unknown',
+  answer_status shablon_analiz_telefonnyh_peregovorov.answer_status not null default 'unknown',
   participant_ref text,
   extension_ref text,
   crm_contact_ref text,
   crm_lead_ref text,
   crm_deal_ref text,
   audio_available boolean,
-  decision shablon.contract_decision not null,
-  call_id uuid references shablon.calls(call_id) on delete restrict,
-  duplicate_of_event_id uuid references shablon.call_events(event_id) on delete restrict,
+  decision shablon_analiz_telefonnyh_peregovorov.contract_decision not null,
+  call_id uuid references shablon_analiz_telefonnyh_peregovorov.calls(call_id) on delete restrict,
+  duplicate_of_event_id uuid references shablon_analiz_telefonnyh_peregovorov.call_events(event_id) on delete restrict,
   rejection_code text,
   safe_metadata jsonb not null default '{}'::jsonb,
 
@@ -278,44 +278,44 @@ create table shablon.call_events (
     )
 );
 
-comment on table shablon.call_events is
+comment on table shablon_analiz_telefonnyh_peregovorov.call_events is
   'One received source signal. Raw provider payload is intentionally not stored here; only normalized trusted refs and safe metadata.';
 
 create unique index uq_call_events_non_duplicate_identity
-  on shablon.call_events (adapter_code, connection_ref, event_identity_key)
+  on shablon_analiz_telefonnyh_peregovorov.call_events (adapter_code, connection_ref, event_identity_key)
   where decision <> 'duplicate';
 
 create index ix_call_events_call_received
-  on shablon.call_events (call_id, received_at);
+  on shablon_analiz_telefonnyh_peregovorov.call_events (call_id, received_at);
 
 create index ix_call_events_external_call
-  on shablon.call_events (adapter_code, connection_ref, external_call_id)
+  on shablon_analiz_telefonnyh_peregovorov.call_events (adapter_code, connection_ref, external_call_id)
   where external_call_id is not null;
 
 -- Logical entity: operacii.
-create table shablon.operations (
+create table shablon_analiz_telefonnyh_peregovorov.operations (
   operation_id uuid primary key default gen_random_uuid(),
-  scope_ref text not null default 'shablon',
-  call_id uuid not null references shablon.calls(call_id) on delete restrict,
+  scope_ref text not null default 'shablon_analiz_telefonnyh_peregovorov',
+  call_id uuid not null references shablon_analiz_telefonnyh_peregovorov.calls(call_id) on delete restrict,
   operation_type text not null,
   idempotency_key text not null,
   contract_version text not null,
   correlation_id text not null,
   input_refs jsonb not null default '{}'::jsonb,
-  decision shablon.contract_decision not null,
-  operation_state shablon.operation_state not null default 'not_started',
+  decision shablon_analiz_telefonnyh_peregovorov.contract_decision not null,
+  operation_state shablon_analiz_telefonnyh_peregovorov.operation_state not null default 'not_started',
   result_ref text,
   external_request_ref text,
   error_class text,
   error_code text,
-  supersedes_operation_id uuid references shablon.operations(operation_id) on delete restrict,
+  supersedes_operation_id uuid references shablon_analiz_telefonnyh_peregovorov.operations(operation_id) on delete restrict,
   requested_at timestamptz not null default now(),
   completed_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
 
   constraint operations_scope_is_test
-    check (scope_ref = 'shablon'),
+    check (scope_ref = 'shablon_analiz_telefonnyh_peregovorov'),
   constraint operations_type_not_blank
     check (btrim(operation_type) <> ''),
   constraint operations_idempotency_key_not_blank
@@ -339,31 +339,31 @@ create table shablon.operations (
     unique (operation_id, call_id)
 );
 
-comment on table shablon.operations is
+comment on table shablon_analiz_telefonnyh_peregovorov.operations is
   'One idempotent logical operation. Safe retries create operation_attempts, not a second equivalent operation.';
 
 create unique index uq_operations_call_type_idempotency
-  on shablon.operations (call_id, operation_type, idempotency_key);
+  on shablon_analiz_telefonnyh_peregovorov.operations (call_id, operation_type, idempotency_key);
 
 create index ix_operations_call_state
-  on shablon.operations (call_id, operation_state, requested_at);
+  on shablon_analiz_telefonnyh_peregovorov.operations (call_id, operation_state, requested_at);
 
 create index ix_operations_state_requested
-  on shablon.operations (operation_state, requested_at);
+  on shablon_analiz_telefonnyh_peregovorov.operations (operation_state, requested_at);
 
 create trigger trg_operations_set_updated_at
-before update on shablon.operations
-for each row execute function shablon.set_updated_at();
+before update on shablon_analiz_telefonnyh_peregovorov.operations
+for each row execute function shablon_analiz_telefonnyh_peregovorov.set_updated_at();
 
 -- Logical entity: popytki_operaciy.
-create table shablon.operation_attempts (
+create table shablon_analiz_telefonnyh_peregovorov.operation_attempts (
   attempt_id uuid primary key default gen_random_uuid(),
-  operation_id uuid not null references shablon.operations(operation_id) on delete restrict,
+  operation_id uuid not null references shablon_analiz_telefonnyh_peregovorov.operations(operation_id) on delete restrict,
   attempt_no integer not null,
-  attempt_state shablon.operation_state not null,
+  attempt_state shablon_analiz_telefonnyh_peregovorov.operation_state not null,
   external_request_ref text,
-  transport_result shablon.transport_result not null default 'not_sent',
-  decision shablon.contract_decision not null,
+  transport_result shablon_analiz_telefonnyh_peregovorov.transport_result not null default 'not_sent',
+  decision shablon_analiz_telefonnyh_peregovorov.contract_decision not null,
   error_class text,
   error_code text,
   safe_context jsonb not null default '{}'::jsonb,
@@ -384,23 +384,23 @@ create table shablon.operation_attempts (
     )
 );
 
-comment on table shablon.operation_attempts is
+comment on table shablon_analiz_telefonnyh_peregovorov.operation_attempts is
   'One concrete execution attempt of an operation. Attempt errors are primary technical facts for monitoring.';
 
 create unique index uq_operation_attempts_number
-  on shablon.operation_attempts (operation_id, attempt_no);
+  on shablon_analiz_telefonnyh_peregovorov.operation_attempts (operation_id, attempt_no);
 
 create index ix_operation_attempts_operation_time
-  on shablon.operation_attempts (operation_id, requested_at);
+  on shablon_analiz_telefonnyh_peregovorov.operation_attempts (operation_id, requested_at);
 
 create index ix_operation_attempts_state
-  on shablon.operation_attempts (attempt_state, requested_at);
+  on shablon_analiz_telefonnyh_peregovorov.operation_attempts (attempt_state, requested_at);
 
 -- Logical entity: resheniya_filtra.
-create table shablon.filter_decisions (
+create table shablon_analiz_telefonnyh_peregovorov.filter_decisions (
   filter_decision_id uuid primary key default gen_random_uuid(),
-  call_id uuid not null references shablon.calls(call_id) on delete restrict,
-  outcome shablon.filter_outcome not null,
+  call_id uuid not null references shablon_analiz_telefonnyh_peregovorov.calls(call_id) on delete restrict,
+  outcome shablon_analiz_telefonnyh_peregovorov.filter_outcome not null,
   reason_code text,
   filter_rules_version_ref text not null,
   input_facts jsonb not null default '{}'::jsonb,
@@ -420,30 +420,30 @@ create table shablon.filter_decisions (
     unique (filter_decision_id, call_id),
   constraint fk_filter_decisions_operation_call
     foreign key (operation_id, call_id)
-    references shablon.operations(operation_id, call_id)
+    references shablon_analiz_telefonnyh_peregovorov.operations(operation_id, call_id)
     on delete restrict
 );
 
-comment on table shablon.filter_decisions is
+comment on table shablon_analiz_telefonnyh_peregovorov.filter_decisions is
   'Versioned filter decision. Filtering never deletes the registered logical call.';
 
 create unique index uq_filter_decisions_operation
-  on shablon.filter_decisions (operation_id);
+  on shablon_analiz_telefonnyh_peregovorov.filter_decisions (operation_id);
 
 create index ix_filter_decisions_call_time
-  on shablon.filter_decisions (call_id, decided_at desc);
+  on shablon_analiz_telefonnyh_peregovorov.filter_decisions (call_id, decided_at desc);
 
-alter table shablon.calls
+alter table shablon_analiz_telefonnyh_peregovorov.calls
   add constraint fk_calls_current_filter_decision
   foreign key (current_filter_decision_id, call_id)
-  references shablon.filter_decisions(filter_decision_id, call_id)
+  references shablon_analiz_telefonnyh_peregovorov.filter_decisions(filter_decision_id, call_id)
   on delete restrict;
 
 -- Logical entity: svyazi_zvonkov.
-create table shablon.call_links (
+create table shablon_analiz_telefonnyh_peregovorov.call_links (
   call_link_id uuid primary key default gen_random_uuid(),
-  current_call_id uuid not null references shablon.calls(call_id) on delete restrict,
-  previous_call_id uuid references shablon.calls(call_id) on delete restrict,
+  current_call_id uuid not null references shablon_analiz_telefonnyh_peregovorov.calls(call_id) on delete restrict,
+  previous_call_id uuid references shablon_analiz_telefonnyh_peregovorov.calls(call_id) on delete restrict,
   external_entity_type text,
   external_entity_ref text,
   relation_type text not null,
@@ -476,25 +476,25 @@ create table shablon.call_links (
     check (previous_call_id is null or previous_call_id <> current_call_id)
 );
 
-comment on table shablon.call_links is
+comment on table shablon_analiz_telefonnyh_peregovorov.call_links is
   'Trusted relation between calls or between a call and a trusted external CRM/contact/deal entity. LLM guess is not sufficient evidence.';
 
 create unique index uq_call_links_identity
-  on shablon.call_links (current_call_id, relation_identity_key);
+  on shablon_analiz_telefonnyh_peregovorov.call_links (current_call_id, relation_identity_key);
 
 create index ix_call_links_previous_call
-  on shablon.call_links (previous_call_id)
+  on shablon_analiz_telefonnyh_peregovorov.call_links (previous_call_id)
   where previous_call_id is not null;
 
 -- Logical entity: vremennye_audio_artefakty.
-create table shablon.temporary_audio_artifacts (
+create table shablon_analiz_telefonnyh_peregovorov.temporary_audio_artifacts (
   audio_artifact_id uuid primary key default gen_random_uuid(),
-  call_id uuid not null references shablon.calls(call_id) on delete restrict,
+  call_id uuid not null references shablon_analiz_telefonnyh_peregovorov.calls(call_id) on delete restrict,
   acquisition_operation_id uuid not null,
   artifact_identity_key text not null,
   local_artifact_ref text not null,
   source_ref text not null,
-  acquisition_state shablon.audio_acquisition_state not null,
+  acquisition_state shablon_analiz_telefonnyh_peregovorov.audio_acquisition_state not null,
   size_bytes bigint,
   duration_ms bigint,
   integrity_algorithm text,
@@ -503,7 +503,7 @@ create table shablon.temporary_audio_artifacts (
   delete_after timestamptz not null,
   deleted_at timestamptz,
   deletion_confirmed_at timestamptz,
-  cleanup_state shablon.audio_cleanup_state not null default 'not_due',
+  cleanup_state shablon_analiz_telefonnyh_peregovorov.audio_cleanup_state not null default 'not_due',
   cleanup_error_code text,
 
   constraint temporary_audio_identity_not_blank
@@ -539,20 +539,20 @@ create table shablon.temporary_audio_artifacts (
     ),
   constraint fk_temporary_audio_operation_call
     foreign key (acquisition_operation_id, call_id)
-    references shablon.operations(operation_id, call_id)
+    references shablon_analiz_telefonnyh_peregovorov.operations(operation_id, call_id)
     on delete restrict
 );
 
-comment on table shablon.temporary_audio_artifacts is
+comment on table shablon_analiz_telefonnyh_peregovorov.temporary_audio_artifacts is
   'Metadata for temporary local audio only. No audio bytea/blob is stored in Supabase. local_artifact_ref must be server-generated and must not contain secrets.';
 
 create unique index uq_temporary_audio_identity
-  on shablon.temporary_audio_artifacts (call_id, artifact_identity_key);
+  on shablon_analiz_telefonnyh_peregovorov.temporary_audio_artifacts (call_id, artifact_identity_key);
 
 create index ix_temporary_audio_cleanup_due
-  on shablon.temporary_audio_artifacts (cleanup_state, delete_after);
+  on shablon_analiz_telefonnyh_peregovorov.temporary_audio_artifacts (cleanup_state, delete_after);
 
 create index ix_temporary_audio_call
-  on shablon.temporary_audio_artifacts (call_id, created_at);
+  on shablon_analiz_telefonnyh_peregovorov.temporary_audio_artifacts (call_id, created_at);
 
 commit;

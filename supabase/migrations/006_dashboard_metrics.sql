@@ -1,6 +1,6 @@
 -- DB-06
 -- Canonical dashboard metric rows and server-side metric functions.
--- APPROVED WORKING CONTOUR. Depends on DB-01..DB-05; scope is limited to schema shablon.
+-- APPROVED WORKING CONTOUR. Depends on DB-01..DB-05; scope is limited to schema shablon_analiz_telefonnyh_peregovorov.
 --
 -- Views keep drill-down call_id/provenance. Metric functions use one shared
 -- filter contract so cards/tables/exports cannot silently use another sample.
@@ -12,9 +12,9 @@ declare
   v_missing text;
 begin
   if not exists (
-    select 1 from pg_namespace where nspname = 'shablon'
+    select 1 from pg_namespace where nspname = 'shablon_analiz_telefonnyh_peregovorov'
   ) then
-    raise exception 'DB-06 requires schema shablon';
+    raise exception 'DB-06 requires schema shablon_analiz_telefonnyh_peregovorov';
   end if;
 
   select string_agg(required_relation, ', ' order by required_relation)
@@ -41,7 +41,7 @@ begin
     select 1
     from pg_class c
     join pg_namespace n on n.oid = c.relnamespace
-    where n.nspname = 'shablon'
+    where n.nspname = 'shablon_analiz_telefonnyh_peregovorov'
       and c.relname = required.required_relation
       and c.relkind in ('r', 'p')
   );
@@ -54,7 +54,7 @@ begin
     select 1
     from pg_class c
     join pg_namespace n on n.oid = c.relnamespace
-    where n.nspname = 'shablon'
+    where n.nspname = 'shablon_analiz_telefonnyh_peregovorov'
       and c.relname in (
         'v_dashboard_business_confirmations_current',
         'v_dashboard_delivery_current',
@@ -77,7 +77,7 @@ $guard$;
 
 -- Latest trusted event in each business-fact family. A cancelled family is
 -- absent from current facts but remains in immutable history.
-create view shablon.v_dashboard_business_confirmations_current as
+create view shablon_analiz_telefonnyh_peregovorov.v_dashboard_business_confirmations_current as
 with ranked as (
   select
     bc.*,
@@ -85,7 +85,7 @@ with ranked as (
       partition by bc.fact_family_ref
       order by bc.event_no desc, bc.created_at desc, bc.confirmation_id
     ) as rn
-  from shablon.business_confirmations bc
+  from shablon_analiz_telefonnyh_peregovorov.business_confirmations bc
 )
 select
   confirmation_id,
@@ -111,11 +111,11 @@ from ranked
 where rn = 1
   and event_kind <> 'cancel';
 
-comment on view shablon.v_dashboard_business_confirmations_current is
+comment on view shablon_analiz_telefonnyh_peregovorov.v_dashboard_business_confirmations_current is
   'Current trusted CRM/human facts. Cancelled families disappear from current metrics but remain in source history.';
 
 -- One current delivery state per outgoing action.
-create view shablon.v_dashboard_delivery_current as
+create view shablon_analiz_telefonnyh_peregovorov.v_dashboard_delivery_current as
 with latest_attempt as (
   select
     d.*,
@@ -123,7 +123,7 @@ with latest_attempt as (
       partition by d.outgoing_action_id
       order by d.requested_at desc, d.created_at desc, d.delivery_attempt_id
     ) as rn
-  from shablon.delivery_attempts d
+  from shablon_analiz_telefonnyh_peregovorov.delivery_attempts d
 )
 select
   oa.outgoing_action_id,
@@ -162,13 +162,13 @@ select
     when la.outcome_state = 'failed_requires_fix' then 'failed_requires_fix'
     else 'pending'
   end as delivery_state
-from shablon.outgoing_actions oa
+from shablon_analiz_telefonnyh_peregovorov.outgoing_actions oa
 left join latest_attempt la
   on la.outgoing_action_id = oa.outgoing_action_id
  and la.rn = 1;
 
 -- Current processing quality for calls that have not yet reached current analysis.
-create view shablon.v_dashboard_processing_quality_current as
+create view shablon_analiz_telefonnyh_peregovorov.v_dashboard_processing_quality_current as
 with ranked as (
   select
     q.*,
@@ -176,7 +176,7 @@ with ranked as (
       partition by q.call_id
       order by q.version_no desc, q.created_at desc, q.quality_id
     ) as rn
-  from shablon.processing_quality q
+  from shablon_analiz_telefonnyh_peregovorov.processing_quality q
   where q.version_state = 'current'
 )
 select
@@ -194,7 +194,7 @@ select
 from ranked
 where rn = 1;
 
-create view shablon.v_dashboard_speech_metrics_current as
+create view shablon_analiz_telefonnyh_peregovorov.v_dashboard_speech_metrics_current as
 with ranked as (
   select
     sm.*,
@@ -202,7 +202,7 @@ with ranked as (
       partition by sm.call_id
       order by sm.version_no desc, sm.created_at desc, sm.speech_metrics_id
     ) as rn
-  from shablon.speech_metrics sm
+  from shablon_analiz_telefonnyh_peregovorov.speech_metrics sm
   where sm.version_state = 'current'
 )
 select
@@ -227,7 +227,7 @@ where rn = 1;
 
 -- One canonical row per logical call. Duplicate webhook rows never appear here
 -- because they live in call_events, not calls.
-create view shablon.v_dashboard_zvonki as
+create view shablon_analiz_telefonnyh_peregovorov.v_dashboard_zvonki as
 with ai as (
   select
     a.analysis_id,
@@ -243,14 +243,14 @@ with ai as (
       )
       order by a.outcome_type, a.ai_outcome_id
     ) as ai_outcomes
-  from shablon.ai_inferred_outcomes a
+  from shablon_analiz_telefonnyh_peregovorov.ai_inferred_outcomes a
   group by a.analysis_id
 ),
 disputes as (
   select
     d.analysis_id,
     true as has_open_dispute
-  from shablon.analysis_disputes d
+  from shablon_analiz_telefonnyh_peregovorov.analysis_disputes d
   where d.dispute_state in ('open', 'under_review')
   group by d.analysis_id
 ),
@@ -269,7 +269,7 @@ crm as (
       )
       order by bc.fact_type, bc.confirmation_id
     ) as crm_facts
-  from shablon.v_dashboard_business_confirmations_current bc
+  from shablon_analiz_telefonnyh_peregovorov.v_dashboard_business_confirmations_current bc
   group by bc.call_id
 ),
 callbacks as (
@@ -279,7 +279,7 @@ callbacks as (
     min(cl.delay_seconds) filter (where cl.link_state = 'confirmed') as first_callback_delay_seconds,
     array_agg(cl.callback_call_id order by cl.delay_seconds nulls last, cl.callback_call_id)
       filter (where cl.link_state = 'confirmed') as confirmed_callback_call_ids
-  from shablon.callback_links cl
+  from shablon_analiz_telefonnyh_peregovorov.callback_links cl
   group by cl.missed_call_id
 ),
 delivery as (
@@ -292,7 +292,7 @@ delivery as (
     d.reconciliation_state,
     d.delivered_at,
     d.action_created_at
-  from shablon.v_dashboard_delivery_current d
+  from shablon_analiz_telefonnyh_peregovorov.v_dashboard_delivery_current d
   order by d.call_id, d.action_created_at desc, d.outgoing_action_id desc
 )
 select
@@ -360,12 +360,12 @@ select
     then av.overall_score
     else null
   end as official_score
-from shablon.calls c
-left join shablon.managers m
+from shablon_analiz_telefonnyh_peregovorov.calls c
+left join shablon_analiz_telefonnyh_peregovorov.managers m
   on m.manager_id = c.manager_id
-left join shablon.filter_decisions fd
+left join shablon_analiz_telefonnyh_peregovorov.filter_decisions fd
   on fd.filter_decision_id = c.current_filter_decision_id
-left join shablon.analysis_versions av
+left join shablon_analiz_telefonnyh_peregovorov.analysis_versions av
   on av.call_id = c.call_id
  and av.analysis_state = 'current'
 left join ai
@@ -379,11 +379,11 @@ left join callbacks
 left join delivery
   on delivery.call_id = c.call_id;
 
-comment on view shablon.v_dashboard_zvonki is
+comment on view shablon_analiz_telefonnyh_peregovorov.v_dashboard_zvonki is
   'One row per logical call with current analysis and separate AI/CRM/delivery facts. Source for dashboard drill-down and global filtering.';
 
 -- One row per call with mutually-exclusive activity flags.
-create view shablon.v_dashboard_obshchaya_kartina as
+create view shablon_analiz_telefonnyh_peregovorov.v_dashboard_obshchaya_kartina as
 select
   z.*,
   (z.terminal_metric_category = 'evaluated_client') as is_evaluated_client,
@@ -411,11 +411,11 @@ select
     and z.occurrence_kind = 'repeat'
   ) as is_repeat_client_call,
   (z.confirmed_callback_count > 0) as has_confirmed_callback
-from shablon.v_dashboard_zvonki z;
+from shablon_analiz_telefonnyh_peregovorov.v_dashboard_zvonki z;
 
 -- Manager metric rows deliberately remain one-row-per-call; period/result filters
 -- are applied before aggregation by dashboard_manager_metrics().
-create view shablon.v_dashboard_menedzhery as
+create view shablon_analiz_telefonnyh_peregovorov.v_dashboard_menedzhery as
 select
   o.manager_id,
   o.manager_name,
@@ -439,10 +439,10 @@ select
   o.is_missed_client,
   o.has_confirmed_callback,
   o.first_callback_delay_seconds
-from shablon.v_dashboard_obshchaya_kartina o
+from shablon_analiz_telefonnyh_peregovorov.v_dashboard_obshchaya_kartina o
 where o.manager_id is not null;
 
-create view shablon.v_dashboard_kriterii as
+create view shablon_analiz_telefonnyh_peregovorov.v_dashboard_kriterii as
 select
   z.call_id,
   z.started_at,
@@ -462,14 +462,14 @@ select
   cs.weight,
   cs.rationale,
   es.evidence_id
-from shablon.v_dashboard_zvonki z
-join shablon.criterion_scores cs
+from shablon_analiz_telefonnyh_peregovorov.v_dashboard_zvonki z
+join shablon_analiz_telefonnyh_peregovorov.criterion_scores cs
   on cs.analysis_id = z.current_analysis_id
-left join shablon.evidence_sets es
+left join shablon_analiz_telefonnyh_peregovorov.evidence_sets es
   on es.claim_id = cs.criterion_score_id
  and es.analysis_id = cs.analysis_id;
 
-create view shablon.v_dashboard_etapy as
+create view shablon_analiz_telefonnyh_peregovorov.v_dashboard_etapy as
 with stage_rows as (
   select
     z.call_id,
@@ -494,10 +494,10 @@ with stage_rows as (
     max(sr.sort_order) filter (
       where sr.applicable and sr.reached
     ) over (partition by sr.analysis_id) as last_reached_sort_order
-  from shablon.v_dashboard_zvonki z
-  join shablon.stage_results sr
+  from shablon_analiz_telefonnyh_peregovorov.v_dashboard_zvonki z
+  join shablon_analiz_telefonnyh_peregovorov.stage_results sr
     on sr.analysis_id = z.current_analysis_id
-  left join shablon.evidence_sets es
+  left join shablon_analiz_telefonnyh_peregovorov.evidence_sets es
     on es.claim_id = sr.stage_result_id
    and es.analysis_id = sr.analysis_id
 )
@@ -510,7 +510,7 @@ select
   ) as is_last_reached_stage
 from stage_rows;
 
-create view shablon.v_dashboard_oshibki as
+create view shablon_analiz_telefonnyh_peregovorov.v_dashboard_oshibki as
 select
   z.call_id,
   z.started_at,
@@ -532,16 +532,16 @@ select
   ao.criterion_code,
   ao.stage_code,
   es.evidence_id
-from shablon.v_dashboard_zvonki z
-join shablon.analysis_observations ao
+from shablon_analiz_telefonnyh_peregovorov.v_dashboard_zvonki z
+join shablon_analiz_telefonnyh_peregovorov.analysis_observations ao
   on ao.analysis_id = z.current_analysis_id
-left join shablon.evidence_sets es
+left join shablon_analiz_telefonnyh_peregovorov.evidence_sets es
   on es.claim_id = ao.observation_id
  and es.analysis_id = ao.analysis_id;
 
 -- AI and CRM/human results share a reporting shape but remain explicitly
 -- distinguished by result_source and never overwrite each other.
-create view shablon.v_dashboard_rezultaty as
+create view shablon_analiz_telefonnyh_peregovorov.v_dashboard_rezultaty as
 select
   z.call_id,
   z.started_at,
@@ -557,10 +557,10 @@ select
   es.evidence_id,
   null::text as trusted_source_system,
   (not z.has_open_dispute) as aggregate_eligible
-from shablon.v_dashboard_zvonki z
-join shablon.ai_inferred_outcomes aio
+from shablon_analiz_telefonnyh_peregovorov.v_dashboard_zvonki z
+join shablon_analiz_telefonnyh_peregovorov.ai_inferred_outcomes aio
   on aio.analysis_id = z.current_analysis_id
-left join shablon.evidence_sets es
+left join shablon_analiz_telefonnyh_peregovorov.evidence_sets es
   on es.claim_id = aio.ai_outcome_id
  and es.analysis_id = aio.analysis_id
 
@@ -581,11 +581,11 @@ select
   null::uuid as evidence_id,
   bc.source_system_code as trusted_source_system,
   true as aggregate_eligible
-from shablon.v_dashboard_zvonki z
-join shablon.v_dashboard_business_confirmations_current bc
+from shablon_analiz_telefonnyh_peregovorov.v_dashboard_zvonki z
+join shablon_analiz_telefonnyh_peregovorov.v_dashboard_business_confirmations_current bc
   on bc.call_id = z.call_id;
 
-create view shablon.v_dashboard_kachestvo as
+create view shablon_analiz_telefonnyh_peregovorov.v_dashboard_kachestvo as
 select
   z.call_id,
   z.started_at,
@@ -630,12 +630,12 @@ select
     when sm.reliability = 'reliable' then sm.call_duration_ms
     else null
   end as metric_call_duration_ms
-from shablon.v_dashboard_zvonki z
-left join shablon.processing_quality q_exact
+from shablon_analiz_telefonnyh_peregovorov.v_dashboard_zvonki z
+left join shablon_analiz_telefonnyh_peregovorov.processing_quality q_exact
   on q_exact.quality_id = z.processing_quality_id
-left join shablon.v_dashboard_processing_quality_current qc
+left join shablon_analiz_telefonnyh_peregovorov.v_dashboard_processing_quality_current qc
   on qc.call_id = z.call_id
-left join shablon.v_dashboard_speech_metrics_current sm
+left join shablon_analiz_telefonnyh_peregovorov.v_dashboard_speech_metrics_current sm
   on sm.call_id = z.call_id
  and (
    z.current_analysis_id is null
@@ -648,7 +648,7 @@ left join shablon.v_dashboard_speech_metrics_current sm
 -- Shared global filter contract. p_start is inclusive, p_end is exclusive.
 -- The dashboard server is responsible for converting a company's local period
 -- into timestamptz boundaries before calling this function.
-create function shablon.dashboard_filter_call_ids(
+create function shablon_analiz_telefonnyh_peregovorov.dashboard_filter_call_ids(
   p_start timestamptz,
   p_end timestamptz,
   p_filters jsonb default '{}'::jsonb
@@ -656,7 +656,7 @@ create function shablon.dashboard_filter_call_ids(
 returns table(call_id uuid)
 language plpgsql
 stable
-set search_path = pg_catalog, shablon
+set search_path = pg_catalog, shablon_analiz_telefonnyh_peregovorov
 as $function$
 begin
   if p_start is null or p_end is null or p_end <= p_start then
@@ -669,7 +669,7 @@ begin
 
   return query
   select z.call_id
-  from shablon.v_dashboard_zvonki z
+  from shablon_analiz_telefonnyh_peregovorov.v_dashboard_zvonki z
   where z.started_at >= p_start
     and z.started_at < p_end
     and (
@@ -715,7 +715,7 @@ begin
 end
 $function$;
 
-create function shablon.dashboard_overview(
+create function shablon_analiz_telefonnyh_peregovorov.dashboard_overview(
   p_start timestamptz,
   p_end timestamptz,
   p_filters jsonb default '{}'::jsonb,
@@ -746,7 +746,7 @@ returns table(
 )
 language plpgsql
 stable
-set search_path = pg_catalog, shablon
+set search_path = pg_catalog, shablon_analiz_telefonnyh_peregovorov
 as $function$
 begin
   if p_as_of is null then
@@ -760,8 +760,8 @@ begin
   return query
   with filtered as (
     select o.*
-    from shablon.v_dashboard_obshchaya_kartina o
-    join shablon.dashboard_filter_call_ids(p_start, p_end, p_filters) f
+    from shablon_analiz_telefonnyh_peregovorov.v_dashboard_obshchaya_kartina o
+    join shablon_analiz_telefonnyh_peregovorov.dashboard_filter_call_ids(p_start, p_end, p_filters) f
       on f.call_id = o.call_id
   ),
   agg as (
@@ -843,7 +843,7 @@ begin
 end
 $function$;
 
-create function shablon.dashboard_manager_metrics(
+create function shablon_analiz_telefonnyh_peregovorov.dashboard_manager_metrics(
   p_start timestamptz,
   p_end timestamptz,
   p_filters jsonb default '{}'::jsonb,
@@ -867,12 +867,12 @@ returns table(
 )
 language sql
 stable
-set search_path = pg_catalog, shablon
+set search_path = pg_catalog, shablon_analiz_telefonnyh_peregovorov
 as $function$
   with filtered as (
     select m.*
-    from shablon.v_dashboard_menedzhery m
-    join shablon.dashboard_filter_call_ids(p_start, p_end, p_filters) f
+    from shablon_analiz_telefonnyh_peregovorov.v_dashboard_menedzhery m
+    join shablon_analiz_telefonnyh_peregovorov.dashboard_filter_call_ids(p_start, p_end, p_filters) f
       on f.call_id = m.call_id
   )
   select
@@ -908,7 +908,7 @@ as $function$
   group by f.manager_id
 $function$;
 
-create function shablon.dashboard_criterion_metrics(
+create function shablon_analiz_telefonnyh_peregovorov.dashboard_criterion_metrics(
   p_start timestamptz,
   p_end timestamptz,
   p_filters jsonb default '{}'::jsonb
@@ -921,15 +921,15 @@ returns table(
 )
 language sql
 stable
-set search_path = pg_catalog, shablon
+set search_path = pg_catalog, shablon_analiz_telefonnyh_peregovorov
 as $function$
   select
     k.criterion_code,
     count(distinct k.call_id)::bigint as applicable_calls,
     avg(k.score) as average_score,
     array_agg(distinct k.call_id order by k.call_id) as call_ids
-  from shablon.v_dashboard_kriterii k
-  join shablon.dashboard_filter_call_ids(p_start, p_end, p_filters) f
+  from shablon_analiz_telefonnyh_peregovorov.v_dashboard_kriterii k
+  join shablon_analiz_telefonnyh_peregovorov.dashboard_filter_call_ids(p_start, p_end, p_filters) f
     on f.call_id = k.call_id
   where k.analysis_reliability = 'reliable'
     and not k.has_open_dispute
@@ -937,7 +937,7 @@ as $function$
   group by k.criterion_code
 $function$;
 
-create function shablon.dashboard_stage_metrics(
+create function shablon_analiz_telefonnyh_peregovorov.dashboard_stage_metrics(
   p_start timestamptz,
   p_end timestamptz,
   p_filters jsonb default '{}'::jsonb
@@ -953,7 +953,7 @@ returns table(
 )
 language sql
 stable
-set search_path = pg_catalog, shablon
+set search_path = pg_catalog, shablon_analiz_telefonnyh_peregovorov
 as $function$
   select
     e.stage_code,
@@ -973,8 +973,8 @@ as $function$
     array_agg(distinct e.call_id order by e.call_id) filter (
       where e.applicable and e.required and not e.reached
     ) as missed_required_call_ids
-  from shablon.v_dashboard_etapy e
-  join shablon.dashboard_filter_call_ids(p_start, p_end, p_filters) f
+  from shablon_analiz_telefonnyh_peregovorov.v_dashboard_etapy e
+  join shablon_analiz_telefonnyh_peregovorov.dashboard_filter_call_ids(p_start, p_end, p_filters) f
     on f.call_id = e.call_id
   where e.analysis_reliability = 'reliable'
     and not e.has_open_dispute
@@ -984,14 +984,14 @@ $function$;
 -- Observation denominator is derived from its explicit criterion/stage context.
 -- With no context the observation is treated as analysis-wide and denominator is
 -- all filtered reliable analyses. No absent observation is fabricated.
-create function shablon.dashboard_observation_metrics(
+create function shablon_analiz_telefonnyh_peregovorov.dashboard_observation_metrics(
   p_start timestamptz,
   p_end timestamptz,
   p_filters jsonb default '{}'::jsonb
 )
 returns table(
   observation_code text,
-  observation_type shablon.observation_type,
+  observation_type shablon_analiz_telefonnyh_peregovorov.observation_type,
   criterion_code text,
   stage_code text,
   observed_calls bigint,
@@ -1002,15 +1002,15 @@ returns table(
 )
 language sql
 stable
-set search_path = pg_catalog, shablon
+set search_path = pg_catalog, shablon_analiz_telefonnyh_peregovorov
 as $function$
   with filtered_calls as (
     select f.call_id
-    from shablon.dashboard_filter_call_ids(p_start, p_end, p_filters) f
+    from shablon_analiz_telefonnyh_peregovorov.dashboard_filter_call_ids(p_start, p_end, p_filters) f
   ),
   filtered_reliable as (
     select z.call_id, z.current_analysis_id as analysis_id
-    from shablon.v_dashboard_zvonki z
+    from shablon_analiz_telefonnyh_peregovorov.v_dashboard_zvonki z
     join filtered_calls f on f.call_id = z.call_id
     where z.analysis_reliability = 'reliable'
       and not z.has_open_dispute
@@ -1022,7 +1022,7 @@ as $function$
       o.observation_type,
       o.criterion_code,
       o.stage_code
-    from shablon.v_dashboard_oshibki o
+    from shablon_analiz_telefonnyh_peregovorov.v_dashboard_oshibki o
     join filtered_calls f on f.call_id = o.call_id
     where o.analysis_reliability = 'reliable'
       and not o.has_open_dispute
@@ -1037,7 +1037,7 @@ as $function$
       count(distinct o.call_id)::bigint as observed_calls,
       count(distinct o.manager_id)::bigint as managers_with_observation,
       array_agg(distinct o.call_id order by o.call_id) as observed_call_ids
-    from shablon.v_dashboard_oshibki o
+    from shablon_analiz_telefonnyh_peregovorov.v_dashboard_oshibki o
     join filtered_calls f on f.call_id = o.call_id
     where o.analysis_reliability = 'reliable'
       and not o.has_open_dispute
@@ -1061,7 +1061,7 @@ as $function$
         c.criterion_code is null
         or exists (
           select 1
-          from shablon.criterion_scores cs
+          from shablon_analiz_telefonnyh_peregovorov.criterion_scores cs
           where cs.analysis_id = fr.analysis_id
             and cs.criterion_code = c.criterion_code
             and cs.applicable
@@ -1071,7 +1071,7 @@ as $function$
         c.stage_code is null
         or exists (
           select 1
-          from shablon.stage_results sr
+          from shablon_analiz_telefonnyh_peregovorov.stage_results sr
           where sr.analysis_id = fr.analysis_id
             and sr.stage_code = c.stage_code
             and sr.applicable
@@ -1088,7 +1088,7 @@ as $function$
             c.criterion_code is null
             or exists (
               select 1
-              from shablon.criterion_scores cs
+              from shablon_analiz_telefonnyh_peregovorov.criterion_scores cs
               where cs.analysis_id = fr.analysis_id
                 and cs.criterion_code = c.criterion_code
                 and cs.applicable
@@ -1098,7 +1098,7 @@ as $function$
             c.stage_code is null
             or exists (
               select 1
-              from shablon.stage_results sr
+              from shablon_analiz_telefonnyh_peregovorov.stage_results sr
               where sr.analysis_id = fr.analysis_id
                 and sr.stage_code = c.stage_code
                 and sr.applicable
@@ -1119,7 +1119,7 @@ as $function$
    and o.stage_code is not distinct from c.stage_code
 $function$;
 
-create function shablon.dashboard_result_metrics(
+create function shablon_analiz_telefonnyh_peregovorov.dashboard_result_metrics(
   p_start timestamptz,
   p_end timestamptz,
   p_filters jsonb default '{}'::jsonb
@@ -1132,15 +1132,15 @@ returns table(
 )
 language sql
 stable
-set search_path = pg_catalog, shablon
+set search_path = pg_catalog, shablon_analiz_telefonnyh_peregovorov
 as $function$
   select
     r.result_source,
     r.result_code,
     count(distinct r.call_id)::bigint as unique_calls,
     array_agg(distinct r.call_id order by r.call_id) as call_ids
-  from shablon.v_dashboard_rezultaty r
-  join shablon.dashboard_filter_call_ids(p_start, p_end, p_filters) f
+  from shablon_analiz_telefonnyh_peregovorov.v_dashboard_rezultaty r
+  join shablon_analiz_telefonnyh_peregovorov.dashboard_filter_call_ids(p_start, p_end, p_filters) f
     on f.call_id = r.call_id
   where r.aggregate_eligible
   group by r.result_source, r.result_code

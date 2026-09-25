@@ -1,7 +1,7 @@
 -- DB-04 rollback
--- APPROVED WORKING CONTOUR. Rollback is limited to schema shablon and requires an explicit safety check before execution.
+-- APPROVED WORKING CONTOUR. Rollback is limited to schema shablon_analiz_telefonnyh_peregovorov and requires an explicit safety check before execution.
 -- Removes only DB-04 objects and refuses to run when later/unknown
--- relational objects already exist in shablon.
+-- relational objects already exist in shablon_analiz_telefonnyh_peregovorov.
 
 begin;
 
@@ -11,9 +11,9 @@ declare
   v_extra_relations text;
 begin
   if not exists (
-    select 1 from pg_namespace where nspname = 'shablon'
+    select 1 from pg_namespace where nspname = 'shablon_analiz_telefonnyh_peregovorov'
   ) then
-    raise exception 'DB-04 rollback refused: schema shablon does not exist';
+    raise exception 'DB-04 rollback refused: schema shablon_analiz_telefonnyh_peregovorov does not exist';
   end if;
 
   select string_agg(required_relation, ', ' order by required_relation)
@@ -36,7 +36,7 @@ begin
     select 1
     from pg_class c
     join pg_namespace n on n.oid = c.relnamespace
-    where n.nspname = 'shablon'
+    where n.nspname = 'shablon_analiz_telefonnyh_peregovorov'
       and c.relname = required.required_relation
       and c.relkind in ('r', 'p', 'v', 'm')
   );
@@ -51,7 +51,7 @@ begin
   into v_extra_relations
   from pg_class c
   join pg_namespace n on n.oid = c.relnamespace
-  where n.nspname = 'shablon'
+  where n.nspname = 'shablon_analiz_telefonnyh_peregovorov'
     and c.relkind in ('r', 'p', 'v', 'm')
     and c.relname not in (
       -- DB-01
@@ -106,52 +106,52 @@ begin
 
   if v_extra_relations is not null then
     raise exception
-      'DB-04 rollback refused: later/unknown relations exist in shablon: %',
+      'DB-04 rollback refused: later/unknown relations exist in shablon_analiz_telefonnyh_peregovorov: %',
       v_extra_relations;
   end if;
 end
 $guard$;
 
-drop table shablon.evidence_conversation_refs;
-drop table shablon.evidence_knowledge_refs;
-drop table shablon.evidence_absence_checks;
-drop table shablon.evidence_sets;
-drop table shablon.criterion_scores;
-drop table shablon.stage_results;
-drop table shablon.analysis_observations;
-drop table shablon.ai_inferred_outcomes;
-drop table shablon.analysis_claims;
-drop table shablon.analysis_knowledge_inputs;
-drop table shablon.analysis_versions;
+drop table shablon_analiz_telefonnyh_peregovorov.evidence_conversation_refs;
+drop table shablon_analiz_telefonnyh_peregovorov.evidence_knowledge_refs;
+drop table shablon_analiz_telefonnyh_peregovorov.evidence_absence_checks;
+drop table shablon_analiz_telefonnyh_peregovorov.evidence_sets;
+drop table shablon_analiz_telefonnyh_peregovorov.criterion_scores;
+drop table shablon_analiz_telefonnyh_peregovorov.stage_results;
+drop table shablon_analiz_telefonnyh_peregovorov.analysis_observations;
+drop table shablon_analiz_telefonnyh_peregovorov.ai_inferred_outcomes;
+drop table shablon_analiz_telefonnyh_peregovorov.analysis_claims;
+drop table shablon_analiz_telefonnyh_peregovorov.analysis_knowledge_inputs;
+drop table shablon_analiz_telefonnyh_peregovorov.analysis_versions;
 
-alter table shablon.processing_quality
+alter table shablon_analiz_telefonnyh_peregovorov.processing_quality
   drop constraint processing_quality_quality_inputs_call_unique;
 
-alter table shablon.privacy_packages
+alter table shablon_analiz_telefonnyh_peregovorov.privacy_packages
   drop constraint privacy_packages_package_role_call_unique;
 
-drop function shablon.guard_analysis_version_update();
-drop function shablon.validate_analysis_evidence_gate(uuid);
-drop function shablon.calculate_analysis_overall_score(uuid);
-drop function shablon.validate_evidence_absence_check();
-drop function shablon.validate_evidence_knowledge_ref();
-drop function shablon.validate_evidence_conversation_ref();
-drop function shablon.guard_evidence_ref_mutation();
-drop function shablon.guard_evidence_set_mutation();
-drop function shablon.validate_evidence_target_rule();
-drop function shablon.validate_stage_result();
-drop function shablon.validate_criterion_score();
-drop function shablon.guard_analysis_child_mutation();
-drop function shablon.guard_analysis_initial_state();
+drop function shablon_analiz_telefonnyh_peregovorov.guard_analysis_version_update();
+drop function shablon_analiz_telefonnyh_peregovorov.validate_analysis_evidence_gate(uuid);
+drop function shablon_analiz_telefonnyh_peregovorov.calculate_analysis_overall_score(uuid);
+drop function shablon_analiz_telefonnyh_peregovorov.validate_evidence_absence_check();
+drop function shablon_analiz_telefonnyh_peregovorov.validate_evidence_knowledge_ref();
+drop function shablon_analiz_telefonnyh_peregovorov.validate_evidence_conversation_ref();
+drop function shablon_analiz_telefonnyh_peregovorov.guard_evidence_ref_mutation();
+drop function shablon_analiz_telefonnyh_peregovorov.guard_evidence_set_mutation();
+drop function shablon_analiz_telefonnyh_peregovorov.validate_evidence_target_rule();
+drop function shablon_analiz_telefonnyh_peregovorov.validate_stage_result();
+drop function shablon_analiz_telefonnyh_peregovorov.validate_criterion_score();
+drop function shablon_analiz_telefonnyh_peregovorov.guard_analysis_child_mutation();
+drop function shablon_analiz_telefonnyh_peregovorov.guard_analysis_initial_state();
 
-drop type shablon.absence_scope_kind;
-drop type shablon.observation_type;
-drop type shablon.evidence_rule_kind;
-drop type shablon.evidence_coverage;
-drop type shablon.evidence_integrity;
-drop type shablon.evidence_type;
-drop type shablon.evidence_requirement;
-drop type shablon.analysis_claim_type;
-drop type shablon.analysis_state;
+drop type shablon_analiz_telefonnyh_peregovorov.absence_scope_kind;
+drop type shablon_analiz_telefonnyh_peregovorov.observation_type;
+drop type shablon_analiz_telefonnyh_peregovorov.evidence_rule_kind;
+drop type shablon_analiz_telefonnyh_peregovorov.evidence_coverage;
+drop type shablon_analiz_telefonnyh_peregovorov.evidence_integrity;
+drop type shablon_analiz_telefonnyh_peregovorov.evidence_type;
+drop type shablon_analiz_telefonnyh_peregovorov.evidence_requirement;
+drop type shablon_analiz_telefonnyh_peregovorov.analysis_claim_type;
+drop type shablon_analiz_telefonnyh_peregovorov.analysis_state;
 
 commit;

@@ -1,7 +1,7 @@
 -- DB-05
 -- CRM/human confirmations, callback links, outgoing delivery, disputes,
 -- corrections and immutable audit trail.
--- APPROVED WORKING CONTOUR. Depends on DB-01..DB-04; scope is limited to schema shablon.
+-- APPROVED WORKING CONTOUR. Depends on DB-01..DB-04; scope is limited to schema shablon_analiz_telefonnyh_peregovorov.
 --
 -- Key invariants:
 --   AI outcome is never a CRM/human confirmation;
@@ -18,9 +18,9 @@ declare
   v_missing text;
 begin
   if not exists (
-    select 1 from pg_namespace where nspname = 'shablon'
+    select 1 from pg_namespace where nspname = 'shablon_analiz_telefonnyh_peregovorov'
   ) then
-    raise exception 'DB-05 requires schema shablon';
+    raise exception 'DB-05 requires schema shablon_analiz_telefonnyh_peregovorov';
   end if;
 
   select string_agg(required_relation, ', ' order by required_relation)
@@ -41,7 +41,7 @@ begin
     select 1
     from pg_class c
     join pg_namespace n on n.oid = c.relnamespace
-    where n.nspname = 'shablon'
+    where n.nspname = 'shablon_analiz_telefonnyh_peregovorov'
       and c.relname = required.required_relation
       and c.relkind in ('r', 'p')
   );
@@ -53,7 +53,7 @@ begin
   if exists (
     select 1
     from pg_tables
-    where schemaname = 'shablon'
+    where schemaname = 'shablon_analiz_telefonnyh_peregovorov'
       and tablename in (
         'business_confirmations',
         'callback_links',
@@ -71,37 +71,37 @@ end
 $guard$;
 
 -- Composite keys needed by exact DB-05 ownership FKs.
-alter table shablon.operation_attempts
+alter table shablon_analiz_telefonnyh_peregovorov.operation_attempts
   add constraint operation_attempts_attempt_operation_unique
   unique (attempt_id, operation_id);
 
-alter table shablon.role_assignment_versions
+alter table shablon_analiz_telefonnyh_peregovorov.role_assignment_versions
   add constraint role_assignment_versions_role_call_unique
   unique (role_assignment_version_id, call_id);
 
-create type shablon.business_confirmation_source as enum (
+create type shablon_analiz_telefonnyh_peregovorov.business_confirmation_source as enum (
   'crm',
   'human'
 );
 
-create type shablon.business_confirmation_event_kind as enum (
+create type shablon_analiz_telefonnyh_peregovorov.business_confirmation_event_kind as enum (
   'confirm',
   'correct',
   'cancel'
 );
 
-create type shablon.callback_link_state as enum (
+create type shablon_analiz_telefonnyh_peregovorov.callback_link_state as enum (
   'candidate',
   'confirmed',
   'rejected'
 );
 
-create type shablon.outgoing_action_state as enum (
+create type shablon_analiz_telefonnyh_peregovorov.outgoing_action_state as enum (
   'prepared',
   'cancelled'
 );
 
-create type shablon.delivery_provider_status as enum (
+create type shablon_analiz_telefonnyh_peregovorov.delivery_provider_status as enum (
   'not_confirmed',
   'accepted',
   'delivered',
@@ -109,7 +109,7 @@ create type shablon.delivery_provider_status as enum (
   'unknown'
 );
 
-create type shablon.delivery_reconciliation_state as enum (
+create type shablon_analiz_telefonnyh_peregovorov.delivery_reconciliation_state as enum (
   'not_required',
   'pending',
   'confirmed_delivered',
@@ -117,20 +117,20 @@ create type shablon.delivery_reconciliation_state as enum (
   'unresolved'
 );
 
-create type shablon.dispute_state as enum (
+create type shablon_analiz_telefonnyh_peregovorov.dispute_state as enum (
   'open',
   'under_review',
   'resolved',
   'rejected'
 );
 
-create type shablon.correction_state as enum (
+create type shablon_analiz_telefonnyh_peregovorov.correction_state as enum (
   'proposed',
   'applied',
   'rejected'
 );
 
-create type shablon.correction_target_type as enum (
+create type shablon_analiz_telefonnyh_peregovorov.correction_target_type as enum (
   'manager',
   'role_assignment',
   'transcript',
@@ -140,7 +140,7 @@ create type shablon.correction_target_type as enum (
   'outgoing_action'
 );
 
-create type shablon.audit_result as enum (
+create type shablon_analiz_telefonnyh_peregovorov.audit_result as enum (
   'success',
   'rejected',
   'unknown'
@@ -148,15 +148,15 @@ create type shablon.audit_result as enum (
 
 -- Trusted source facts. Corrections/cancellations are new immutable source events,
 -- not updates of an AI outcome or old CRM row.
-create table shablon.business_confirmations (
+create table shablon_analiz_telefonnyh_peregovorov.business_confirmations (
   confirmation_id uuid primary key default gen_random_uuid(),
   call_id uuid not null,
   fact_family_ref text not null,
   event_no integer not null,
   supersedes_confirmation_id uuid,
-  event_kind shablon.business_confirmation_event_kind not null,
+  event_kind shablon_analiz_telefonnyh_peregovorov.business_confirmation_event_kind not null,
   fact_type text not null,
-  source_kind shablon.business_confirmation_source not null,
+  source_kind shablon_analiz_telefonnyh_peregovorov.business_confirmation_source not null,
   source_system_code text not null,
   source_event_key text not null,
   external_fact_id text,
@@ -211,25 +211,25 @@ create table shablon.business_confirmations (
     unique (source_kind, source_system_code, source_event_key),
   constraint business_confirmations_call_fk
     foreign key (call_id)
-    references shablon.calls(call_id)
+    references shablon_analiz_telefonnyh_peregovorov.calls(call_id)
     on delete restrict,
   constraint business_confirmations_operation_same_call
     foreign key (created_by_operation_id, call_id)
-    references shablon.operations(operation_id, call_id)
+    references shablon_analiz_telefonnyh_peregovorov.operations(operation_id, call_id)
     on delete restrict,
   constraint business_confirmations_predecessor_same_family
     foreign key (supersedes_confirmation_id, fact_family_ref)
-    references shablon.business_confirmations(confirmation_id, fact_family_ref)
+    references shablon_analiz_telefonnyh_peregovorov.business_confirmations(confirmation_id, fact_family_ref)
     on delete restrict
 );
 
-comment on table shablon.business_confirmations is
+comment on table shablon_analiz_telefonnyh_peregovorov.business_confirmations is
   'Immutable trusted CRM/human source events. They never overwrite AI inferred outcomes.';
 
-create function shablon.validate_business_confirmation_insert()
+create function shablon_analiz_telefonnyh_peregovorov.validate_business_confirmation_insert()
 returns trigger
 language plpgsql
-set search_path = pg_catalog, shablon
+set search_path = pg_catalog, shablon_analiz_telefonnyh_peregovorov
 as $function$
 declare
   v_predecessor_event_no integer;
@@ -242,7 +242,7 @@ begin
 
   select event_no, call_id, fact_type
   into v_predecessor_event_no, v_predecessor_call_id, v_predecessor_fact_type
-  from shablon.business_confirmations
+  from shablon_analiz_telefonnyh_peregovorov.business_confirmations
   where confirmation_id = new.supersedes_confirmation_id
     and fact_family_ref = new.fact_family_ref;
 
@@ -262,7 +262,7 @@ begin
 
   if exists (
     select 1
-    from shablon.business_confirmations x
+    from shablon_analiz_telefonnyh_peregovorov.business_confirmations x
     where x.supersedes_confirmation_id = new.supersedes_confirmation_id
   ) then
     raise exception 'Business confirmation predecessor already has a successor';
@@ -272,7 +272,7 @@ begin
 end
 $function$;
 
-create function shablon.guard_business_confirmation_immutable()
+create function shablon_analiz_telefonnyh_peregovorov.guard_business_confirmation_immutable()
 returns trigger
 language plpgsql
 set search_path = pg_catalog
@@ -284,15 +284,15 @@ end
 $function$;
 
 create trigger trg_business_confirmations_validate_insert
-before insert on shablon.business_confirmations
-for each row execute function shablon.validate_business_confirmation_insert();
+before insert on shablon_analiz_telefonnyh_peregovorov.business_confirmations
+for each row execute function shablon_analiz_telefonnyh_peregovorov.validate_business_confirmation_insert();
 
 create trigger trg_business_confirmations_immutable
-before update or delete on shablon.business_confirmations
-for each row execute function shablon.guard_business_confirmation_immutable();
+before update or delete on shablon_analiz_telefonnyh_peregovorov.business_confirmations
+for each row execute function shablon_analiz_telefonnyh_peregovorov.guard_business_confirmation_immutable();
 
 -- Shared delete guard for history rows that may have no child FK yet.
-create function shablon.guard_db05_history_delete()
+create function shablon_analiz_telefonnyh_peregovorov.guard_db05_history_delete()
 returns trigger
 language plpgsql
 set search_path = pg_catalog
@@ -303,17 +303,17 @@ end
 $function$;
 
 -- Missed-call -> callback relation based only on trusted source/CRM facts.
-create table shablon.callback_links (
+create table shablon_analiz_telefonnyh_peregovorov.callback_links (
   callback_link_id uuid primary key default gen_random_uuid(),
-  missed_call_id uuid not null references shablon.calls(call_id) on delete restrict,
-  callback_call_id uuid not null references shablon.calls(call_id) on delete restrict,
-  manager_id uuid references shablon.managers(manager_id) on delete restrict,
+  missed_call_id uuid not null references shablon_analiz_telefonnyh_peregovorov.calls(call_id) on delete restrict,
+  callback_call_id uuid not null references shablon_analiz_telefonnyh_peregovorov.calls(call_id) on delete restrict,
+  manager_id uuid references shablon_analiz_telefonnyh_peregovorov.managers(manager_id) on delete restrict,
   basis_kind text not null,
   basis_refs jsonb not null default '{}'::jsonb,
   rules_version_ref text not null,
   window_config jsonb not null default '{}'::jsonb,
   delay_seconds integer,
-  link_state shablon.callback_link_state not null default 'candidate',
+  link_state shablon_analiz_telefonnyh_peregovorov.callback_link_state not null default 'candidate',
   decision_reason text,
   decision_operation_id uuid not null,
   decided_at timestamptz,
@@ -352,30 +352,30 @@ create table shablon.callback_links (
     unique (callback_link_id, callback_call_id),
   constraint callback_links_operation_same_callback
     foreign key (decision_operation_id, callback_call_id)
-    references shablon.operations(operation_id, call_id)
+    references shablon_analiz_telefonnyh_peregovorov.operations(operation_id, call_id)
     on delete restrict
 );
 
-create function shablon.validate_callback_link()
+create function shablon_analiz_telefonnyh_peregovorov.validate_callback_link()
 returns trigger
 language plpgsql
-set search_path = pg_catalog, shablon
+set search_path = pg_catalog, shablon_analiz_telefonnyh_peregovorov
 as $function$
 declare
-  v_missed_answer shablon.answer_status;
-  v_missed_class shablon.call_classification;
-  v_callback_direction shablon.call_direction;
+  v_missed_answer shablon_analiz_telefonnyh_peregovorov.answer_status;
+  v_missed_class shablon_analiz_telefonnyh_peregovorov.call_classification;
+  v_callback_direction shablon_analiz_telefonnyh_peregovorov.call_direction;
   v_missed_started timestamptz;
   v_callback_started timestamptz;
 begin
   select answer_status, classification, started_at
   into v_missed_answer, v_missed_class, v_missed_started
-  from shablon.calls
+  from shablon_analiz_telefonnyh_peregovorov.calls
   where call_id = new.missed_call_id;
 
   select direction, started_at
   into v_callback_direction, v_callback_started
-  from shablon.calls
+  from shablon_analiz_telefonnyh_peregovorov.calls
   where call_id = new.callback_call_id;
 
   if v_missed_answer is distinct from 'missed'
@@ -405,7 +405,7 @@ begin
 end
 $function$;
 
-create function shablon.guard_callback_link_update()
+create function shablon_analiz_telefonnyh_peregovorov.guard_callback_link_update()
 returns trigger
 language plpgsql
 set search_path = pg_catalog
@@ -440,19 +440,19 @@ end
 $function$;
 
 create trigger trg_callback_links_validate
-before insert or update on shablon.callback_links
-for each row execute function shablon.validate_callback_link();
+before insert or update on shablon_analiz_telefonnyh_peregovorov.callback_links
+for each row execute function shablon_analiz_telefonnyh_peregovorov.validate_callback_link();
 
 create trigger trg_callback_links_guard_update
-before update on shablon.callback_links
-for each row execute function shablon.guard_callback_link_update();
+before update on shablon_analiz_telefonnyh_peregovorov.callback_links
+for each row execute function shablon_analiz_telefonnyh_peregovorov.guard_callback_link_update();
 
 create trigger trg_callback_links_guard_delete
-before delete on shablon.callback_links
-for each row execute function shablon.guard_db05_history_delete();
+before delete on shablon_analiz_telefonnyh_peregovorov.callback_links
+for each row execute function shablon_analiz_telefonnyh_peregovorov.guard_db05_history_delete();
 
 -- Outgoing message/action is persisted before any external send.
-create table shablon.outgoing_actions (
+create table shablon_analiz_telefonnyh_peregovorov.outgoing_actions (
   outgoing_action_id uuid primary key default gen_random_uuid(),
   call_id uuid not null,
   analysis_id uuid not null,
@@ -464,7 +464,7 @@ create table shablon.outgoing_actions (
   message_body text not null,
   message_sha256 text not null,
   creation_operation_id uuid not null,
-  action_state shablon.outgoing_action_state not null default 'prepared',
+  action_state shablon_analiz_telefonnyh_peregovorov.outgoing_action_state not null default 'prepared',
   cancel_reason text,
   cancelled_at timestamptz,
   created_at timestamptz not null default now(),
@@ -498,22 +498,22 @@ create table shablon.outgoing_actions (
     unique (outgoing_action_id, call_id),
   constraint outgoing_actions_analysis_same_call
     foreign key (analysis_id, call_id)
-    references shablon.analysis_versions(analysis_id, call_id)
+    references shablon_analiz_telefonnyh_peregovorov.analysis_versions(analysis_id, call_id)
     on delete restrict,
   constraint outgoing_actions_operation_same_call
     foreign key (creation_operation_id, call_id)
-    references shablon.operations(operation_id, call_id)
+    references shablon_analiz_telefonnyh_peregovorov.operations(operation_id, call_id)
     on delete restrict
 );
 
-create function shablon.validate_outgoing_action_insert()
+create function shablon_analiz_telefonnyh_peregovorov.validate_outgoing_action_insert()
 returns trigger
 language plpgsql
-set search_path = pg_catalog, shablon
+set search_path = pg_catalog, shablon_analiz_telefonnyh_peregovorov
 as $function$
 declare
-  v_analysis_state shablon.analysis_state;
-  v_operation_state shablon.operation_state;
+  v_analysis_state shablon_analiz_telefonnyh_peregovorov.analysis_state;
+  v_operation_state shablon_analiz_telefonnyh_peregovorov.operation_state;
 begin
   if new.action_state <> 'prepared' then
     raise exception 'Outgoing action must be inserted as prepared';
@@ -521,7 +521,7 @@ begin
 
   select analysis_state
   into v_analysis_state
-  from shablon.analysis_versions
+  from shablon_analiz_telefonnyh_peregovorov.analysis_versions
   where analysis_id = new.analysis_id
     and call_id = new.call_id;
 
@@ -532,7 +532,7 @@ begin
 
   select operation_state
   into v_operation_state
-  from shablon.operations
+  from shablon_analiz_telefonnyh_peregovorov.operations
   where operation_id = new.creation_operation_id
     and call_id = new.call_id;
 
@@ -544,7 +544,7 @@ begin
 end
 $function$;
 
-create function shablon.guard_outgoing_action_update()
+create function shablon_analiz_telefonnyh_peregovorov.guard_outgoing_action_update()
 returns trigger
 language plpgsql
 set search_path = pg_catalog
@@ -579,34 +579,34 @@ end
 $function$;
 
 create trigger trg_outgoing_actions_validate_insert
-before insert on shablon.outgoing_actions
-for each row execute function shablon.validate_outgoing_action_insert();
+before insert on shablon_analiz_telefonnyh_peregovorov.outgoing_actions
+for each row execute function shablon_analiz_telefonnyh_peregovorov.validate_outgoing_action_insert();
 
 create trigger trg_outgoing_actions_guard_update
-before update on shablon.outgoing_actions
-for each row execute function shablon.guard_outgoing_action_update();
+before update on shablon_analiz_telefonnyh_peregovorov.outgoing_actions
+for each row execute function shablon_analiz_telefonnyh_peregovorov.guard_outgoing_action_update();
 
 create trigger trg_outgoing_actions_guard_delete
-before delete on shablon.outgoing_actions
-for each row execute function shablon.guard_db05_history_delete();
+before delete on shablon_analiz_telefonnyh_peregovorov.outgoing_actions
+for each row execute function shablon_analiz_telefonnyh_peregovorov.guard_db05_history_delete();
 
 -- One physical send attempt. outcome_unknown is intentionally not retryable
 -- until reconciliation proves that the external side effect did not happen.
-create table shablon.delivery_attempts (
+create table shablon_analiz_telefonnyh_peregovorov.delivery_attempts (
   delivery_attempt_id uuid primary key default gen_random_uuid(),
   outgoing_action_id uuid not null,
   call_id uuid not null,
   operation_id uuid not null,
   attempt_id uuid not null,
   provider_request_id text,
-  transport_result shablon.transport_result not null,
-  provider_status shablon.delivery_provider_status not null,
-  outcome_state shablon.operation_state not null,
+  transport_result shablon_analiz_telefonnyh_peregovorov.transport_result not null,
+  provider_status shablon_analiz_telefonnyh_peregovorov.delivery_provider_status not null,
+  outcome_state shablon_analiz_telefonnyh_peregovorov.operation_state not null,
   safe_retry_allowed boolean not null default false,
   delivered_at timestamptz,
   error_class text,
   error_code text,
-  reconciliation_state shablon.delivery_reconciliation_state not null default 'not_required',
+  reconciliation_state shablon_analiz_telefonnyh_peregovorov.delivery_reconciliation_state not null default 'not_required',
   reconciliation_operation_id uuid,
   reconciled_at timestamptz,
   requested_at timestamptz not null default now(),
@@ -675,38 +675,38 @@ create table shablon.delivery_attempts (
     unique (outgoing_action_id, attempt_id),
   constraint delivery_attempts_action_same_call
     foreign key (outgoing_action_id, call_id)
-    references shablon.outgoing_actions(outgoing_action_id, call_id)
+    references shablon_analiz_telefonnyh_peregovorov.outgoing_actions(outgoing_action_id, call_id)
     on delete restrict,
   constraint delivery_attempts_operation_same_call
     foreign key (operation_id, call_id)
-    references shablon.operations(operation_id, call_id)
+    references shablon_analiz_telefonnyh_peregovorov.operations(operation_id, call_id)
     on delete restrict,
   constraint delivery_attempts_attempt_same_operation
     foreign key (attempt_id, operation_id)
-    references shablon.operation_attempts(attempt_id, operation_id)
+    references shablon_analiz_telefonnyh_peregovorov.operation_attempts(attempt_id, operation_id)
     on delete restrict,
   constraint delivery_attempts_reconciliation_operation_same_call
     foreign key (reconciliation_operation_id, call_id)
-    references shablon.operations(operation_id, call_id)
+    references shablon_analiz_telefonnyh_peregovorov.operations(operation_id, call_id)
     on delete restrict
 );
 
 create index ix_delivery_attempts_action_created
-  on shablon.delivery_attempts (outgoing_action_id, created_at);
+  on shablon_analiz_telefonnyh_peregovorov.delivery_attempts (outgoing_action_id, created_at);
 
-create function shablon.guard_delivery_attempt_insert()
+create function shablon_analiz_telefonnyh_peregovorov.guard_delivery_attempt_insert()
 returns trigger
 language plpgsql
-set search_path = pg_catalog, shablon
+set search_path = pg_catalog, shablon_analiz_telefonnyh_peregovorov
 as $function$
 declare
-  v_action_state shablon.outgoing_action_state;
-  v_attempt_state shablon.operation_state;
-  v_attempt_transport shablon.transport_result;
+  v_action_state shablon_analiz_telefonnyh_peregovorov.outgoing_action_state;
+  v_attempt_state shablon_analiz_telefonnyh_peregovorov.operation_state;
+  v_attempt_transport shablon_analiz_telefonnyh_peregovorov.transport_result;
 begin
   select action_state
   into v_action_state
-  from shablon.outgoing_actions
+  from shablon_analiz_telefonnyh_peregovorov.outgoing_actions
   where outgoing_action_id = new.outgoing_action_id
     and call_id = new.call_id;
 
@@ -716,7 +716,7 @@ begin
 
   if exists (
     select 1
-    from shablon.delivery_attempts d
+    from shablon_analiz_telefonnyh_peregovorov.delivery_attempts d
     where d.outgoing_action_id = new.outgoing_action_id
       and (
         d.provider_status = 'delivered'
@@ -728,7 +728,7 @@ begin
 
   if exists (
     select 1
-    from shablon.delivery_attempts d
+    from shablon_analiz_telefonnyh_peregovorov.delivery_attempts d
     where d.outgoing_action_id = new.outgoing_action_id
       and d.outcome_state = 'outcome_unknown'
       and d.reconciliation_state in ('pending', 'unresolved')
@@ -739,7 +739,7 @@ begin
 
   select attempt_state, transport_result
   into v_attempt_state, v_attempt_transport
-  from shablon.operation_attempts
+  from shablon_analiz_telefonnyh_peregovorov.operation_attempts
   where attempt_id = new.attempt_id
     and operation_id = new.operation_id;
 
@@ -754,15 +754,15 @@ begin
 end
 $function$;
 
-create function shablon.guard_delivery_attempt_update()
+create function shablon_analiz_telefonnyh_peregovorov.guard_delivery_attempt_update()
 returns trigger
 language plpgsql
-set search_path = pg_catalog, shablon
+set search_path = pg_catalog, shablon_analiz_telefonnyh_peregovorov
 as $function$
 declare
   v_old_semantic jsonb;
   v_new_semantic jsonb;
-  v_recon_state shablon.operation_state;
+  v_recon_state shablon_analiz_telefonnyh_peregovorov.operation_state;
 begin
   if old.outcome_state <> 'outcome_unknown' then
     raise exception 'Only outcome_unknown delivery may be reconciled';
@@ -799,7 +799,7 @@ begin
 
   select operation_state
   into v_recon_state
-  from shablon.operations
+  from shablon_analiz_telefonnyh_peregovorov.operations
   where operation_id = new.reconciliation_operation_id
     and call_id = new.call_id;
 
@@ -811,7 +811,7 @@ begin
 end
 $function$;
 
-create function shablon.guard_delivery_attempt_delete()
+create function shablon_analiz_telefonnyh_peregovorov.guard_delivery_attempt_delete()
 returns trigger
 language plpgsql
 set search_path = pg_catalog
@@ -822,19 +822,19 @@ end
 $function$;
 
 create trigger trg_delivery_attempts_guard_insert
-before insert on shablon.delivery_attempts
-for each row execute function shablon.guard_delivery_attempt_insert();
+before insert on shablon_analiz_telefonnyh_peregovorov.delivery_attempts
+for each row execute function shablon_analiz_telefonnyh_peregovorov.guard_delivery_attempt_insert();
 
 create trigger trg_delivery_attempts_guard_update
-before update on shablon.delivery_attempts
-for each row execute function shablon.guard_delivery_attempt_update();
+before update on shablon_analiz_telefonnyh_peregovorov.delivery_attempts
+for each row execute function shablon_analiz_telefonnyh_peregovorov.guard_delivery_attempt_update();
 
 create trigger trg_delivery_attempts_guard_delete
-before delete on shablon.delivery_attempts
-for each row execute function shablon.guard_delivery_attempt_delete();
+before delete on shablon_analiz_telefonnyh_peregovorov.delivery_attempts
+for each row execute function shablon_analiz_telefonnyh_peregovorov.guard_delivery_attempt_delete();
 
 -- A dispute is a request for review, not a direct score edit.
-create table shablon.analysis_disputes (
+create table shablon_analiz_telefonnyh_peregovorov.analysis_disputes (
   dispute_id uuid primary key default gen_random_uuid(),
   call_id uuid not null,
   analysis_id uuid not null,
@@ -842,7 +842,7 @@ create table shablon.analysis_disputes (
   evidence_id uuid,
   author_ref text not null,
   reason text not null,
-  dispute_state shablon.dispute_state not null default 'open',
+  dispute_state shablon_analiz_telefonnyh_peregovorov.dispute_state not null default 'open',
   resolution_reason text,
   resolved_by_ref text,
   opened_at timestamptz not null default now(),
@@ -868,19 +868,19 @@ create table shablon.analysis_disputes (
     unique (dispute_id, call_id),
   constraint analysis_disputes_analysis_same_call
     foreign key (analysis_id, call_id)
-    references shablon.analysis_versions(analysis_id, call_id)
+    references shablon_analiz_telefonnyh_peregovorov.analysis_versions(analysis_id, call_id)
     on delete restrict,
   constraint analysis_disputes_claim_same_analysis
     foreign key (claim_id, analysis_id)
-    references shablon.analysis_claims(claim_id, analysis_id)
+    references shablon_analiz_telefonnyh_peregovorov.analysis_claims(claim_id, analysis_id)
     on delete restrict,
   constraint analysis_disputes_evidence_same_analysis
     foreign key (evidence_id, analysis_id)
-    references shablon.evidence_sets(evidence_id, analysis_id)
+    references shablon_analiz_telefonnyh_peregovorov.evidence_sets(evidence_id, analysis_id)
     on delete restrict
 );
 
-create function shablon.guard_analysis_dispute_initial_state()
+create function shablon_analiz_telefonnyh_peregovorov.guard_analysis_dispute_initial_state()
 returns trigger
 language plpgsql
 set search_path = pg_catalog
@@ -897,7 +897,7 @@ begin
 end
 $function$;
 
-create function shablon.guard_analysis_dispute_update()
+create function shablon_analiz_telefonnyh_peregovorov.guard_analysis_dispute_update()
 returns trigger
 language plpgsql
 set search_path = pg_catalog
@@ -942,24 +942,24 @@ end
 $function$;
 
 create trigger trg_analysis_disputes_guard_initial
-before insert on shablon.analysis_disputes
-for each row execute function shablon.guard_analysis_dispute_initial_state();
+before insert on shablon_analiz_telefonnyh_peregovorov.analysis_disputes
+for each row execute function shablon_analiz_telefonnyh_peregovorov.guard_analysis_dispute_initial_state();
 
 create trigger trg_analysis_disputes_guard_update
-before update on shablon.analysis_disputes
-for each row execute function shablon.guard_analysis_dispute_update();
+before update on shablon_analiz_telefonnyh_peregovorov.analysis_disputes
+for each row execute function shablon_analiz_telefonnyh_peregovorov.guard_analysis_dispute_update();
 
 create trigger trg_analysis_disputes_guard_delete
-before delete on shablon.analysis_disputes
-for each row execute function shablon.guard_db05_history_delete();
+before delete on shablon_analiz_telefonnyh_peregovorov.analysis_disputes
+for each row execute function shablon_analiz_telefonnyh_peregovorov.guard_db05_history_delete();
 
 -- Typed correction record. It records a controlled correction but never
 -- rewrites the original source/analysis row itself.
-create table shablon.corrections (
+create table shablon_analiz_telefonnyh_peregovorov.corrections (
   correction_id uuid primary key default gen_random_uuid(),
-  call_id uuid not null references shablon.calls(call_id) on delete restrict,
-  target_type shablon.correction_target_type not null,
-  target_manager_id uuid references shablon.managers(manager_id) on delete restrict,
+  call_id uuid not null references shablon_analiz_telefonnyh_peregovorov.calls(call_id) on delete restrict,
+  target_type shablon_analiz_telefonnyh_peregovorov.correction_target_type not null,
+  target_manager_id uuid references shablon_analiz_telefonnyh_peregovorov.managers(manager_id) on delete restrict,
   target_role_assignment_version_id uuid,
   target_transcript_id uuid,
   target_analysis_id uuid,
@@ -972,7 +972,7 @@ create table shablon.corrections (
   after_value jsonb,
   actor_ref text not null,
   reason text not null,
-  correction_state shablon.correction_state not null default 'proposed',
+  correction_state shablon_analiz_telefonnyh_peregovorov.correction_state not null default 'proposed',
   source_dispute_id uuid,
   apply_operation_id uuid,
   applied_at timestamptz,
@@ -1021,39 +1021,39 @@ create table shablon.corrections (
     ),
   constraint corrections_role_same_call
     foreign key (target_role_assignment_version_id, call_id)
-    references shablon.role_assignment_versions(role_assignment_version_id, call_id)
+    references shablon_analiz_telefonnyh_peregovorov.role_assignment_versions(role_assignment_version_id, call_id)
     on delete restrict,
   constraint corrections_transcript_same_call
     foreign key (target_transcript_id, call_id)
-    references shablon.raw_transcripts(transcript_id, call_id)
+    references shablon_analiz_telefonnyh_peregovorov.raw_transcripts(transcript_id, call_id)
     on delete restrict,
   constraint corrections_analysis_same_call
     foreign key (target_analysis_id, call_id)
-    references shablon.analysis_versions(analysis_id, call_id)
+    references shablon_analiz_telefonnyh_peregovorov.analysis_versions(analysis_id, call_id)
     on delete restrict,
   constraint corrections_confirmation_same_call
     foreign key (target_business_confirmation_id, call_id)
-    references shablon.business_confirmations(confirmation_id, call_id)
+    references shablon_analiz_telefonnyh_peregovorov.business_confirmations(confirmation_id, call_id)
     on delete restrict,
   constraint corrections_callback_same_call
     foreign key (target_callback_link_id, call_id)
-    references shablon.callback_links(callback_link_id, callback_call_id)
+    references shablon_analiz_telefonnyh_peregovorov.callback_links(callback_link_id, callback_call_id)
     on delete restrict,
   constraint corrections_outgoing_same_call
     foreign key (target_outgoing_action_id, call_id)
-    references shablon.outgoing_actions(outgoing_action_id, call_id)
+    references shablon_analiz_telefonnyh_peregovorov.outgoing_actions(outgoing_action_id, call_id)
     on delete restrict,
   constraint corrections_dispute_same_call
     foreign key (source_dispute_id, call_id)
-    references shablon.analysis_disputes(dispute_id, call_id)
+    references shablon_analiz_telefonnyh_peregovorov.analysis_disputes(dispute_id, call_id)
     on delete restrict,
   constraint corrections_operation_same_call
     foreign key (apply_operation_id, call_id)
-    references shablon.operations(operation_id, call_id)
+    references shablon_analiz_telefonnyh_peregovorov.operations(operation_id, call_id)
     on delete restrict
 );
 
-create function shablon.guard_correction_initial_state()
+create function shablon_analiz_telefonnyh_peregovorov.guard_correction_initial_state()
 returns trigger
 language plpgsql
 set search_path = pg_catalog
@@ -1070,7 +1070,7 @@ begin
 end
 $function$;
 
-create function shablon.guard_correction_update()
+create function shablon_analiz_telefonnyh_peregovorov.guard_correction_update()
 returns trigger
 language plpgsql
 set search_path = pg_catalog
@@ -1078,7 +1078,7 @@ as $function$
 declare
   v_old_semantic jsonb;
   v_new_semantic jsonb;
-  v_apply_state shablon.operation_state;
+  v_apply_state shablon_analiz_telefonnyh_peregovorov.operation_state;
 begin
   if old.correction_state <> 'proposed' then
     raise exception 'Applied/rejected correction is immutable';
@@ -1104,7 +1104,7 @@ begin
   if new.correction_state = 'applied' then
     select operation_state
     into v_apply_state
-    from shablon.operations
+    from shablon_analiz_telefonnyh_peregovorov.operations
     where operation_id = new.apply_operation_id
       and call_id = new.call_id;
 
@@ -1118,21 +1118,21 @@ end
 $function$;
 
 create trigger trg_corrections_guard_initial
-before insert on shablon.corrections
-for each row execute function shablon.guard_correction_initial_state();
+before insert on shablon_analiz_telefonnyh_peregovorov.corrections
+for each row execute function shablon_analiz_telefonnyh_peregovorov.guard_correction_initial_state();
 
 create trigger trg_corrections_guard_update
-before update on shablon.corrections
-for each row execute function shablon.guard_correction_update();
+before update on shablon_analiz_telefonnyh_peregovorov.corrections
+for each row execute function shablon_analiz_telefonnyh_peregovorov.guard_correction_update();
 
 create trigger trg_corrections_guard_delete
-before delete on shablon.corrections
-for each row execute function shablon.guard_db05_history_delete();
+before delete on shablon_analiz_telefonnyh_peregovorov.corrections
+for each row execute function shablon_analiz_telefonnyh_peregovorov.guard_db05_history_delete();
 
 -- Generic administrative audit metadata. This is intentionally append-only.
-create table shablon.audit_events (
+create table shablon_analiz_telefonnyh_peregovorov.audit_events (
   audit_event_id uuid primary key default gen_random_uuid(),
-  scope_ref text not null default 'shablon',
+  scope_ref text not null default 'shablon_analiz_telefonnyh_peregovorov',
   environment_ref text not null default 'working',
   actor_ref text not null,
   actor_capability text not null,
@@ -1142,8 +1142,8 @@ create table shablon.audit_events (
   before_ref text,
   after_ref text,
   reason text,
-  operation_id uuid references shablon.operations(operation_id) on delete restrict,
-  result shablon.audit_result not null,
+  operation_id uuid references shablon_analiz_telefonnyh_peregovorov.operations(operation_id) on delete restrict,
+  result shablon_analiz_telefonnyh_peregovorov.audit_result not null,
   error_code text,
   source_channel text not null default 'backend',
   safe_details jsonb not null default '{}'::jsonb,
@@ -1151,8 +1151,8 @@ create table shablon.audit_events (
   result_at timestamptz,
   created_at timestamptz not null default now(),
 
-  constraint audit_events_scope_is_shablon
-    check (scope_ref = 'shablon'),
+  constraint audit_events_scope_is_shablon_analiz_telefonnyh_peregovorov
+    check (scope_ref = 'shablon_analiz_telefonnyh_peregovorov'),
   constraint audit_events_environment_is_working
     check (environment_ref = 'working'),
   constraint audit_events_actor_not_blank
@@ -1173,7 +1173,7 @@ create table shablon.audit_events (
     check (result_at is not null and result_at >= requested_at)
 );
 
-create function shablon.guard_audit_event_append_only()
+create function shablon_analiz_telefonnyh_peregovorov.guard_audit_event_append_only()
 returns trigger
 language plpgsql
 set search_path = pg_catalog
@@ -1184,7 +1184,7 @@ end
 $function$;
 
 create trigger trg_audit_events_append_only
-before update or delete on shablon.audit_events
-for each row execute function shablon.guard_audit_event_append_only();
+before update or delete on shablon_analiz_telefonnyh_peregovorov.audit_events
+for each row execute function shablon_analiz_telefonnyh_peregovorov.guard_audit_event_append_only();
 
 commit;

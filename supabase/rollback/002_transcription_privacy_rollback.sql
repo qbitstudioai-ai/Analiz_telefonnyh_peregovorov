@@ -1,6 +1,6 @@
 -- DB-02 rollback
--- APPROVED WORKING CONTOUR. Rollback is limited to schema shablon and requires an explicit safety check before execution.
--- Destructive for DB-02 objects inside shablon.
+-- APPROVED WORKING CONTOUR. Rollback is limited to schema shablon_analiz_telefonnyh_peregovorov and requires an explicit safety check before execution.
+-- Destructive for DB-02 objects inside shablon_analiz_telefonnyh_peregovorov.
 -- Refuses to run when later/unknown relational objects exist.
 
 begin;
@@ -11,9 +11,9 @@ declare
   v_extra_relations text;
 begin
   if not exists (
-    select 1 from pg_namespace where nspname = 'shablon'
+    select 1 from pg_namespace where nspname = 'shablon_analiz_telefonnyh_peregovorov'
   ) then
-    raise exception 'DB-02 rollback refused: schema shablon does not exist';
+    raise exception 'DB-02 rollback refused: schema shablon_analiz_telefonnyh_peregovorov does not exist';
   end if;
 
   select string_agg(required_table, ', ' order by required_table)
@@ -35,7 +35,7 @@ begin
   where not exists (
     select 1
     from pg_tables
-    where schemaname = 'shablon'
+    where schemaname = 'shablon_analiz_telefonnyh_peregovorov'
       and tablename = required.required_table
   );
 
@@ -49,7 +49,7 @@ begin
   into v_extra_relations
   from pg_class c
   join pg_namespace n on n.oid = c.relnamespace
-  where n.nspname = 'shablon'
+  where n.nspname = 'shablon_analiz_telefonnyh_peregovorov'
     and c.relkind in ('r', 'p', 'v', 'm')
     and c.relname not in (
       -- DB-01
@@ -77,33 +77,33 @@ begin
 
   if v_extra_relations is not null then
     raise exception
-      'DB-02 rollback refused: later/unknown relations exist in shablon: %',
+      'DB-02 rollback refused: later/unknown relations exist in shablon_analiz_telefonnyh_peregovorov: %',
       v_extra_relations;
   end if;
 end
 $guard$;
 
-drop table shablon.speech_metrics;
-drop table shablon.processing_quality;
-drop table shablon.pseudonym_mappings;
-drop table shablon.privacy_package_segments;
-drop table shablon.privacy_packages;
-drop table shablon.pseudonymized_segments;
-drop table shablon.pseudonymized_transcripts;
-drop table shablon.role_assignments;
-drop table shablon.role_assignment_versions;
-drop table shablon.transcript_segments;
-drop table shablon.raw_transcripts;
+drop table shablon_analiz_telefonnyh_peregovorov.speech_metrics;
+drop table shablon_analiz_telefonnyh_peregovorov.processing_quality;
+drop table shablon_analiz_telefonnyh_peregovorov.pseudonym_mappings;
+drop table shablon_analiz_telefonnyh_peregovorov.privacy_package_segments;
+drop table shablon_analiz_telefonnyh_peregovorov.privacy_packages;
+drop table shablon_analiz_telefonnyh_peregovorov.pseudonymized_segments;
+drop table shablon_analiz_telefonnyh_peregovorov.pseudonymized_transcripts;
+drop table shablon_analiz_telefonnyh_peregovorov.role_assignments;
+drop table shablon_analiz_telefonnyh_peregovorov.role_assignment_versions;
+drop table shablon_analiz_telefonnyh_peregovorov.transcript_segments;
+drop table shablon_analiz_telefonnyh_peregovorov.raw_transcripts;
 
-alter table shablon.temporary_audio_artifacts
+alter table shablon_analiz_telefonnyh_peregovorov.temporary_audio_artifacts
   drop constraint temporary_audio_artifact_call_unique;
 
-drop type shablon.metric_reliability;
-drop type shablon.processing_reliability;
-drop type shablon.privacy_status;
-drop type shablon.role_confidence_status;
-drop type shablon.business_role;
-drop type shablon.validation_status;
-drop type shablon.artifact_version_state;
+drop type shablon_analiz_telefonnyh_peregovorov.metric_reliability;
+drop type shablon_analiz_telefonnyh_peregovorov.processing_reliability;
+drop type shablon_analiz_telefonnyh_peregovorov.privacy_status;
+drop type shablon_analiz_telefonnyh_peregovorov.role_confidence_status;
+drop type shablon_analiz_telefonnyh_peregovorov.business_role;
+drop type shablon_analiz_telefonnyh_peregovorov.validation_status;
+drop type shablon_analiz_telefonnyh_peregovorov.artifact_version_state;
 
 commit;

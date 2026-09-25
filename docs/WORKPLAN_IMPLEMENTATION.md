@@ -4,9 +4,9 @@
 
 ## Режим
 
-Разрешена реализация **в рабочем Supabase только внутри schema `shablon`**.
+Разрешена реализация **в рабочем Supabase только внутри schema `shablon_analiz_telefonnyh_peregovorov`**.
 
-Это разрешает создавать, применять и проверять SQL внутри `shablon`, а также по мере последующих задач подключать реальные сервисные Credentials к этому контуру.
+Это разрешает создавать, применять и проверять SQL внутри `shablon_analiz_telefonnyh_peregovorov`, а также по мере последующих задач подключать реальные сервисные Credentials к этому контуру.
 
 Это **не blanket-разрешение на весь production**. Нельзя без отдельного решения менять/удалять посторонние схемы и данные, выполнять destructive rollback на единственном рабочем экземпляре или переключать реальный клиентский трафик.
 
@@ -34,9 +34,10 @@
 | [x] DB-04 | ChatGPT | Migration analysis/evidence | Созданы migration/verify/guarded rollback для 11 tables; exact input manifest, typed claims/evidence, exact safe segment/knowledge refs, absence coverage и current evidence gate статически проверены; direct final-state INSERT bypass закрыт; к Supabase не применено |
 | [x] DB-05 | ChatGPT | Migration CRM/outgoing/corrections/audit | Созданы migration/verify/guarded rollback для 7 tables; CRM/human facts отделены от AI outcome, callback использует trusted refs, outgoing action предшествует send, delivered/unknown retry gates, corrections/disputes и append-only audit статически проверены; к Supabase не применено |
 | [x] DB-06 | ChatGPT | Dashboard views/metric SQL | Созданы migration/verify/guarded rollback для 12 views + 7 metric/filter functions; logical-call decomposition, current/reliable/no-dispute averages, N/A criteria, stages, AI/CRM split, callback window, speech provenance и drill-down IDs статически проверены; к Supabase не применено |
-| [x] DB-07 | ChatGPT | Изоляция и права шаблонного контура | Канонический migration/verify/guarded rollback: 9 NOLOGIN capability roles, 18 security-barrier runtime/safe views, 5 defense-in-depth RLS policies на raw/mapping, 2 audited SECURITY DEFINER proposal functions, PUBLIC/default privilege hardening и positive/negative matrix; физический контур обновлён DB-08A до `shablon`; к Supabase ещё не применено |
-| [x] DB-08A | ChatGPT | Адаптация DB-01—DB-07 к рабочей schema `shablon` | Все migration/verify/rollback используют `shablon`, test-only hardcode удалён из рабочего контура, DB-05 audit маркирует `working`, DB-07 roles переименованы в `shablon_*`; к Supabase ещё не применено |
-| [ ] DB-08B | Павел + ChatGPT | Применение migrations в рабочем Supabase | После preflight Павел запускает подготовленный SQL только для `shablon`; ChatGPT по фактическому результату проверяет schema, constraints, связи, права и безопасный recovery |
+| [x] DB-07 | ChatGPT | Изоляция и права шаблонного контура | Канонический migration/verify/guarded rollback: 9 NOLOGIN capability roles, 18 security-barrier runtime/safe views, 5 defense-in-depth RLS policies на raw/mapping, 2 audited SECURITY DEFINER proposal functions, PUBLIC/default privilege hardening и positive/negative matrix; физический контур обновлён DB-08A до `shablon_analiz_telefonnyh_peregovorov`; к Supabase ещё не применено |
+| [x] DB-08A | ChatGPT | Адаптация DB-01—DB-07 к рабочей schema `shablon` | Migration/verify/rollback были переведены с `atp_test` на рабочий контур `shablon`; SQL к Supabase не применялся |
+| [x] DB-08A.1 | ChatGPT | Окончательное имя рабочего контура | До применения SQL schema переименована в `shablon_analiz_telefonnyh_peregovorov` во всех migration/verify/rollback и документации; DB-07 roles используют `shablon_analiz_telefonnyh_peregovorov_*`; DB-05 audit использует `scope_ref='shablon_analiz_telefonnyh_peregovorov'`; к Supabase ещё не применено |
+| [~] DB-08B | Павел + ChatGPT | Применение migrations в рабочем Supabase | Первая read-only проверка соединения выполнена; дальше preflight наличия schema/roles, затем migrations 001→007 и verify при отсутствии конфликтов |
 
 ## Этап B — обработка и контракты
 
@@ -93,7 +94,7 @@
 
 ## Текущая следующая задача
 
-**DB-08B — применение DB-01—DB-07 в рабочем Supabase schema `shablon`.**
+**DB-08B — применение DB-01—DB-07 в рабочем Supabase schema `shablon_analiz_telefonnyh_peregovorov`.**
 
 Исполнители: **Павел + ChatGPT**.
 
@@ -102,7 +103,7 @@
 Порядок DB-08B:
 
 1. до запуска подтвердить, что открыт нужный рабочий Supabase-проект;
-2. выполнить безопасный preflight: проверить наличие schema `shablon`, конфликтующих объектов и старой schema `atp_test`;
+2. выполнить безопасный preflight: проверить наличие schema `shablon_analiz_telefonnyh_peregovorov`, промежуточной schema `shablon`, старой schema `atp_test`, конфликтующих объектов и capability roles;
 3. если конфликтов нет, применить migrations 001 → 007 строго по порядку;
 4. после каждой migration зафиксировать фактический результат;
 5. выполнить verify 001 → 007;
@@ -114,7 +115,7 @@
 Критерий готовности:
 
 - SQL фактически выполнен именно в согласованном рабочем Supabase;
-- schema `shablon` создана и содержит ожидаемые tables/FK/views/functions/roles/policies;
+- schema `shablon_analiz_telefonnyh_peregovorov` создана и содержит ожидаемые tables/FK/views/functions/roles/policies;
 - migrations 001—007 завершились без необъяснённых ошибок;
 - verify 001—007 дали PASS;
 - DB-07 negative privilege checks подтвердили запреты;

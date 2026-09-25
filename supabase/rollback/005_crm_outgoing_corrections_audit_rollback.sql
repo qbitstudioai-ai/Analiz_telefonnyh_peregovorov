@@ -1,7 +1,7 @@
 -- DB-05 rollback
--- APPROVED WORKING CONTOUR. Rollback is limited to schema shablon and requires an explicit safety check before execution.
+-- APPROVED WORKING CONTOUR. Rollback is limited to schema shablon_analiz_telefonnyh_peregovorov and requires an explicit safety check before execution.
 -- Removes only DB-05 objects and refuses to run if later/unknown
--- relational objects already exist in shablon.
+-- relational objects already exist in shablon_analiz_telefonnyh_peregovorov.
 
 begin;
 
@@ -11,9 +11,9 @@ declare
   v_extra_relations text;
 begin
   if not exists (
-    select 1 from pg_namespace where nspname = 'shablon'
+    select 1 from pg_namespace where nspname = 'shablon_analiz_telefonnyh_peregovorov'
   ) then
-    raise exception 'DB-05 rollback refused: schema shablon does not exist';
+    raise exception 'DB-05 rollback refused: schema shablon_analiz_telefonnyh_peregovorov does not exist';
   end if;
 
   select string_agg(required_relation, ', ' order by required_relation)
@@ -32,7 +32,7 @@ begin
     select 1
     from pg_class c
     join pg_namespace n on n.oid = c.relnamespace
-    where n.nspname = 'shablon'
+    where n.nspname = 'shablon_analiz_telefonnyh_peregovorov'
       and c.relname = required.required_relation
       and c.relkind in ('r', 'p', 'v', 'm')
   );
@@ -47,7 +47,7 @@ begin
   into v_extra_relations
   from pg_class c
   join pg_namespace n on n.oid = c.relnamespace
-  where n.nspname = 'shablon'
+  where n.nspname = 'shablon_analiz_telefonnyh_peregovorov'
     and c.relkind in ('r', 'p', 'v', 'm')
     and c.relname not in (
       -- DB-01
@@ -110,51 +110,51 @@ begin
 
   if v_extra_relations is not null then
     raise exception
-      'DB-05 rollback refused: later/unknown relations exist in shablon: %',
+      'DB-05 rollback refused: later/unknown relations exist in shablon_analiz_telefonnyh_peregovorov: %',
       v_extra_relations;
   end if;
 end
 $guard$;
 
-drop table shablon.audit_events;
-drop table shablon.corrections;
-drop table shablon.analysis_disputes;
-drop table shablon.delivery_attempts;
-drop table shablon.outgoing_actions;
-drop table shablon.callback_links;
-drop table shablon.business_confirmations;
+drop table shablon_analiz_telefonnyh_peregovorov.audit_events;
+drop table shablon_analiz_telefonnyh_peregovorov.corrections;
+drop table shablon_analiz_telefonnyh_peregovorov.analysis_disputes;
+drop table shablon_analiz_telefonnyh_peregovorov.delivery_attempts;
+drop table shablon_analiz_telefonnyh_peregovorov.outgoing_actions;
+drop table shablon_analiz_telefonnyh_peregovorov.callback_links;
+drop table shablon_analiz_telefonnyh_peregovorov.business_confirmations;
 
-alter table shablon.role_assignment_versions
+alter table shablon_analiz_telefonnyh_peregovorov.role_assignment_versions
   drop constraint role_assignment_versions_role_call_unique;
 
-alter table shablon.operation_attempts
+alter table shablon_analiz_telefonnyh_peregovorov.operation_attempts
   drop constraint operation_attempts_attempt_operation_unique;
 
-drop function shablon.guard_audit_event_append_only();
-drop function shablon.guard_correction_update();
-drop function shablon.guard_correction_initial_state();
-drop function shablon.guard_analysis_dispute_update();
-drop function shablon.guard_analysis_dispute_initial_state();
-drop function shablon.guard_delivery_attempt_delete();
-drop function shablon.guard_delivery_attempt_update();
-drop function shablon.guard_delivery_attempt_insert();
-drop function shablon.guard_outgoing_action_update();
-drop function shablon.validate_outgoing_action_insert();
-drop function shablon.guard_callback_link_update();
-drop function shablon.validate_callback_link();
-drop function shablon.guard_db05_history_delete();
-drop function shablon.guard_business_confirmation_immutable();
-drop function shablon.validate_business_confirmation_insert();
+drop function shablon_analiz_telefonnyh_peregovorov.guard_audit_event_append_only();
+drop function shablon_analiz_telefonnyh_peregovorov.guard_correction_update();
+drop function shablon_analiz_telefonnyh_peregovorov.guard_correction_initial_state();
+drop function shablon_analiz_telefonnyh_peregovorov.guard_analysis_dispute_update();
+drop function shablon_analiz_telefonnyh_peregovorov.guard_analysis_dispute_initial_state();
+drop function shablon_analiz_telefonnyh_peregovorov.guard_delivery_attempt_delete();
+drop function shablon_analiz_telefonnyh_peregovorov.guard_delivery_attempt_update();
+drop function shablon_analiz_telefonnyh_peregovorov.guard_delivery_attempt_insert();
+drop function shablon_analiz_telefonnyh_peregovorov.guard_outgoing_action_update();
+drop function shablon_analiz_telefonnyh_peregovorov.validate_outgoing_action_insert();
+drop function shablon_analiz_telefonnyh_peregovorov.guard_callback_link_update();
+drop function shablon_analiz_telefonnyh_peregovorov.validate_callback_link();
+drop function shablon_analiz_telefonnyh_peregovorov.guard_db05_history_delete();
+drop function shablon_analiz_telefonnyh_peregovorov.guard_business_confirmation_immutable();
+drop function shablon_analiz_telefonnyh_peregovorov.validate_business_confirmation_insert();
 
-drop type shablon.audit_result;
-drop type shablon.correction_target_type;
-drop type shablon.correction_state;
-drop type shablon.dispute_state;
-drop type shablon.delivery_reconciliation_state;
-drop type shablon.delivery_provider_status;
-drop type shablon.outgoing_action_state;
-drop type shablon.callback_link_state;
-drop type shablon.business_confirmation_event_kind;
-drop type shablon.business_confirmation_source;
+drop type shablon_analiz_telefonnyh_peregovorov.audit_result;
+drop type shablon_analiz_telefonnyh_peregovorov.correction_target_type;
+drop type shablon_analiz_telefonnyh_peregovorov.correction_state;
+drop type shablon_analiz_telefonnyh_peregovorov.dispute_state;
+drop type shablon_analiz_telefonnyh_peregovorov.delivery_reconciliation_state;
+drop type shablon_analiz_telefonnyh_peregovorov.delivery_provider_status;
+drop type shablon_analiz_telefonnyh_peregovorov.outgoing_action_state;
+drop type shablon_analiz_telefonnyh_peregovorov.callback_link_state;
+drop type shablon_analiz_telefonnyh_peregovorov.business_confirmation_event_kind;
+drop type shablon_analiz_telefonnyh_peregovorov.business_confirmation_source;
 
 commit;

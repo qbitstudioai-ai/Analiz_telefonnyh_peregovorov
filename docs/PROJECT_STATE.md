@@ -1,18 +1,18 @@
 # Текущее состояние проекта
 
-Обновлено: 2026-09-25. Рабочий Supabase разрешён только для изолированного контура schema `shablon`.
+Обновлено: 2026-09-25. Рабочий Supabase разрешён только для изолированного контура schema `shablon_analiz_telefonnyh_peregovorov`.
 
 ## Режим
 
-**Разрешена реализация по одной задаче в рабочем Supabase только внутри schema `shablon`.**
+**Разрешена реализация по одной задаче в рабочем Supabase только внутри schema `shablon_analiz_telefonnyh_peregovorov`.**
 
 Решение Павла от 25 сентября 2026 года заменяет прежнее ограничение «только test/локально» для этого контура.
 
 Разрешено:
 
-- создать и развивать schema `shablon`;
+- создать и развивать schema `shablon_analiz_telefonnyh_peregovorov`;
 - создать внутри неё реальные таблицы, связи, views, functions, RLS и capability roles по согласованным migrations;
-- подключать к `shablon` рабочие сервисные Credentials по мере соответствующих задач;
+- подключать к `shablon_analiz_telefonnyh_peregovorov` рабочие сервисные Credentials по мере соответствующих задач;
 - выполнять verify, если проверка не оставляет фиктивные данные и не затрагивает посторонние схемы.
 
 Не входит в разрешение автоматически:
@@ -24,30 +24,34 @@
 
 ## Последняя завершённая задача
 
-**DB-08A — комплект DB-01—DB-07 адаптирован под рабочую schema `shablon`.**
+**DB-08A.1 — рабочий контур переименован в schema `shablon_analiz_telefonnyh_peregovorov`.**
 
-Подготовлено в GitHub:
+До фактического применения SQL Павел уточнил окончательное имя schema. В GitHub синхронно обновлены:
 
-- migrations 001—007 используют schema `shablon`;
-- DB-07 использует capability roles `shablon_*`;
-- audit metadata DB-05 использует `scope_ref='shablon'` и `environment_ref='working'`;
-- DB-07 файлы переименованы без устаревшего `test` в имени;
-- verify/rollback приведены к тому же физическому контуру;
-- SQL по-прежнему не считается применённым до фактического запуска в Supabase.
+- migrations 001—007;
+- verify 001—007;
+- rollback 001—007;
+- DB-07 capability roles → `shablon_analiz_telefonnyh_peregovorov_*`;
+- DB-05 audit metadata → `scope_ref='shablon_analiz_telefonnyh_peregovorov'`, `environment_ref='working'`;
+- профильная документация и планы.
 
-DB-01—DB-07 ранее были только статически проверены. DB-08A меняет целевой физический контур, но не заявляет фактическое выполнение PostgreSQL.
+Исторически DB-08A сначала адаптировал SQL к рабочей schema `shablon`; DB-08A.1 переименовал этот ещё не применённый контур в окончательное имя `shablon_analiz_telefonnyh_peregovorov`.
+
+SQL по-прежнему **не применён** к Supabase.
 
 ## Следующая одна задача
 
-**DB-08B — фактически применить migrations DB-01—DB-07 в рабочем Supabase schema `shablon` и выполнить verify.**
+**DB-08B — фактически применить migrations DB-01—DB-07 в рабочем Supabase schema `shablon_analiz_telefonnyh_peregovorov` и выполнить verify.**
 
 Исполнители: **Павел + ChatGPT**.
 
-Перед первым SQL Павел подтверждает, что открыт нужный рабочий Supabase-проект. Первый preflight должен подтвердить, что schema `shablon` отсутствует либо её состояние полностью понятно и безопасно для продолжения. Посторонние схемы и данные не изменяются.
+Павел уже выполнил первую read-only часть preflight: соединение показывает database `postgres`, user `postgres`, current schema `public`, PostgreSQL 17.6. Это подтверждает только параметры текущего соединения, но ещё не подтверждает отсутствие целевой schema.
+
+Следующий read-only preflight должен проверить, существует ли schema `shablon_analiz_telefonnyh_peregovorov`, старая `shablon` или ещё более старая `atp_test`, а также одноимённые capability roles. Посторонние схемы и данные не изменяются.
 
 Критерий готовности:
 
-- migrations 001→007 фактически выполнены в schema `shablon`;
+- migrations 001→007 фактически выполнены в schema `shablon_analiz_telefonnyh_peregovorov`;
 - verify 001→007 фактически PASS;
 - schema/constraints/FK/views/functions/roles/RLS/grants сверены;
 - отрицательные privilege checks подтверждены;
@@ -57,4 +61,4 @@ DB-01—DB-07 ранее были только статически провер
 
 ## Что ещё не применялось
 
-На момент фиксации DB-08A SQL 001—007 ещё не запускался в Supabase. Реальные Credentials, n8n workflow, серверные сервисы и dashboard к schema `shablon` ещё не подключены и не проверены.
+На момент фиксации DB-08A SQL 001—007 ещё не запускался в Supabase. Реальные Credentials, n8n workflow, серверные сервисы и dashboard к schema `shablon_analiz_telefonnyh_peregovorov` ещё не подключены и не проверены.

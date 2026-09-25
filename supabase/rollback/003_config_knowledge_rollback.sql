@@ -1,7 +1,7 @@
 -- DB-03 rollback
--- APPROVED WORKING CONTOUR. Rollback is limited to schema shablon and requires an explicit safety check before execution.
+-- APPROVED WORKING CONTOUR. Rollback is limited to schema shablon_analiz_telefonnyh_peregovorov and requires an explicit safety check before execution.
 -- Removes only DB-03 objects and refuses to run if later/unknown
--- relational objects already exist in shablon.
+-- relational objects already exist in shablon_analiz_telefonnyh_peregovorov.
 
 begin;
 
@@ -13,9 +13,9 @@ begin
   if not exists (
     select 1
     from pg_namespace
-    where nspname = 'shablon'
+    where nspname = 'shablon_analiz_telefonnyh_peregovorov'
   ) then
-    raise exception 'DB-03 rollback refused: schema shablon does not exist';
+    raise exception 'DB-03 rollback refused: schema shablon_analiz_telefonnyh_peregovorov does not exist';
   end if;
 
   select string_agg(required_relation, ', ' order by required_relation)
@@ -41,7 +41,7 @@ begin
     select 1
     from pg_class c
     join pg_namespace n on n.oid = c.relnamespace
-    where n.nspname = 'shablon'
+    where n.nspname = 'shablon_analiz_telefonnyh_peregovorov'
       and c.relname = required.required_relation
       and c.relkind in ('r', 'p', 'v', 'm')
   );
@@ -56,7 +56,7 @@ begin
   into v_extra_relations
   from pg_class c
   join pg_namespace n on n.oid = c.relnamespace
-  where n.nspname = 'shablon'
+  where n.nspname = 'shablon_analiz_telefonnyh_peregovorov'
     and c.relkind in ('r', 'p', 'v', 'm')
     and c.relname not in (
       -- DB-01
@@ -99,45 +99,45 @@ begin
 
   if v_extra_relations is not null then
     raise exception
-      'DB-03 rollback refused: later/unknown relations exist in shablon: %',
+      'DB-03 rollback refused: later/unknown relations exist in shablon_analiz_telefonnyh_peregovorov: %',
       v_extra_relations;
   end if;
 end
 $guard$;
 
-drop view shablon.v_runtime_knowledge_fragments;
+drop view shablon_analiz_telefonnyh_peregovorov.v_runtime_knowledge_fragments;
 
-alter table shablon.filter_decisions
+alter table shablon_analiz_telefonnyh_peregovorov.filter_decisions
   drop constraint fk_filter_decisions_rules_version;
 
-drop table shablon.knowledge_publication_fragment_products;
-drop table shablon.knowledge_publication_fragments;
-drop table shablon.knowledge_publication_documents;
-drop table shablon.knowledge_publications;
-drop table shablon.knowledge_embeddings;
-drop table shablon.knowledge_fragments;
-drop table shablon.knowledge_document_versions;
-drop table shablon.knowledge_documents;
+drop table shablon_analiz_telefonnyh_peregovorov.knowledge_publication_fragment_products;
+drop table shablon_analiz_telefonnyh_peregovorov.knowledge_publication_fragments;
+drop table shablon_analiz_telefonnyh_peregovorov.knowledge_publication_documents;
+drop table shablon_analiz_telefonnyh_peregovorov.knowledge_publications;
+drop table shablon_analiz_telefonnyh_peregovorov.knowledge_embeddings;
+drop table shablon_analiz_telefonnyh_peregovorov.knowledge_fragments;
+drop table shablon_analiz_telefonnyh_peregovorov.knowledge_document_versions;
+drop table shablon_analiz_telefonnyh_peregovorov.knowledge_documents;
 
-drop table shablon.filter_rule_versions;
-drop table shablon.methodology_stages;
-drop table shablon.methodology_criteria;
-drop table shablon.methodology_versions;
-drop table shablon.prompt_versions;
+drop table shablon_analiz_telefonnyh_peregovorov.filter_rule_versions;
+drop table shablon_analiz_telefonnyh_peregovorov.methodology_stages;
+drop table shablon_analiz_telefonnyh_peregovorov.methodology_criteria;
+drop table shablon_analiz_telefonnyh_peregovorov.methodology_versions;
+drop table shablon_analiz_telefonnyh_peregovorov.prompt_versions;
 
-drop function shablon.guard_knowledge_embedding_update();
-drop function shablon.guard_knowledge_fragment_update();
-drop function shablon.guard_knowledge_document_update();
-drop function shablon.validate_knowledge_publication_activation();
-drop function shablon.guard_knowledge_publication_update();
-drop function shablon.guard_knowledge_publication_membership();
-drop function shablon.guard_methodology_child_mutation();
-drop function shablon.guard_config_semantic_update();
-drop function shablon.guard_config_initial_state();
+drop function shablon_analiz_telefonnyh_peregovorov.guard_knowledge_embedding_update();
+drop function shablon_analiz_telefonnyh_peregovorov.guard_knowledge_fragment_update();
+drop function shablon_analiz_telefonnyh_peregovorov.guard_knowledge_document_update();
+drop function shablon_analiz_telefonnyh_peregovorov.validate_knowledge_publication_activation();
+drop function shablon_analiz_telefonnyh_peregovorov.guard_knowledge_publication_update();
+drop function shablon_analiz_telefonnyh_peregovorov.guard_knowledge_publication_membership();
+drop function shablon_analiz_telefonnyh_peregovorov.guard_methodology_child_mutation();
+drop function shablon_analiz_telefonnyh_peregovorov.guard_config_semantic_update();
+drop function shablon_analiz_telefonnyh_peregovorov.guard_config_initial_state();
 
-drop type shablon.knowledge_publication_state;
-drop type shablon.embedding_state;
-drop type shablon.knowledge_editorial_state;
-drop type shablon.config_version_state;
+drop type shablon_analiz_telefonnyh_peregovorov.knowledge_publication_state;
+drop type shablon_analiz_telefonnyh_peregovorov.embedding_state;
+drop type shablon_analiz_telefonnyh_peregovorov.knowledge_editorial_state;
+drop type shablon_analiz_telefonnyh_peregovorov.config_version_state;
 
 commit;

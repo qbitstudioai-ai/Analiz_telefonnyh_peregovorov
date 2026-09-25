@@ -1,5 +1,5 @@
 -- DB-06 verification
--- APPROVED WORKING CONTOUR. Verification is limited to schema shablon.
+-- APPROVED WORKING CONTOUR. Verification is limited to schema shablon_analiz_telefonnyh_peregovorov.
 -- Run after DB-01..DB-06 migrations.
 -- Catalog/formula checks plus negative calls; transaction is rolled back.
 
@@ -12,9 +12,9 @@ declare
   v_definition text;
 begin
   if not exists (
-    select 1 from pg_namespace where nspname = 'shablon'
+    select 1 from pg_namespace where nspname = 'shablon_analiz_telefonnyh_peregovorov'
   ) then
-    raise exception 'DB-06 verification failed: schema shablon does not exist';
+    raise exception 'DB-06 verification failed: schema shablon_analiz_telefonnyh_peregovorov does not exist';
   end if;
 
   select string_agg(required_relation, ', ' order by required_relation)
@@ -34,7 +34,7 @@ begin
       ('v_dashboard_rezultaty'),
       ('v_dashboard_kachestvo')
   ) as required(required_relation)
-  where to_regclass('shablon.' || required.required_relation) is null;
+  where to_regclass('shablon_analiz_telefonnyh_peregovorov.' || required.required_relation) is null;
 
   if v_missing is not null then
     raise exception
@@ -46,7 +46,7 @@ begin
   into v_count
   from pg_proc p
   join pg_namespace n on n.oid = p.pronamespace
-  where n.nspname = 'shablon'
+  where n.nspname = 'shablon_analiz_telefonnyh_peregovorov'
     and p.proname in (
       'dashboard_filter_call_ids',
       'dashboard_overview',
@@ -64,11 +64,11 @@ begin
   end if;
 
   -- Call list must originate from calls, not call_events: one logical call row.
-  select pg_get_viewdef('shablon.v_dashboard_zvonki'::regclass, true)
+  select pg_get_viewdef('shablon_analiz_telefonnyh_peregovorov.v_dashboard_zvonki'::regclass, true)
   into v_definition;
 
-  if v_definition not ilike '%from shablon.calls%'
-     or v_definition ilike '%from shablon.call_events%'
+  if v_definition not ilike '%from shablon_analiz_telefonnyh_peregovorov.calls%'
+     or v_definition ilike '%from shablon_analiz_telefonnyh_peregovorov.call_events%'
   then
     raise exception
       'DB-06 verification failed: call dashboard is not based on logical calls';
@@ -88,7 +88,7 @@ begin
   end if;
 
   -- AI result and trusted CRM/human fact must be distinguishable.
-  select pg_get_viewdef('shablon.v_dashboard_rezultaty'::regclass, true)
+  select pg_get_viewdef('shablon_analiz_telefonnyh_peregovorov.v_dashboard_rezultaty'::regclass, true)
   into v_definition;
 
   if v_definition not ilike '%''ai''%'
@@ -101,7 +101,7 @@ begin
 
   -- Current CRM facts must exclude cancellation but preserve source history.
   select pg_get_viewdef(
-    'shablon.v_dashboard_business_confirmations_current'::regclass,
+    'shablon_analiz_telefonnyh_peregovorov.v_dashboard_business_confirmations_current'::regclass,
     true
   )
   into v_definition;
@@ -116,7 +116,7 @@ begin
 
   -- Quality view may expose speech values only when speech metric reliability
   -- is reliable.
-  select pg_get_viewdef('shablon.v_dashboard_kachestvo'::regclass, true)
+  select pg_get_viewdef('shablon_analiz_telefonnyh_peregovorov.v_dashboard_kachestvo'::regclass, true)
   into v_definition;
 
   if v_definition not ilike '%speech_metrics_reliability%'
@@ -132,7 +132,7 @@ begin
   into v_definition
   from pg_proc p
   join pg_namespace n on n.oid = p.pronamespace
-  where n.nspname = 'shablon'
+  where n.nspname = 'shablon_analiz_telefonnyh_peregovorov'
     and p.proname = 'dashboard_filter_call_ids';
 
   if v_definition not ilike '%started_at >= p_start%'
@@ -157,7 +157,7 @@ begin
   into v_definition
   from pg_proc p
   join pg_namespace n on n.oid = p.pronamespace
-  where n.nspname = 'shablon'
+  where n.nspname = 'shablon_analiz_telefonnyh_peregovorov'
     and p.proname = 'dashboard_overview';
 
   if v_definition not ilike '%avg(official_score)%'
@@ -177,7 +177,7 @@ begin
   into v_definition
   from pg_proc p
   join pg_namespace n on n.oid = p.pronamespace
-  where n.nspname = 'shablon'
+  where n.nspname = 'shablon_analiz_telefonnyh_peregovorov'
     and p.proname = 'dashboard_criterion_metrics';
 
   if v_definition not ilike '%k.applicable%'
@@ -193,7 +193,7 @@ begin
   into v_definition
   from pg_proc p
   join pg_namespace n on n.oid = p.pronamespace
-  where n.nspname = 'shablon'
+  where n.nspname = 'shablon_analiz_telefonnyh_peregovorov'
     and p.proname = 'dashboard_stage_metrics';
 
   if v_definition not ilike '%where e.applicable%'
@@ -210,7 +210,7 @@ begin
   into v_definition
   from pg_proc p
   join pg_namespace n on n.oid = p.pronamespace
-  where n.nspname = 'shablon'
+  where n.nspname = 'shablon_analiz_telefonnyh_peregovorov'
     and p.proname = 'dashboard_observation_metrics';
 
   if v_definition not ilike '%criterion_scores%'
@@ -227,7 +227,7 @@ begin
   into v_definition
   from pg_proc p
   join pg_namespace n on n.oid = p.pronamespace
-  where n.nspname = 'shablon'
+  where n.nspname = 'shablon_analiz_telefonnyh_peregovorov'
     and p.proname = 'dashboard_result_metrics';
 
   if v_definition not ilike '%result_source%'
@@ -241,7 +241,7 @@ begin
   -- Negative execution checks do not need fixture data.
   begin
     perform *
-    from shablon.dashboard_filter_call_ids(
+    from shablon_analiz_telefonnyh_peregovorov.dashboard_filter_call_ids(
       now(),
       now() - interval '1 minute',
       '{}'::jsonb
@@ -261,7 +261,7 @@ begin
 
   begin
     perform *
-    from shablon.dashboard_filter_call_ids(
+    from shablon_analiz_telefonnyh_peregovorov.dashboard_filter_call_ids(
       now() - interval '1 hour',
       now(),
       '[]'::jsonb
@@ -281,7 +281,7 @@ begin
 
   begin
     perform *
-    from shablon.dashboard_overview(
+    from shablon_analiz_telefonnyh_peregovorov.dashboard_overview(
       now() - interval '1 hour',
       now(),
       '{}'::jsonb,

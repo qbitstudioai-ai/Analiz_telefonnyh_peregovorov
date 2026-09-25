@@ -1,5 +1,5 @@
 -- DB-04 verification
--- APPROVED WORKING CONTOUR. Verification is limited to schema shablon.
+-- APPROVED WORKING CONTOUR. Verification is limited to schema shablon_analiz_telefonnyh_peregovorov.
 -- Run after DB-01..DB-04 migrations.
 -- The whole verification is rolled back and does not persist fixture rows.
 
@@ -13,9 +13,9 @@ declare
   v_labels text[];
 begin
   if not exists (
-    select 1 from pg_namespace where nspname = 'shablon'
+    select 1 from pg_namespace where nspname = 'shablon_analiz_telefonnyh_peregovorov'
   ) then
-    raise exception 'DB-04 verification failed: schema shablon does not exist';
+    raise exception 'DB-04 verification failed: schema shablon_analiz_telefonnyh_peregovorov does not exist';
   end if;
 
   select string_agg(required_relation, ', ' order by required_relation)
@@ -34,7 +34,7 @@ begin
       ('evidence_knowledge_refs'),
       ('evidence_absence_checks')
   ) as required(required_relation)
-  where to_regclass('shablon.' || required.required_relation) is null;
+  where to_regclass('shablon_analiz_telefonnyh_peregovorov.' || required.required_relation) is null;
 
   if v_missing is not null then
     raise exception
@@ -46,7 +46,7 @@ begin
   into v_count
   from pg_type t
   join pg_namespace n on n.oid = t.typnamespace
-  where n.nspname = 'shablon'
+  where n.nspname = 'shablon_analiz_telefonnyh_peregovorov'
     and t.typname in (
       'analysis_state',
       'analysis_claim_type',
@@ -70,7 +70,7 @@ begin
   from pg_type t
   join pg_namespace n on n.oid = t.typnamespace
   join pg_enum e on e.enumtypid = t.oid
-  where n.nspname = 'shablon'
+  where n.nspname = 'shablon_analiz_telefonnyh_peregovorov'
     and t.typname = 'analysis_state';
 
   if v_labels is distinct from
@@ -85,7 +85,7 @@ begin
   into v_count
   from pg_proc p
   join pg_namespace n on n.oid = p.pronamespace
-  where n.nspname = 'shablon'
+  where n.nspname = 'shablon_analiz_telefonnyh_peregovorov'
     and p.proname in (
       'guard_analysis_initial_state',
       'guard_analysis_child_mutation',
@@ -114,7 +114,7 @@ begin
   join pg_class c on c.oid = tg.tgrelid
   join pg_namespace n on n.oid = c.relnamespace
   where not tg.tgisinternal
-    and n.nspname = 'shablon'
+    and n.nspname = 'shablon_analiz_telefonnyh_peregovorov'
     and tg.tgname in (
       'trg_analysis_versions_guard_initial_state',
       'trg_analysis_knowledge_inputs_guard',
@@ -148,7 +148,7 @@ begin
     from pg_constraint con
     join pg_class c on c.oid = con.conrelid
     join pg_namespace n on n.oid = c.relnamespace
-    where n.nspname = 'shablon'
+    where n.nspname = 'shablon_analiz_telefonnyh_peregovorov'
       and c.relname = 'privacy_packages'
       and con.conname = 'privacy_packages_package_role_call_unique'
       and con.contype = 'u'
@@ -162,7 +162,7 @@ begin
     from pg_constraint con
     join pg_class c on c.oid = con.conrelid
     join pg_namespace n on n.oid = c.relnamespace
-    where n.nspname = 'shablon'
+    where n.nspname = 'shablon_analiz_telefonnyh_peregovorov'
       and c.relname = 'processing_quality'
       and con.conname = 'processing_quality_quality_inputs_call_unique'
       and con.contype = 'u'
@@ -198,7 +198,7 @@ begin
   where not exists (
     select 1
     from information_schema.columns c
-    where c.table_schema = 'shablon'
+    where c.table_schema = 'shablon_analiz_telefonnyh_peregovorov'
       and c.table_name = 'analysis_versions'
       and c.column_name = required.column_name
   );
@@ -214,7 +214,7 @@ begin
   into v_definition
   from pg_constraint con
   where con.conname = 'analysis_knowledge_inputs_product_scope'
-    and con.conrelid = 'shablon.analysis_knowledge_inputs'::regclass;
+    and con.conrelid = 'shablon_analiz_telefonnyh_peregovorov.analysis_knowledge_inputs'::regclass;
 
   if v_definition is null
      or regexp_replace(lower(v_definition), '\s+', ' ', 'g')
@@ -228,7 +228,7 @@ begin
   into v_definition
   from pg_constraint con
   where con.conname = 'evidence_conversation_refs_package_segment_fk'
-    and con.conrelid = 'shablon.evidence_conversation_refs'::regclass;
+    and con.conrelid = 'shablon_analiz_telefonnyh_peregovorov.evidence_conversation_refs'::regclass;
 
   if v_definition is null
      or regexp_replace(lower(v_definition), '\s+', ' ', 'g')
@@ -242,7 +242,7 @@ begin
   into v_definition
   from pg_constraint con
   where con.conname = 'evidence_knowledge_refs_analysis_input_fk'
-    and con.conrelid = 'shablon.evidence_knowledge_refs'::regclass;
+    and con.conrelid = 'shablon_analiz_telefonnyh_peregovorov.evidence_knowledge_refs'::regclass;
 
   if v_definition is null
      or regexp_replace(lower(v_definition), '\s+', ' ', 'g')
@@ -256,7 +256,7 @@ begin
   into v_definition
   from pg_constraint con
   where con.conname = 'evidence_absence_checks_analysis_package_fk'
-    and con.conrelid = 'shablon.evidence_absence_checks'::regclass;
+    and con.conrelid = 'shablon_analiz_telefonnyh_peregovorov.evidence_absence_checks'::regclass;
 
   if v_definition is null
      or regexp_replace(lower(v_definition), '\s+', ' ', 'g')
@@ -270,7 +270,7 @@ begin
   select count(*)
   into v_count
   from information_schema.columns
-  where table_schema = 'shablon'
+  where table_schema = 'shablon_analiz_telefonnyh_peregovorov'
     and table_name in (
       'analysis_claims',
       'evidence_sets',
@@ -298,7 +298,7 @@ begin
   join pg_class idx on idx.oid = i.indexrelid
   join pg_class tbl on tbl.oid = i.indrelid
   join pg_namespace n on n.oid = tbl.relnamespace
-  where n.nspname = 'shablon'
+  where n.nspname = 'shablon_analiz_telefonnyh_peregovorov'
     and idx.relname = 'uq_analysis_versions_one_current'
     and i.indisunique;
 
@@ -312,7 +312,7 @@ begin
   into v_definition
   from pg_proc p
   join pg_namespace n on n.oid = p.pronamespace
-  where n.nspname = 'shablon'
+  where n.nspname = 'shablon_analiz_telefonnyh_peregovorov'
     and p.proname = 'guard_analysis_version_update';
 
   if v_definition is null
@@ -325,7 +325,7 @@ begin
 
   -- Regression: final state must never be inserted directly.
   begin
-    insert into shablon.analysis_versions (
+    insert into shablon_analiz_telefonnyh_peregovorov.analysis_versions (
       call_id,
       version_no,
       analysis_operation_id,
@@ -396,7 +396,7 @@ begin
 
   -- Regression: even a candidate cannot pre-declare a passed evidence gate.
   begin
-    insert into shablon.analysis_versions (
+    insert into shablon_analiz_telefonnyh_peregovorov.analysis_versions (
       call_id,
       version_no,
       analysis_operation_id,

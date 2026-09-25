@@ -1,5 +1,5 @@
 -- DB-01 verification
--- APPROVED WORKING CONTOUR. Verification is limited to schema shablon.
+-- APPROVED WORKING CONTOUR. Verification is limited to schema shablon_analiz_telefonnyh_peregovorov.
 -- Run only after supabase/migrations/001_base_ingest_reliability.sql.
 -- All synthetic data created below is rolled back.
 
@@ -23,15 +23,15 @@ begin
   if not exists (
     select 1
     from pg_namespace
-    where nspname = 'shablon'
+    where nspname = 'shablon_analiz_telefonnyh_peregovorov'
   ) then
-    raise exception 'DB-01 verification failed: schema shablon does not exist';
+    raise exception 'DB-01 verification failed: schema shablon_analiz_telefonnyh_peregovorov does not exist';
   end if;
 
   select count(*)
   into v_table_count
   from pg_tables
-  where schemaname = 'shablon'
+  where schemaname = 'shablon_analiz_telefonnyh_peregovorov'
     and tablename in (
       'managers',
       'calls',
@@ -52,7 +52,7 @@ begin
   select count(*)
   into v_bytea_count
   from information_schema.columns
-  where table_schema = 'shablon'
+  where table_schema = 'shablon_analiz_telefonnyh_peregovorov'
     and data_type = 'bytea';
 
   if v_bytea_count <> 0 then
@@ -61,7 +61,7 @@ begin
       v_bytea_count;
   end if;
 
-  insert into shablon.managers (
+  insert into shablon_analiz_telefonnyh_peregovorov.managers (
     source_code,
     external_scope_ref,
     external_manager_id,
@@ -77,7 +77,7 @@ begin
   )
   returning manager_id into v_manager_id;
 
-  insert into shablon.calls (
+  insert into shablon_analiz_telefonnyh_peregovorov.calls (
     source_adapter_code,
     connection_ref,
     call_identity_key,
@@ -109,7 +109,7 @@ begin
   )
   returning call_id into v_call_id;
 
-  insert into shablon.call_events (
+  insert into shablon_analiz_telefonnyh_peregovorov.call_events (
     adapter_code,
     connection_ref,
     event_identity_key,
@@ -143,7 +143,7 @@ begin
 
   -- A duplicate receipt is preserved as a separate receipt record but points
   -- to the canonical event and may not create another logical call.
-  insert into shablon.call_events (
+  insert into shablon_analiz_telefonnyh_peregovorov.call_events (
     adapter_code,
     connection_ref,
     event_identity_key,
@@ -178,7 +178,7 @@ begin
 
   select count(*)
   into v_count
-  from shablon.calls
+  from shablon_analiz_telefonnyh_peregovorov.calls
   where source_adapter_code = 'verify_source'
     and connection_ref = 'verify_connection'
     and call_identity_key = 'call-key-001';
@@ -190,7 +190,7 @@ begin
   end if;
 
   begin
-    insert into shablon.call_events (
+    insert into shablon_analiz_telefonnyh_peregovorov.call_events (
       adapter_code,
       connection_ref,
       event_identity_key,
@@ -214,7 +214,7 @@ begin
       null;
   end;
 
-  insert into shablon.operations (
+  insert into shablon_analiz_telefonnyh_peregovorov.operations (
     scope_ref,
     call_id,
     operation_type,
@@ -228,7 +228,7 @@ begin
     completed_at
   )
   values (
-    'shablon',
+    'shablon_analiz_telefonnyh_peregovorov',
     v_call_id,
     'filter_call',
     'filter-call-key-001',
@@ -242,7 +242,7 @@ begin
   )
   returning operation_id into v_filter_operation_id;
 
-  insert into shablon.operation_attempts (
+  insert into shablon_analiz_telefonnyh_peregovorov.operation_attempts (
     operation_id,
     attempt_no,
     attempt_state,
@@ -264,7 +264,7 @@ begin
   )
   returning attempt_id into v_filter_attempt_id;
 
-  insert into shablon.filter_decisions (
+  insert into shablon_analiz_telefonnyh_peregovorov.filter_decisions (
     call_id,
     outcome,
     reason_code,
@@ -282,13 +282,13 @@ begin
   )
   returning filter_decision_id into v_filter_decision_id;
 
-  update shablon.calls
+  update shablon_analiz_telefonnyh_peregovorov.calls
   set
     current_filter_decision_id = v_filter_decision_id,
     processing_state = 'waiting_audio'
   where call_id = v_call_id;
 
-  insert into shablon.calls (
+  insert into shablon_analiz_telefonnyh_peregovorov.calls (
     source_adapter_code,
     connection_ref,
     call_identity_key,
@@ -310,7 +310,7 @@ begin
 
   -- A filter operation from one call must not be attachable to another call.
   begin
-    insert into shablon.filter_decisions (
+    insert into shablon_analiz_telefonnyh_peregovorov.filter_decisions (
       call_id,
       outcome,
       filter_rules_version_ref,
@@ -334,7 +334,7 @@ begin
 
   -- A call must not point to another call's current filter decision.
   begin
-    update shablon.calls
+    update shablon_analiz_telefonnyh_peregovorov.calls
     set current_filter_decision_id = v_filter_decision_id
     where call_id = v_other_call_id;
 
@@ -346,7 +346,7 @@ begin
   end;
 
   begin
-    insert into shablon.operations (
+    insert into shablon_analiz_telefonnyh_peregovorov.operations (
       scope_ref,
       call_id,
       operation_type,
@@ -357,7 +357,7 @@ begin
       decision
     )
     values (
-      'shablon',
+      'shablon_analiz_telefonnyh_peregovorov',
       v_call_id,
       'filter_call',
       'filter-call-key-001',
@@ -374,7 +374,7 @@ begin
       null;
   end;
 
-  insert into shablon.operations (
+  insert into shablon_analiz_telefonnyh_peregovorov.operations (
     scope_ref,
     call_id,
     operation_type,
@@ -388,7 +388,7 @@ begin
     completed_at
   )
   values (
-    'shablon',
+    'shablon_analiz_telefonnyh_peregovorov',
     v_call_id,
     'get_audio',
     'audio-call-key-001',
@@ -402,7 +402,7 @@ begin
   )
   returning operation_id into v_audio_operation_id;
 
-  insert into shablon.operation_attempts (
+  insert into shablon_analiz_telefonnyh_peregovorov.operation_attempts (
     operation_id,
     attempt_no,
     attempt_state,
@@ -426,7 +426,7 @@ begin
   )
   returning attempt_id into v_audio_attempt_id;
 
-  insert into shablon.temporary_audio_artifacts (
+  insert into shablon_analiz_telefonnyh_peregovorov.temporary_audio_artifacts (
     call_id,
     acquisition_operation_id,
     artifact_identity_key,
@@ -455,7 +455,7 @@ begin
     'not_due'
   );
 
-  insert into shablon.call_links (
+  insert into shablon_analiz_telefonnyh_peregovorov.call_links (
     current_call_id,
     external_entity_type,
     external_entity_ref,
@@ -479,7 +479,7 @@ begin
   );
 
   begin
-    insert into shablon.calls (
+    insert into shablon_analiz_telefonnyh_peregovorov.calls (
       source_adapter_code,
       connection_ref,
       call_identity_key,
@@ -500,7 +500,7 @@ begin
   end;
 
   begin
-    insert into shablon.call_events (
+    insert into shablon_analiz_telefonnyh_peregovorov.call_events (
       adapter_code,
       connection_ref,
       event_identity_key,
@@ -524,7 +524,7 @@ begin
 
   select count(*)
   into v_count
-  from shablon.call_events
+  from shablon_analiz_telefonnyh_peregovorov.call_events
   where adapter_code = 'verify_source'
     and connection_ref = 'verify_connection'
     and event_identity_key = 'event-key-001';
@@ -537,7 +537,7 @@ begin
 
   if not exists (
     select 1
-    from shablon.calls
+    from shablon_analiz_telefonnyh_peregovorov.calls
     where call_id = v_call_id
       and current_filter_decision_id = v_filter_decision_id
       and processing_state = 'waiting_audio'
@@ -548,7 +548,7 @@ begin
 
   if not exists (
     select 1
-    from shablon.temporary_audio_artifacts
+    from shablon_analiz_telefonnyh_peregovorov.temporary_audio_artifacts
     where call_id = v_call_id
       and acquisition_operation_id = v_audio_operation_id
       and acquisition_state = 'ready'
