@@ -1,40 +1,46 @@
 # Текущее состояние проекта
 
-Обновлено: 2026-09-25. Начат этап реализации шаблона.
+Обновлено: 2026-09-25. Реализация шаблона в test/локальном режиме.
 
 ## Режим
 
 **Разрешена реализация только в test/локальном контуре по одной задаче из [WORKPLAN_IMPLEMENTATION](WORKPLAN_IMPLEMENTATION.md).**
 
-Павел разрешил продолжить после GATE-01. Можно создавать SQL, workflow, программный код и test-артефакты. Их создание в GitHub не означает применение к Supabase/n8n/серверу.
-
-**Production не разрешён.** Production migrations, реальные production Credentials, переключение рабочего трафика, удаление рабочих данных и production side effects требуют отдельного явного разрешения Павла и RELEASE_CHECKLIST.
+Production не разрешён. Созданные SQL/workflow/code не считаются применёнными без фактического запуска и проверки в test.
 
 ## Последняя завершённая задача
 
-**GATE-01 — разрешён переход к test/локальной реализации.**
+**DB-01 — создан базовый SQL-слой приёма и надёжности.**
 
-Создан [WORKPLAN_IMPLEMENTATION](WORKPLAN_IMPLEMENTATION.md), который разделяет реализацию на небольшие DB/CORE/n8n/AI/UI/OPS задачи и отдельный production gate.
+Созданы:
 
-Проверено:
+- `supabase/migrations/001_base_ingest_reliability.sql`;
+- `supabase/verify/001_base_ingest_reliability_verify.sql`;
+- `supabase/rollback/001_base_ingest_reliability_rollback.sql`;
+- [описание DB-01](implementation/DB-01.md).
 
-- main перед переходом соответствовал итоговому commit документационного этапа `47ab181c755b1b157bb0344ca267fcfe1b5ddff3`;
-- документационный аудит DOC-19 завершён;
-- новых реализационных файлов до GATE-01 в репозитории не обнаружено;
-- production явно исключён из текущего разрешения.
+Проверено статически:
+
+- migration создаёт ровно 8 первичных таблиц `atp_test`;
+- SQL lexical structure сбалансирована;
+- executable SQL не содержит `bytea`/blob, `service_role` и production schema DDL;
+- event identity и call identity защищены от второго non-duplicate результата;
+- logical operation имеет idempotency key, retry вынесен в attempts;
+- filter/audio ownership защищены составными FK `operation + call`;
+- rollback отказывается удалять schema при наличии later/unknown tables.
+
+Не проверено: фактическое выполнение PostgreSQL/Supabase. DB-01 создан в GitHub, но не применён.
 
 ## Следующая одна задача
 
-**DB-01 — подготовить базовую migration приёма и надёжности для test.**
+**DB-02 — подготовить migration транскрипции и privacy для test.**
 
 Исполнитель: **ChatGPT**.
 
-Исходная точка задачи: текущий `main` после фиксации GATE-01 и плана реализации.
+Цель: поверх DB-01 реализовать исходные/псевдонимизированные транскрипции, segments, role assignments, privacy packages/mappings, quality и speech metrics с version/provenance/retention связями.
 
-Цель: создать первый полный SQL migration для событий звонков, логических звонков, менеджеров/связей, фильтрации, операций/attempts и metadata временного аудио.
-
-Критерий готовности: migration и verification/rollback SQL находятся в GitHub, соответствуют DATA_DICTIONARY/INTEGRATION_CONTRACTS/RELIABILITY/CALL_LIFECYCLE/AUDIO_RETENTION, не содержат permanent audio или секретов и прошли статическую проверку. SQL **не считается применённым**, пока Павел не запустил его в test Supabase и не сообщил фактический результат.
+Критерий готовности: migration/verify/rollback записаны в GitHub, raw/pseudonym/mapping разделены физически, exact versions/operations связаны FK, privacy package не содержит mapping/raw content, retention metadata есть, SQL статически проверен и **не считается применённым**.
 
 ## Что ещё не применялось
 
-SQL migrations, workflow, код, изменения n8n/Supabase/сервера, реальные Credentials, реальные данные/документы компаний, backup и production пока фактически не применялись и не тестировались.
+DB-01/DB-02 SQL, workflow, код, изменения n8n/Supabase/сервера, реальные Credentials, реальные данные/документы компаний, backup и production фактически не применялись и не тестировались.
