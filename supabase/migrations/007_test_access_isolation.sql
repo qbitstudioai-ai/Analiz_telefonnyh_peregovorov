@@ -166,7 +166,7 @@ select
   m.family_ref,
   m.version_no,
   c.criterion_code,
-  c.title,
+  c.display_name,
   c.weight,
   c.applicability_rule,
   c.sort_order
@@ -183,8 +183,8 @@ select
   m.family_ref,
   m.version_no,
   s.stage_code,
-  s.title,
-  s.required_by_default,
+  s.display_name,
+  s.required,
   s.applicability_rule,
   s.sort_order
 from atp_test.methodology_versions m
@@ -196,10 +196,10 @@ where m.config_state = 'active'
 create view atp_test.v_runtime_filter_rules_active
 with (security_barrier = true) as
 select
-  f.filter_rule_version_id,
+  f.filter_rule_version_ref,
   f.family_ref,
   f.version_no,
-  f.rule_config,
+  f.rules_json,
   f.content_sha256,
   f.activated_at
 from atp_test.filter_rule_versions f
