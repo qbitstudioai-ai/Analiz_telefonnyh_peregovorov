@@ -10,38 +10,38 @@ Production не разрешён. Созданные SQL/workflow/code не сч
 
 ## Последняя завершённая задача
 
-**DB-03 — создан SQL-слой конфигураций и общей базы знаний.**
+**DB-04 — создан SQL-слой analysis/evidence.**
 
-Созданы migration/verify/rollback и [описание DB-03](implementation/DB-03.md).
+Созданы migration/verify/rollback и [описание DB-04](implementation/DB-04.md).
 
 Статически подтверждено:
 
-- 13 DB-03 tables + 1 internal published-only knowledge view;
-- prompt/methodology/filter версии обязаны начинаться как draft и после activation не редактируются in-place;
-- methodology criteria/stages заморожены после выхода parent из draft;
-- filter decision теперь имеет FK на exact filter-rule version;
-- canonical document, document version, fragment version и embedding version разделены;
-- publication фиксирует exact document/fragment/embedding membership;
-- published membership/manifest нельзя вернуть в draft/ready или переписать;
-- каждый published fragment имеет explicit product scope;
-- external embedding проверяется по exact document policy и exact fragment hash;
-- один canonical fragment может обслуживать несколько продуктов без копирования исходного документа;
-- raw internal runtime view не предназначен для прямого GRANT product-reader; product-scoped permission boundary будет DB-07;
-- executable SQL не содержит production schema DDL/service_role/bytea/blob;
-- признаков типовых реальных секретов не найдено.
+- 11 DB-04 tables, 13 functions, 9 enum types и 18 triggers;
+- analysis version фиксирует exact call/operation/transcript/roles/privacy/quality/prompt/methodology/knowledge publication/model/config manifest;
+- direct INSERT сразу как validated/current заблокирован отдельным initial-state guard;
+- candidate нельзя создать с заранее passed evidence gate;
+- criteria/stages/observations/AI outcome являются typed claims exact analysis version;
+- knowledge evidence может ссылаться только на exact `analysis_knowledge_inputs`;
+- conversation evidence может ссылаться только на exact safe segment pinned privacy package;
+- absence evidence использует scope + processing quality, а не выдуманную цитату;
+- evidence reference integrity и coverage физически различимы;
+- current analysis требует validated state, CORE validation и structural evidence gate;
+- migration/rollback совпадают по 11 tables, 13 functions и 9 types;
+- SQL lexical structure сбалансирована;
+- executable `service_role`, `bytea/blob` и признаки типовых реальных секретов отсутствуют.
 
-Не проверено: фактическое выполнение PostgreSQL/Supabase. DB-01—DB-03 созданы в GitHub, но не применены.
+Не проверено: фактическое выполнение PostgreSQL/Supabase. DB-01—DB-04 созданы в GitHub, но не применены.
 
 ## Следующая одна задача
 
-**DB-04 — подготовить migration analysis и evidence.**
+**DB-05 — подготовить migration CRM/outgoing/corrections/audit.**
 
 Исполнитель: **ChatGPT**.
 
-Цель: физически реализовать immutable analysis input manifest, criteria/stages/observations/AI outcome и проверяемую evidence-модель, которая допускает current analysis только после evidence gate.
+Цель: физически реализовать подтверждённые CRM/человеком факты, callback-связи, outgoing actions/delivery attempts, corrections/disputes и audit trail без смешения с AI outcome и без небезопасного повторения внешних side effects.
 
-Критерий готовности: migration/verify/rollback в GitHub; analysis pins exact upstream versions, fake/non-input segment/knowledge refs блокируются, evidence types/coverage физически различимы, current analysis требует passed evidence gate, SQL статически проверен и не считается применённым.
+Критерий готовности: migration/verify/rollback в GitHub; CRM fact отделён от AI outcome, outgoing action создаётся до send, confirmed delivery блокирует повтор, outcome_unknown остаётся наблюдаемым/reconciliation-required, correction/audit сохраняют происхождение и историю, SQL статически проверен и не считается применённым.
 
 ## Что ещё не применялось
 
-DB-01—DB-04 SQL, workflow, код, изменения n8n/Supabase/сервера, реальные Credentials, реальные данные/документы компаний, backup и production фактически не применялись и не тестировались.
+DB-01—DB-05 SQL, workflow, код, изменения n8n/Supabase/сервера, реальные Credentials, реальные данные/документы компаний, backup и production фактически не применялись и не тестировались.
