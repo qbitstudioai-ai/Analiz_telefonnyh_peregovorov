@@ -301,7 +301,7 @@
 
 Обычный analysis reader не получает право publish.
 
-Точный lifecycle публикации, общая база знаний нескольких продуктов и approvals завершаются DOC-17.
+Точный lifecycle публикации и общая база знаний нескольких продуктов определены в [ANALYSIS_AND_KNOWLEDGE](ANALYSIS_AND_KNOWLEDGE.md). Конкретная approval chain остаётся параметром внедрения/production-процесса.
 
 ## Менеджеры и привязки
 
