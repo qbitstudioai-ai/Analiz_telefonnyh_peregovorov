@@ -1,5 +1,7 @@
 # Анализ разговора и база знаний компании
 
+Статус: DOC-17 завершён. Документ определяет единый источник знаний компании, lifecycle публикации, доступ независимых продуктов, vector/embedding-границы и связь публикации с анализом. Это не SQL, не физическая схема RAG и не подтверждение реального импорта документов.
+
 ## Два слоя анализа
 
 Анализ настраивается двумя разными способами:
@@ -41,7 +43,7 @@ LLM не должна считать свои общие знания главн
 
 Не нужно без необходимости создавать независимые копии одной и той же документации для разных продуктов.
 
-Граница доступа и логические роли зафиксированы в [ACCESS_AND_ISOLATION](ACCESS_AND_ISOLATION.md), правила версий — в [VERSIONING](VERSIONING.md). Точный механизм публикации знаний относится к DOC-17, а SQL/grants/RLS будут выбраны при реализации.
+Граница доступа и логические роли зафиксированы в [ACCESS_AND_ISOLATION](ACCESS_AND_ISOLATION.md), правила версий — в [VERSIONING](VERSIONING.md), пользовательские capabilities — в [DASHBOARD_ADMIN](DASHBOARD_ADMIN.md). DOC-17 ниже фиксирует логический lifecycle публикации; SQL/grants/RLS и физическая RAG-схема будут выбраны при реализации.
 
 ## Векторное хранилище
 
@@ -57,6 +59,342 @@ LLM не должна считать свои общие знания главн
 - сохранённый результат анализа позволяет установить, какая версия знаний использовалась.
 
 Точные schema, таблицы, embeddings, chunking и поиск определяются позднее.
+
+## DOC-17 — логическая модель общей базы знаний
+
+Единый источник знаний не означает, что все продукты получают все документы и не означает одну общую runtime-Credential.
+
+Логически различаются:
+
+- **канонический документ компании** — бизнес-материал, который может иметь несколько неизменяемых версий;
+- **document version** — конкретная версия содержания и значимой metadata;
+- **fragment version** — конкретный фрагмент конкретной версии документа после согласованной подготовки;
+- **embedding version** — вектор для конкретного fragment version и конкретной embedding model/config;
+- **publication version** — неизменяемый манифест того, какие document/fragment versions разрешены для runtime в конкретной компании и среде;
+- **product scope** — какие продукты/роли могут читать конкретный опубликованный материал;
+- **runtime retrieval result** — exact fragment refs, реально выбранные для конкретной операции.
+
+Бот первичного обращения, анализ звонков и будущие продукты не создают собственные независимые копии исходного документа. Они читают разрешённую публикацию одного канонического источника через свои ограниченные reader identities.
+
+При этом один документ может быть опубликован для нескольких продуктов либо только для части продуктов. Разрешение является свойством публикации/доступа, а не скрытой копии документа.
+
+## Lifecycle знания
+
+Нормативный смысловой путь:
+
+draft → validation → ready_for_publication → publication → runtime read → superseded/archive/depublication.
+
+Отдельно существует состояние invalidated для публикации или версии, которую нельзя продолжать использовать из-за ошибки, privacy, прав или другого блокирующего основания.
+
+### Draft
+
+Черновик:
+
+- может редактироваться уполномоченным editor;
+- не виден обычному runtime reader;
+- не участвует в анализе/ответе бота;
+- не заменяет действующую publication version;
+- может иметь неполные fragments/embeddings.
+
+Сохранение draft само по себе не является публикацией.
+
+### Validation
+
+До publication должны быть проверены по смыслу как минимум:
+
+- company + environment;
+- документ и его exact version;
+- источник/авторство материала в пределах доступных данных;
+- обязательная metadata и product scope;
+- отсутствие запрещённого межкомпанейского смешения;
+- privacy/коммерческие ограничения для внешнего embedding API;
+- готовность fragments;
+- соответствие fragment конкретной document version;
+- готовность embeddings, если выбранный runtime-поиск их требует;
+- модель/config embeddings и provenance;
+- отсутствие ссылок на удалённые/несуществующие версии;
+- конфликтующие или дублирующиеся материалы отмечены для разрешения, а не молча объединены;
+- отсутствие блокирующей ошибки validation.
+
+Шаблон не вводит универсального автоматического правила «какой из двух противоречащих документов истиннее». Конфликт должен быть разрешён уполномоченным источником/публикатором до использования как однозначного факта.
+
+### Publication
+
+Publication — отдельная явная операция, а не side effect сохранения документа.
+
+Publication version фиксирует неизменяемый по смыслу манифест:
+
+- company + environment;
+- publication version ID;
+- predecessor publication, если есть;
+- exact document versions;
+- exact fragment versions либо правило их неизменяемого состава;
+- product scope/разрешённые readers;
+- необходимые embedding refs/model config, если они являются частью runtime-поиска;
+- время публикации;
+- actor/operation, выполнивший публикацию;
+- validation result/version;
+- reason/change note;
+- состояние publication.
+
+Нельзя собирать runtime knowledge как «все строки, где updated_at самое новое». Продукт должен читать конкретную действующую publication version.
+
+Активация новой publication должна быть атомарной по смыслу: runtime не должен видеть половину старого и половину нового набора как якобы одну согласованную публикацию.
+
+### Runtime read
+
+При начале операции продукт получает company + environment + product identity из серверной конфигурации/авторизации, а не из LLM или пользовательского текста.
+
+Затем:
+
+1. выбирается разрешённая current publication для этого контура и продукта;
+2. publication version фиксируется в input manifest операции;
+3. поиск ограничивается только фрагментами этой публикации;
+4. выбранные exact fragment refs сохраняются как provenance;
+5. только эти фрагменты могут попасть в контекст LLM/бота;
+6. downstream evidence может ссылаться только на реально разрешённые и переданные refs.
+
+Новая публикация после начала операции не меняет уже зафиксированный input manifest.
+
+Если публикация отсутствует или недоступна, система не должна заменять знания компании общими знаниями LLM и выдавать их как подтверждённый факт компании. Fact-dependent анализ/ответ должен быть блокирован, ограничен или явно помечен как не имеющий подтверждённого knowledge source по контракту конкретного продукта.
+
+## Независимость продуктов
+
+Бот первичного обращения и анализ звонков:
+
+- не вызывают workflow друг друга;
+- не зависят от доступности workflow другого продукта;
+- имеют отдельные runtime identities;
+- могут читать одну и ту же publication version, если product scope разрешает;
+- могут получать разные разрешённые subsets одного канонического источника без дублирования исходного документа;
+- самостоятельно фиксируют publication version и exact fragments в своих операциях;
+- не получают права edit/publish только потому, что имеют право runtime read.
+
+Сбой или deployment одного продукта не должен менять current publication другого продукта скрытым side effect.
+
+## Reader, editor и publisher
+
+Минимально различаются три способности.
+
+### Reader
+
+Может читать только опубликованные знания разрешённого company + environment + product scope.
+
+Reader не может:
+
+- видеть draft только из-за знания ID;
+- менять документ;
+- создавать publication;
+- расширять product scope;
+- переключаться в другую компанию/среду.
+
+### Editor
+
+Может создавать/редактировать draft и готовить новые document versions своего разрешённого контура.
+
+Editor не получает право publication автоматически.
+
+### Publisher
+
+Выполняет отдельную publication/depublication operation после validation и в пределах выданной capability.
+
+Publisher не получает произвольный доступ к данным звонков, другой компании или инфраструктурным секретам.
+
+Конкретная approval chain внедрения остаётся параметром компании/production-процесса; DOC-17 не назначает одного универсального человека, который обязан утверждать все публикации.
+
+## Test и production
+
+Test и production имеют отдельные publication families и runtime identities.
+
+Обязательные правила:
+
+- test reader не читает production publication;
+- production reader не использует test publication;
+- успешная test validation не активирует production автоматически;
+- перенос утверждённого содержания в production является отдельной явной production publication operation;
+- production publication фиксирует собственный actor, scope, versions и validation evidence;
+- test embeddings/индексы не становятся production-источником только потому, что содержат тот же текст.
+
+До фактического production-действия по-прежнему требуется разрешение по правилам проекта и DOC-18.
+
+## Изменение и исправление знания
+
+Опубликованная использованная document/fragment/publication version не редактируется in place.
+
+Исправление создаёт:
+
+- новую document version;
+- при необходимости новые fragment versions;
+- новые embedding versions;
+- новую publication version.
+
+Новая публикация влияет на новые операции после активации.
+
+Уже завершённые анализы продолжают ссылаться на старую publication/fragment version. Они не переписываются и не становятся автоматически «сделанными по новым знаниям».
+
+Если бизнесу нужен historical reanalysis, это отдельная операция с явным scope; она создаёт новую analysis version и не подменяет историю.
+
+## Archive, depublication и invalidation
+
+**Archive/depublication** означает: материал больше не должен входить в новые runtime-публикации/чтения по соответствующему правилу.
+
+Это не означает физическое уничтожение исторической версии, если она ещё нужна для воспроизводимости, evidence или установленного retention.
+
+**Superseded publication** остаётся исторической и объясняет старые результаты.
+
+**Invalidated** используется, когда версия признана недопустимой из-за существенной ошибки, privacy/permission нарушения или другого блокирующего основания.
+
+Для invalidated publication:
+
+- новые операции не должны её выбирать;
+- причина и время invalidation сохраняются;
+- завершённые исторические результаты не переписываются бесследно;
+- необходимость reanalysis/уведомления определяется отдельной контролируемой операцией;
+- если причина связана с privacy/security, дальнейшая передача соответствующего содержимого наружу блокируется.
+
+Физическое удаление содержимого следует retention/backup правилам и не определяется самим фактом depublication.
+
+## Embeddings и vector search
+
+Embedding — производное представление fragment version, а не самостоятельный источник истины.
+
+Обязательные правила:
+
+- embedding всегда связан с exact fragment version и model/config provenance;
+- смена fragment или embedding model/config создаёт новую embedding version по [VERSIONING](VERSIONING.md);
+- permission проверяется по company + environment + publication + product scope до/вместе с vector search, а не после выдачи результатов;
+- similarity score не может расширить права доступа;
+- одинаковый текст у компаний A и B не делает fragments взаимозаменяемыми;
+- draft/archived/not-published fragment не попадает в runtime search только потому, что его embedding существует;
+- поиск не должен незаметно fallback на другую компанию, среду или старую публикацию при пустом результате;
+- exact fragment refs, реально выбранные поиском, сохраняются с операцией;
+- внешний embedding API получает только разрешённые очищенные fragments по [INFRASTRUCTURE_RU_SERVER](../INFRASTRUCTURE_RU_SERVER.md); при запрете внешней передачи используется разрешённый локальный вариант.
+
+Конкретная vector БД, индекс, distance metric, chunk size, top-k и ranking algorithm выбираются позднее и должны проходить проверку качества на реальных материалах.
+
+## Согласованность публикации и индекса
+
+Publication не считается готовой для runtime, использующего vector search, если разрешённые fragments требуют embeddings, но нужные embedding versions ещё не готовы/не прошли validation.
+
+Нельзя сначала активировать неполный knowledge set, а затем незаметно «достраивать» его так, чтобы один и тот же publication version менял выдачу из-за появления новых обязательных fragments.
+
+Техническое переиндексирование без смыслового изменения допустимо только если оно не меняет логический состав публикации и сохраняет provenance; если меняется доступный набор/семантика retrieval, требуется новая версия по [VERSIONING](VERSIONING.md).
+
+## Knowledge context для анализа
+
+Аналитическая LLM получает не всю базу знаний компании, а только минимально релевантные разрешённые fragments конкретной publication.
+
+Для каждого вызова должны быть доступны:
+
+- publication version;
+- exact fragment refs;
+- document/version refs;
+- retrieval/query provenance в согласованном объёме;
+- embedding model/config, если это существенно для воспроизводимости;
+- product/analysis scope.
+
+LLM не может своим ответом запросить дополнительный hidden document, изменить publication или сослаться на fragment, которого не было в разрешённом input context, и превратить его в evidence.
+
+## Ошибка или недоступность knowledge subsystem
+
+Если knowledge retrieval недоступен:
+
+- система сохраняет отдельный технический результат/ошибку;
+- не подменяет знания компании памятью LLM;
+- не переключается на чужой/старый/draft набор без явного разрешённого правила;
+- безопасный retry следует DOC-05/контрактам;
+- fact-dependent analysis не повышается до подтверждённого результата без обязательного knowledge input.
+
+Продукт, которому конкретная операция не требует знаний компании, может продолжить только в той части, где это явно разрешено методикой/контрактом.
+
+## Аудит публикации
+
+Publication/depublication/invalidation должны позволять установить:
+
+- actor/capability;
+- company + environment;
+- operation ID;
+- previous publication;
+- new/affected publication;
+- exact scope;
+- validation result;
+- reason;
+- время запроса и результата;
+- success/rejected/unknown outcome.
+
+Audit не содержит plaintext секретов и не является способом обойти права на содержание документа.
+
+## Обязательные проверки DOC-17
+
+Будущая реализация должна подтвердить как минимум:
+
+1. Сохранение draft не меняет current publication.
+2. Reader продукта не читает draft по известному ID.
+3. Editor без publish capability не может активировать publication.
+4. Publisher компании A не публикует документ компании B.
+5. Test publisher не активирует production publication.
+6. Test reader не читает production publication.
+7. Production reader не читает test publication.
+8. Анализ звонков и бот читают один канонический document source через разные runtime identities.
+9. Отключение workflow бота не мешает анализу звонков читать разрешённую publication.
+10. Product scope может разрешить документ анализу и запретить боту без создания независимой копии исходного документа.
+11. Новая publication состоит из exact document/fragment versions, а не «последних строк».
+12. Неполный validation блокирует publication.
+13. Конфликтующие документы не становятся молча единым подтверждённым фактом.
+14. Runtime operation фиксирует publication version до retrieval/LLM.
+15. Publication, активированная после старта анализа, не меняет его input manifest.
+16. Новый анализ после активации получает новую current publication.
+17. Старый завершённый анализ сохраняет ссылку на прежнюю publication.
+18. Новая publication не запускает historical reanalysis автоматически.
+19. Historical reanalysis создаёт новую analysis version и сохраняет старую.
+20. Depublished fragment не попадает в новые runtime retrieval.
+21. Depublication не ломает historical evidence refs без отдельной retention причины.
+22. Invalidated publication не выбирается для новых операций.
+23. Privacy-invalidated material не продолжает отправляться во внешний AI API.
+24. Vector search A не возвращает fragment B даже при одинаковом тексте/embedding similarity.
+25. Vector search не возвращает draft/archived fragment только из-за существующего embedding.
+26. Пустой search result не вызывает fallback на другую компанию/среду/publication.
+27. Embedding ref соответствует exact fragment version.
+28. Смена embedding model/config сохраняет новую provenance/version.
+29. Publication для vector runtime не активируется с обязательными fragments без готовых embeddings.
+30. Reader не получает publish/edit capability через runtime Credential.
+31. LLM не может сослаться на не переданный knowledge fragment как на подтверждённое evidence.
+32. В analysis/evidence сохраняются publication + exact fragment/document refs.
+33. Knowledge subsystem outage не заменяется общими знаниями LLM как фактом компании.
+34. Publication/depublication audit содержит actor, contour, scope, before/after refs и outcome.
+35. Неизвестный/отсутствующий company + environment блокирует knowledge operation вместо default production.
+36. Production publication является отдельным явным действием после test и не происходит автоматически.
+
+## Что не определяется DOC-17
+
+- SQL tables/columns/indexes;
+- конкретная vector DB/pgvector index;
+- chunk size и ranking formula;
+- top-k;
+- конкретная embedding model;
+- UI экранов knowledge editor;
+- универсальная approval chain для всех компаний;
+- реальные документы и их содержимое;
+- production Credentials;
+- физический backup/restore;
+- release/rollback procedure DOC-18.
+
+Эти решения не могут ослабить lifecycle, version pinning, product scope и изоляцию.
+
+## Критерий DOC-17
+
+DOC-17 готов, если однозначно понятно:
+
+- почему у компании один канонический источник, но независимые продукты не зависят друг от друга;
+- чем draft отличается от publication;
+- кто по смыслу читает, редактирует и публикует;
+- как publication фиксирует exact разрешённый набор;
+- как test отделён от production;
+- как vector/embedding слой подчиняется publication и правам;
+- какую publication/fragment version сохраняет анализ;
+- почему новая публикация не переписывает историю;
+- как работают depublication/invalidation;
+- какие отрицательные проверки обязательны до production.
 
 ## Доказательность
 
