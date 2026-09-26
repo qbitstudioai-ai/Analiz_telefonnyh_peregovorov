@@ -10,7 +10,7 @@
 
 Это **не blanket-разрешение на весь production**. Нельзя без отдельного решения менять/удалять посторонние схемы и данные, выполнять destructive rollback на единственном рабочем экземпляре или переключать реальный клиентский трафик.
 
-Статусы: `[ ]` не начато, `[~]` в работе, `[x]` проверено, `[!]` пауза.
+Статусы: `[ ]` не начато, `[~]` в работе, `[x]` проверено, `[!]` пауза, `[→]` отдельная задача снята и её требования перенесены в другую задачу.
 
 ## Принципы реализации
 
@@ -39,23 +39,25 @@
 | [x] DB-08A.1 | ChatGPT | Окончательное имя рабочего контура | До применения SQL schema переименована в `shablon_analiz_telefonnyh_peregovorov` во всех migration/verify/rollback и документации; DB-07 roles используют `shablon_analiz_telefonnyh_peregovorov_*`; DB-05 audit использует `scope_ref='shablon_analiz_telefonnyh_peregovorov'`; к Supabase ещё не применено |
 | [x] DB-08B | Павел + ChatGPT | Применение migrations в рабочем Supabase | DB-01—DB-07 migrations фактически применены и verify PASS; DB-07 negative privilege matrix PASS; recovery безопасно подтверждён транзакционными откатами без частичных/probe объектов; destructive rollback не запускался; внешние Credentials не подключены |
 
-## Этап B — обработка и контракты
+## Этап B — логика обработки внутри n8n
+
+Отдельный CORE-сервис и отдельный программный модуль не создаются. Исторические ID CORE сохранены для трассировки требований:
+
+| Статус / ID | Куда перенесено | Смысл |
+|---|---|---|
+| [→] CORE-01 | N8N-01 | contract/version/scope/idempotency validators реализуются в Code-нодах n8n |
+| [→] CORE-02 | N8N-04 | privacy package/gate реализуется в n8n до внешней LLM |
+| [→] CORE-03 | N8N-04 | evidence/version gates реализуются в n8n перед сохранением анализа |
+| [→] CORE-04 | N8N-04 | knowledge retrieval boundary реализуется n8n через разрешённые Supabase views/functions |
+
+## Этап C — n8n workflows
 
 | Статус / ID | Исполнитель | Результат | Критерий готовности |
 |---|---|---|---|
-| [ ] CORE-01 | VSCode | Общие contract/version/idempotency validators | Автотесты покрывают accepted/duplicate/rejected, operation states, scope и unknown contract |
-| [ ] CORE-02 | VSCode | Privacy package/gate | Тесты подтверждают, что raw identifiers/mapping/secrets не проходят во внешний пакет |
-| [ ] CORE-03 | VSCode | Evidence/version gates | Fake segment/chunk refs блокируются, immutable input manifest воспроизводим |
-| [ ] CORE-04 | VSCode | Knowledge retrieval boundary | Retrieval фиксирует publication + exact fragments и не делает cross-company/draft fallback |
-
-## Этап C — n8n test workflows
-
-| Статус / ID | Исполнитель | Результат | Критерий готовности |
-|---|---|---|---|
-| [ ] N8N-01 | ChatGPT | Вход/регистрация/дедупликация/фильтрация | Полный JSON импортируется в test n8n и корректно обрабатывает normal/duplicate/excluded/missed cases |
+| [ ] N8N-01 | ChatGPT | Вход/регистрация/contract checks/дедупликация/фильтрация | ChatGPT создаёт полный JSON для импорта; Code-ноды содержат полный код contract/version/scope/idempotency checks; workflow корректно обрабатывает accepted/duplicate/rejected, normal/duplicate/excluded/missed cases и пишет состояние в Supabase |
 | [ ] N8N-02 | ChatGPT | Получение/временное аудио/cleanup | JSON соблюдает AUDIO_RETENTION, сохраняет metadata и не делает аудио постоянным |
-| [ ] N8N-03 | ChatGPT + VSCode | Транскрибация/диаризация/роли | Test workflow использует выбранный после испытаний локальный adapter и фиксирует quality/provenance |
-| [ ] N8N-04 | ChatGPT | Privacy/knowledge/LLM analysis | Внешний вызов возможен только после privacy-gate; analysis сохраняет versions/evidence |
+| [ ] N8N-03 | ChatGPT | WhisperX: транскрибация/диаризация/роли | ChatGPT создаёт полный JSON n8n; workflow получает временное аудио, вызывает локальный WhisperX, проверяет/нормализует ответ в Code-нодах и фиксирует quality/provenance/roles в Supabase |
+| [ ] N8N-04 | ChatGPT | Privacy/knowledge/LLM analysis | Полный JSON содержит pseudonymization/privacy/evidence/version/knowledge gates в Code-нодах; внешняя LLM вызывается только после privacy PASS; analysis сохраняет exact versions/evidence в Supabase |
 | [ ] N8N-05 | ChatGPT | CRM/result/delivery | AI result отделён от CRM fact; outgoing action создаётся до send; retry/outcome_unknown безопасны |
 | [ ] N8N-06 | ChatGPT | Recovery/reconciliation/cleanup | Partial failures DOC-05 восстанавливаются с сохранённой точки без дублей |
 
@@ -104,38 +106,32 @@
 
 ## Текущая следующая задача
 
-**CORE-01 — общие contract/version/idempotency validators.**
+**N8N-01 — вход, регистрация, contract checks, дедупликация и фильтрация.**
 
-Исполнитель: **VSCode**.
+Исполнитель: **ChatGPT**.
 
-Цель: реализовать общий слой проверки контрактов, версий, scope, operation result/state и idempotency до сборки n8n workflows.
+Архитектурное решение Павла от 26 сентября 2026 года:
 
-Обязательное чтение перед изменениями:
+- отдельный CORE-сервис/модуль не создаётся;
+- вся прикладная логика обработки звонков находится в n8n;
+- Code-ноды содержат проверки контрактов, версий, scope, idempotency и переходов состояний;
+- WhisperX вызывается из n8n как локальный вычислительный сервис;
+- Supabase хранит состояние и историю;
+- dashboard остаётся отдельным программным приложением;
+- каждый workflow ChatGPT отдаёт полным JSON для импорта, включая полный код всех Code-нод.
 
-- `README.md`;
-- `docs/CHATGPT_INSTRUCTIONS.md`;
-- `docs/PROJECT_STATE.md`;
-- `docs/specs/INTEGRATION_CONTRACTS.md`;
-- `docs/specs/RELIABILITY_AND_IDEMPOTENCY.md`;
-- `docs/specs/VERSIONING.md`;
-- `docs/DATA_DICTIONARY.md`.
+Цель N8N-01: подготовить первый полный импортируемый workflow для входного события до решения «продолжать / дубль / исключить / пропущенный», с надёжной записью состояния в Supabase.
 
-Границы CORE-01:
+Критерий готовности на этапе создания:
 
-- код и автотесты в репозитории;
-- Supabase schema/SQL не изменять;
-- n8n workflow не создавать и не импортировать;
-- Credentials не создавать и не подключать;
-- сервер и deployment не изменять;
-- production не затрагивать.
-
-Критерий готовности:
-
-- автотесты покрывают `accepted / duplicate / rejected`;
-- проверены operation states;
-- проверены scope boundaries;
-- unknown/unsupported contract/version отклоняется предсказуемо;
-- idempotency validator не смешивает duplicate event с новым событием того же звонка;
-- тесты и код проходят проверки проекта;
-- VSCode делает commit/push и возвращает SHA;
-- ChatGPT после отчёта самостоятельно сверяет изменения в GitHub.
+- полный JSON находится в GitHub;
+- понятные русские названия основных нод;
+- перечислены необходимые Credentials/variables без секретов;
+- Code-ноды содержат полный код;
+- реализованы contract/version/scope/idempotency checks;
+- duplicate event не запускает второй эквивалентный процесс;
+- новое событие того же звонка не теряется как дубль;
+- состояние фиксируется в уже созданной schema `shablon_analiz_telefonnyh_peregovorov`;
+- есть обработка normal/duplicate/excluded/missed;
+- описаны тестовые сценарии и ожидаемый результат;
+- статус после создания — «JSON создан», но не «импортирован/протестирован», пока Павел фактически не импортирует workflow и не выполнит тест.

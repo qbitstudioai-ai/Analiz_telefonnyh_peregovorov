@@ -1,6 +1,6 @@
 # Текущее состояние проекта
 
-Обновлено: 2026-09-25. Рабочий Supabase разрешён только для изолированного контура schema `shablon_analiz_telefonnyh_peregovorov`.
+Обновлено: 2026-09-26. Рабочий Supabase разрешён только для изолированного контура schema `shablon_analiz_telefonnyh_peregovorov`.
 
 ## Режим
 
@@ -12,7 +12,7 @@
 
 - продолжать реализацию задач плана в GitHub;
 - для уже согласованного Supabase-контура выполнять только явно предусмотренные последующими задачами действия;
-- создавать код и автотесты CORE без деплоя;
+- создавать n8n workflow JSON с полным кодом Code-нод;
 - подключать рабочие сервисные Credentials только в отдельной соответствующей задаче после явной проверки scope.
 
 Не входит в разрешение автоматически:
@@ -51,22 +51,22 @@ DB-08B: **завершена**.
 
 ## Следующая одна задача
 
-**CORE-01 — общие contract/version/idempotency validators.**
+**N8N-01 — вход, регистрация, contract checks, дедупликация и фильтрация.**
 
-Исполнитель: **VSCode**.
+Исполнитель: **ChatGPT**.
+
+Архитектурное решение Павла: отдельного CORE-кода/сервиса нет. Общая логика реализуется внутри n8n Code-нод. Связка обработки: n8n + Supabase + локальный WhisperX + внешние разрешённые AI API; dashboard — отдельное приложение.
 
 Цель:
 
-- реализовать общие валидаторы контрактов, версий, scope и idempotency;
-- покрыть автотестами `accepted / duplicate / rejected`, operation states, scope и unknown contract;
-- не менять Supabase schema;
-- не создавать Credentials;
-- не трогать n8n;
-- не выполнять deploy.
+- создать полный JSON workflow для импорта в n8n;
+- реализовать внутри Code-нод contract/version/scope/idempotency checks;
+- зарегистрировать событие/звонок/операцию в Supabase;
+- корректно различать accepted/duplicate/rejected и normal/duplicate/excluded/missed;
+- не создавать отдельный backend/CORE;
+- не менять сервер и production.
 
-До выдачи задания VSCode новая сессия должна сверить текущую структуру репозитория и профильные требования: `docs/specs/INTEGRATION_CONTRACTS.md`, `docs/specs/RELIABILITY_AND_IDEMPOTENCY.md`, `docs/specs/VERSIONING.md`, `docs/DATA_DICTIONARY.md`.
-
-Критерий готовности CORE-01: автотесты подтверждают согласованное поведение validators; изменения записаны в GitHub и проверены ChatGPT после отчёта VSCode.
+Критерий готовности текущего шага: полный JSON и инструкция импорта находятся в GitHub; workflow ещё не называется рабочим, пока Павел его не импортирует и не протестирует.
 
 ## SQL / DB-08B
 
@@ -99,4 +99,4 @@ DB-08B: **завершена**.
 - dashboard — **не подключён и не проверен**;
 - production traffic — **не переключался**.
 
-Следующая задача: **CORE-01**, код и автотесты в репозитории, исполнитель VSCode, deploy не входит.
+Следующая задача: **N8N-01**, полный JSON workflow с Code-нодами, исполнитель ChatGPT. Импорт/тест выполняет Павел отдельным фактическим шагом.
