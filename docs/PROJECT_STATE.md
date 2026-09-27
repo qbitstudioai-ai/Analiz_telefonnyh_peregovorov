@@ -1,6 +1,6 @@
 # Текущее состояние проекта
 
-Обновлено: 2026-09-26. Рабочий Supabase разрешён только для изолированного контура schema `shablon_analiz_telefonnyh_peregovorov`.
+Обновлено: 2026-09-27. Рабочий Supabase разрешён только для изолированного контура schema `shablon_analiz_telefonnyh_peregovorov`.
 
 ## Режим
 
@@ -49,24 +49,30 @@
 
 DB-08B: **завершена**.
 
+## Последний завершённый подэтап n8n
+
+**N8N-00 — логика общего pipeline n8n + WhisperX + Supabase согласована.**
+
+Фактически сделано:
+
+- создан `docs/implementation/N8N_PIPELINE.md`;
+- утверждена шаблонная архитектура source adapter → Supabase registration/dedup/filter → temporary audio → WhisperX → raw transcript → roles/quality → optional second filter → pseudonymization/privacy → knowledge/history → LLM → validation → analysis/evidence → feedback delivery → cleanup;
+- raw PII остаётся во внутренней ветке n8n + Supabase и не уходит в LLM;
+- обратная связь менеджеру мотивирующая и отправляется только после сохранения анализа;
+- dashboard metrics не пересчитываются в n8n, а используют DB-06;
+- N8N-01—N8N-06 сохранены как трассировка требований и объединены в будущий единый JSON.
+
+JSON ещё не создан, не импортирован и не протестирован.
+
 ## Следующая одна задача
 
-**N8N-01 — вход, регистрация, contract checks, дедупликация и фильтрация.**
+**N8N-JSON-01 — полный импортируемый JSON первой версии общего pipeline.**
 
 Исполнитель: **ChatGPT**.
 
-Архитектурное решение Павла: отдельного CORE-кода/сервиса нет. Общая логика реализуется внутри n8n Code-нод. Связка обработки: n8n + Supabase + локальный WhisperX + внешние разрешённые AI API; dashboard — отдельное приложение.
+Основание: `docs/implementation/N8N_PIPELINE.md`.
 
-Цель:
-
-- создать полный JSON workflow для импорта в n8n;
-- реализовать внутри Code-нод contract/version/scope/idempotency checks;
-- зарегистрировать событие/звонок/операцию в Supabase;
-- корректно различать accepted/duplicate/rejected и normal/duplicate/excluded/missed;
-- не создавать отдельный backend/CORE;
-- не менять сервер и production.
-
-Критерий готовности текущего шага: полный JSON и инструкция импорта находятся в GitHub; workflow ещё не называется рабочим, пока Павел его не импортирует и не протестирует.
+Критерий готовности: единый JSON с полным кодом Code-нод и единым блоком настроек компании находится в GitHub; Credentials/variables и порядок импорта описаны; секретов нет. До фактического импорта Павлом workflow не называется рабочим.
 
 ## SQL / DB-08B
 
@@ -99,4 +105,4 @@ DB-08B: **завершена**.
 - dashboard — **не подключён и не проверен**;
 - production traffic — **не переключался**.
 
-Следующая задача: **N8N-01**, полный JSON workflow с Code-нодами, исполнитель ChatGPT. Импорт/тест выполняет Павел отдельным фактическим шагом.
+Следующая задача: **N8N-JSON-01**, полный единый JSON workflow по утверждённому N8N_PIPELINE. Импорт/тест — отдельный последующий N8N-TEST-01.

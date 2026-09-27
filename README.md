@@ -45,6 +45,7 @@ ChatGPT создаёт n8n workflow целиком в JSON для импорта
 | Логика n8n, настройки, адаптеры и общий путь | [Архитектура](docs/ARCHITECTURE.md) |
 | Где размещаются сервисы и какие данные могут покидать российский сервер | [Российская инфраструктура](docs/INFRASTRUCTURE_RU_SERVER.md) |
 | Как n8n, Supabase, ИИ-сервисы и дашборд образуют один продукт | [Взаимодействие инструментов](docs/specs/SYSTEM_INTERACTIONS.md) |
+| Утверждённый end-to-end pipeline n8n + WhisperX + Supabase перед сборкой JSON | [N8N pipeline](docs/implementation/N8N_PIPELINE.md) |
 | Какие идентификаторы, статусы и подтверждения проходят между компонентами | [Контракты обмена](docs/specs/INTEGRATION_CONTRACTS.md) |
 | Источники звонков и фильтрация | [Вход и фильтрация](docs/specs/INPUT_AND_FILTERING.md) |
 | Состояния, повторные и пропущенные звонки, результаты | [Жизненный цикл звонка](docs/specs/CALL_LIFECYCLE.md) |

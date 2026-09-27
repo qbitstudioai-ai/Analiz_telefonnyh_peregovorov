@@ -1,6 +1,6 @@
 # План подготовки шаблона
 
-Текущий режим — **разрешённая реализация по [WORKPLAN_IMPLEMENTATION](WORKPLAN_IMPLEMENTATION.md)**. DB-08B завершена: рабочий Supabase-контур `shablon_analiz_telefonnyh_peregovorov` создан и verify DB-01—DB-07 PASS. Следующая задача — N8N-01: полный n8n workflow JSON, который готовит ChatGPT. Посторонние schemas/data, destructive actions, новые Credentials, server deploy и переключение реального трафика не входят в разрешение автоматически.
+Текущий режим — **разрешённая реализация по [WORKPLAN_IMPLEMENTATION](WORKPLAN_IMPLEMENTATION.md)**. DB-08B завершена: рабочий Supabase-контур `shablon_analiz_telefonnyh_peregovorov` создан и verify DB-01—DB-07 PASS. Логика N8N-00 согласована и записана в `docs/implementation/N8N_PIPELINE.md`. Следующая задача — N8N-JSON-01: полный общий n8n workflow JSON, который готовит ChatGPT. Посторонние schemas/data, destructive actions, новые Credentials, server deploy и переключение реального трафика не входят в разрешение автоматически.
 
 Документационный план ниже завершён и сохраняется как основание требований. Текущая одна задача и статусы реализации ведутся в [WORKPLAN_IMPLEMENTATION](WORKPLAN_IMPLEMENTATION.md).
 

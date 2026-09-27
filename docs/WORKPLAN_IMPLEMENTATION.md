@@ -50,16 +50,19 @@
 | [→] CORE-03 | N8N-04 | evidence/version gates реализуются в n8n перед сохранением анализа |
 | [→] CORE-04 | N8N-04 | knowledge retrieval boundary реализуется n8n через разрешённые Supabase views/functions |
 
-## Этап C — n8n workflows
+## Этап C — n8n pipeline и JSON
 
 | Статус / ID | Исполнитель | Результат | Критерий готовности |
 |---|---|---|---|
-| [ ] N8N-01 | ChatGPT | Вход/регистрация/contract checks/дедупликация/фильтрация | ChatGPT создаёт полный JSON для импорта; Code-ноды содержат полный код contract/version/scope/idempotency checks; workflow корректно обрабатывает accepted/duplicate/rejected, normal/duplicate/excluded/missed cases и пишет состояние в Supabase |
-| [ ] N8N-02 | ChatGPT | Получение/временное аудио/cleanup | JSON соблюдает AUDIO_RETENTION, сохраняет metadata и не делает аудио постоянным |
-| [ ] N8N-03 | ChatGPT | WhisperX: транскрибация/диаризация/роли | ChatGPT создаёт полный JSON n8n; workflow получает временное аудио, вызывает локальный WhisperX, проверяет/нормализует ответ в Code-нодах и фиксирует quality/provenance/roles в Supabase |
-| [ ] N8N-04 | ChatGPT | Privacy/knowledge/LLM analysis | Полный JSON содержит pseudonymization/privacy/evidence/version/knowledge gates в Code-нодах; внешняя LLM вызывается только после privacy PASS; analysis сохраняет exact versions/evidence в Supabase |
-| [ ] N8N-05 | ChatGPT | CRM/result/delivery | AI result отделён от CRM fact; outgoing action создаётся до send; retry/outcome_unknown безопасны |
-| [ ] N8N-06 | ChatGPT | Recovery/reconciliation/cleanup | Partial failures DOC-05 восстанавливаются с сохранённой точки без дублей |
+| [x] N8N-00 | Павел + ChatGPT | Утверждён end-to-end pipeline n8n + WhisperX + Supabase | В `docs/implementation/N8N_PIPELINE.md` зафиксирован путь от source event до cleanup/delivery, двухэтапная фильтрация, raw/pseudonymized branches, privacy/evidence gates, Supabase mappings, мотивирующая feedback и шаблонность настроек |
+| [→] N8N-01 | N8N-JSON-01 | Вход/регистрация/contract checks/дедупликация/фильтрация включаются в общий JSON | Требования перенесены в единый JSON pipeline |
+| [→] N8N-02 | N8N-JSON-01 | Получение/временное аудио/cleanup включаются в общий JSON | Требования перенесены в единый JSON pipeline |
+| [→] N8N-03 | N8N-JSON-01 | WhisperX: транскрибация/диаризация/роли включаются в общий JSON | Требования перенесены в единый JSON pipeline |
+| [→] N8N-04 | N8N-JSON-01 | Privacy/knowledge/LLM analysis включается в общий JSON | Требования перенесены в единый JSON pipeline |
+| [→] N8N-05 | N8N-JSON-01 | CRM/result/delivery включается в общий JSON | Требования перенесены в единый JSON pipeline |
+| [→] N8N-06 | N8N-JSON-01 | Recovery/reconciliation/cleanup включается в общий JSON | Требования перенесены в единый JSON pipeline |
+| [ ] N8N-JSON-01 | ChatGPT | Полный импортируемый JSON первой версии общего pipeline | Один JSON содержит все согласованные блоки, полный код Code-нод, изолированные source/channel adapters, единый блок настроек компании и обращения к существующей Supabase schema; секретов нет |
+| [ ] N8N-TEST-01 | Павел + ChatGPT | Импорт, настройка и фактический тест JSON | Павел импортировал workflow, заполнил только разрешённые Credentials/variables и фактически проверены согласованные сценарии без production traffic |
 
 ## Этап D — модели и контрольный набор
 
@@ -106,32 +109,23 @@
 
 ## Текущая следующая задача
 
-**N8N-01 — вход, регистрация, contract checks, дедупликация и фильтрация.**
+**N8N-JSON-01 — собрать полный импортируемый JSON первой версии общего pipeline.**
 
 Исполнитель: **ChatGPT**.
 
-Архитектурное решение Павла от 26 сентября 2026 года:
+Основание: утверждённый документ `docs/implementation/N8N_PIPELINE.md`.
 
-- отдельный CORE-сервис/модуль не создаётся;
-- вся прикладная логика обработки звонков находится в n8n;
-- Code-ноды содержат проверки контрактов, версий, scope, idempotency и переходов состояний;
-- WhisperX вызывается из n8n как локальный вычислительный сервис;
-- Supabase хранит состояние и историю;
-- dashboard остаётся отдельным программным приложением;
-- каждый workflow ChatGPT отдаёт полным JSON для импорта, включая полный код всех Code-нод.
+Цель: перевести согласованный end-to-end pipeline в один JSON n8n без изменения бизнес-логики.
 
-Цель N8N-01: подготовить первый полный импортируемый workflow для входного события до решения «продолжать / дубль / исключить / пропущенный», с надёжной записью состояния в Supabase.
+Критерий готовности текущего шага:
 
-Критерий готовности на этапе создания:
-
-- полный JSON находится в GitHub;
-- понятные русские названия основных нод;
-- перечислены необходимые Credentials/variables без секретов;
-- Code-ноды содержат полный код;
-- реализованы contract/version/scope/idempotency checks;
-- duplicate event не запускает второй эквивалентный процесс;
-- новое событие того же звонка не теряется как дубль;
-- состояние фиксируется в уже созданной schema `shablon_analiz_telefonnyh_peregovorov`;
-- есть обработка normal/duplicate/excluded/missed;
-- описаны тестовые сценарии и ожидаемый результат;
-- статус после создания — «JSON создан», но не «импортирован/протестирован», пока Павел фактически не импортирует workflow и не выполнит тест.
+- один полный JSON находится в GitHub;
+- все основные ноды имеют понятные русские названия;
+- все Code-ноды содержат полный код;
+- нет токенов, паролей и реальных client data;
+- есть единый блок «НАСТРОЙКИ КОМПАНИИ»;
+- source/channel-specific nodes изолированы как адаптеры;
+- используются уже существующие Supabase tables/views/functions;
+- перечислены Credentials/variables, которые заполняются после импорта;
+- описан порядок импорта и тестовые сценарии;
+- статус после создания: **JSON создан, но не импортирован и не протестирован**.
